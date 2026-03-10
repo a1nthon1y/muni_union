@@ -3,7 +3,13 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const { Pool } = pkg;
+const { Pool, types } = pkg;
+
+// Configurar parser de fechas para evitar problemas de zona horaria con PostgreSQL
+// 1082 es el OID del tipo DATE en PostgreSQL
+types.setTypeParser(1082, function(stringValue) {
+  return stringValue; // Retorna "YYYY-MM-DD" directamente como string
+});
 
 const pool = new Pool({
   host: process.env.DB_HOST,
