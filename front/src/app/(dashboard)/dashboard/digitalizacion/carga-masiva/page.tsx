@@ -19,16 +19,19 @@ import { Separator } from "@/components/ui/separator";
 
 interface ResultadoFila {
     fila: number;
-    estado: "OK" | "ERROR";
+    estado: "OK" | "ERROR" | "OMITIDO" | "OMITIDO_DOC";
     acta: string;
     persona: string;
     con_documento: boolean;
     error?: string;
+    mensaje?: string;
 }
 
 interface ResumenImportacion {
     total: number;
     exitosos: number;
+    omitidos: number;
+    docs_vinculados: number;
     errores: number;
     resultados: ResultadoFila[];
 }
@@ -96,10 +99,12 @@ export default function CargaMasivaPage() {
 
             setResumen(data);
 
-            if (data.errores === 0) {
-                toast.success(`✅ Importación completada: ${data.exitosos} actas registradas.`);
+            if (data.errores === 0 && data.docs_vinculados === 0) {
+                toast.success(`✅ Importación completada: ${data.exitosos} actas nuevas, ${data.omitidos} omitidas.`);
+            } else if (data.docs_vinculados > 0) {
+                toast.info(`📎 ${data.docs_vinculados} documentos vinculados a actas existentes sin PDF.`);
             } else {
-                toast.warning(`Importación finalizada: ${data.exitosos} exitosas, ${data.errores} con errores.`);
+                toast.warning(`Importación: ${data.exitosos} nuevas, ${data.docs_vinculados} docs vinculados, ${data.errores} errores.`);
             }
         } catch (error: any) {
             const msg = error?.response?.data?.message || "Error inesperado durante la importación.";
@@ -119,7 +124,7 @@ export default function CargaMasivaPage() {
             "ACTA": r.acta,
             "CIUDADANO": r.persona,
             "VINCULO PDF": r.con_documento ? "SI" : "NO",
-            "DETALLE/ERROR": r.error || "Operación exitosa"
+            "DETALLE/ERROR": r.error || r.mensaje || "Operación exitosa"
         }));
 
         const ws = XLSX.utils.json_to_sheet(dataArr);
@@ -139,7 +144,9 @@ export default function CargaMasivaPage() {
         XLSX.writeFile(wb, `Reporte_Importacion_${Date.now()}.xlsx`);
     };
 
-    const porcentajeExito = resumen ? Math.round((resumen.exitosos / resumen.total) * 100) : 0;
+    const porcentajeExito = resumen
+        ? Math.round(((resumen.exitosos + resumen.omitidos + resumen.docs_vinculados) / resumen.total) * 100)
+        : 0;
 
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500 max-w-5xl mx-auto">
@@ -177,11 +184,12 @@ export default function CargaMasivaPage() {
             </div>
 
             {/* GUÍA RÁPIDA DE IMPORTACIÓN */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
-                    { step: "01", title: "PREPARA EL EXCEL", desc: "Usa la plantilla oficial con todos los campos obligatorios." },
-                    { step: "02", title: "ORGANIZA EL ZIP", desc: "Sube tus PDFs/Imágenes en un ZIP con las rutas correctas." },
-                    { step: "03", title: "VERIFICA Y CARGA", desc: "Revisa el reporte final para corregir posibles incidencias." }
+                    { step: "01", title: "PREPARA EL EXCEL", desc: "Usa la plantilla oficial. Soporta Modo Clásico (Libro) y CUI." },
+                    { step: "02", title: "ORGANIZA EL ZIP", desc: "Pon tus PDFs en la raíz o en carpetas. El nombre debe coincidir." },
+                    { step: "03", title: "CAMPOS MÍNIMOS", desc: "Nombres, Apellidos, Tipo de Acta y Fecha son estrictos." },
+                    { step: "04", title: "VERIFICA Y CARGA", desc: "Revisa el reporte final de cada fila al terminar." }
                 ].map((item, i) => (
                     <div key={i} className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-sm border border-slate-200/60 dark:border-slate-800 p-4 rounded-2xl flex gap-4 items-start group hover:border-emerald-500/30 transition-all">
                         <span className="text-xl font-black text-emerald-500/20 group-hover:text-emerald-500/40 transition-colors leading-none mt-1">{item.step}</span>
@@ -192,6 +200,68 @@ export default function CargaMasivaPage() {
                     </div>
                 ))}
             </div>
+
+            {/* DETALLES DEL FORMATO EXCEL */}
+            <Card className="border-none shadow-sm bg-blue-50/30 dark:bg-blue-950/10 rounded-3xl overflow-hidden">
+                <CardHeader className="pb-2">
+                    <div className="flex items-center gap-2">
+                        <Info className="h-4 w-4 text-blue-600" />
+                        <CardTitle className="text-sm font-bold text-blue-900 dark:text-blue-300">Guía de Columnas del Excel</CardTitle>
+                    </div>
+                    <CardDescription className="text-[10px] font-medium uppercase tracking-tight">
+                        El sistema procesa automáticamente los siguientes encabezados (insensible a mayúsculas):
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6 pt-2">
+                    <div className="space-y-3">
+                        <h5 className="text-[10px] font-black text-blue-800/60 uppercase tracking-widest border-b border-blue-100 pb-1">Identificación del Acta</h5>
+                        <ul className="space-y-2">
+                            <li className="flex flex-col">
+                                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                                    cui <Badge className="h-3 text-[8px] px-1 bg-amber-500">NUEVO</Badge>
+                                </span>
+                                <span className="text-[9px] text-slate-500">Identificador RENIEC. Si se usa, no requiere Libro/Número.</span>
+                            </li>
+                            <li className="flex flex-col">
+                                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">tipo_acta <Badge variant="outline" className="h-3 text-[8px] px-1 border-rose-400 text-rose-500 font-black">REQ</Badge></span>
+                                <span className="text-[9px] text-slate-500">NACIMIENTO, MATRIMONIO o DEFUNCION.</span>
+                            </li>
+                            <li className="flex flex-col">
+                                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">libro / numero_acta</span>
+                                <span className="text-[9px] text-slate-500">Obligatorios si NO hay CUI (Modo Clásico).</span>
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <div className="space-y-3">
+                        <h5 className="text-[10px] font-black text-blue-800/60 uppercase tracking-widest border-b border-blue-100 pb-1">Datos del Ciudadano</h5>
+                        <ul className="space-y-2">
+                            <li className="flex flex-col">
+                                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">nombres / apellido_paterno <Badge variant="outline" className="h-3 text-[8px] px-1 border-rose-400 text-rose-500 font-black">REQ</Badge></span>
+                                <span className="text-[9px] text-slate-500">Identidad básica del titular.</span>
+                            </li>
+                            <li className="flex flex-col">
+                                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">dni / sexo / fecha_nacimiento</span>
+                                <span className="text-[9px] text-slate-500">Datos adicionales de la persona.</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div className="space-y-3">
+                        <h5 className="text-[10px] font-black text-blue-800/60 uppercase tracking-widest border-b border-blue-100 pb-1">Vínculo con Archivos</h5>
+                        <ul className="space-y-2">
+                            <li className="flex flex-col">
+                                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">nombre_archivo_pdf</span>
+                                <span className="text-[9px] text-slate-500">Ejm: "acta_123.pdf". Debe estar dentro del ZIP.</span>
+                            </li>
+                            <li className="flex flex-col">
+                                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">carpeta_ruta</span>
+                                <span className="text-[9px] text-slate-500">Subcarpeta dentro del ZIP (opcional).</span>
+                            </li>
+                        </ul>
+                    </div>
+                </CardContent>
+            </Card>
 
             {/* BARRA DE PROGRESO ESTRATÉGICA (DURANTE LA CARGA) */}
             {loading && (
@@ -360,27 +430,33 @@ export default function CargaMasivaPage() {
                         </div>
 
                         {/* RESUMEN ESTADÍSTICO */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             {[
                                 { label: 'TOTAL FILAS', value: resumen.total, icon: FileSpreadsheet, color: 'slate' },
-                                { label: 'REGISTROS EXITOSOS', value: resumen.exitosos, icon: CheckCircle2, color: 'emerald' },
-                                { label: 'FALLIDOS / ERRORES', value: resumen.errores, icon: XCircle, color: 'rose' }
+                                { label: 'ACTAS NUEVAS', value: resumen.exitosos, icon: CheckCircle2, color: 'emerald' },
+                                { label: 'DOCS VINCULADOS', value: resumen.docs_vinculados, icon: AlertTriangle, color: 'amber' },
+                                { label: 'ERRORES', value: resumen.errores, icon: XCircle, color: 'rose' }
                             ].map((stat, i) => (
                                 <div key={i} className={cn(
-                                    "p-8 rounded-[32px] border flex flex-col items-center justify-center gap-3 transition-all hover:translate-y-[-4px]",
+                                    "p-6 rounded-[28px] border flex flex-col items-center justify-center gap-2 transition-all hover:translate-y-[-4px]",
                                     stat.color === 'slate' ? "bg-white dark:bg-slate-800 border-slate-100" :
                                         stat.color === 'emerald' ? "bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-100/50" :
+                                        stat.color === 'amber' ? "bg-amber-50/50 dark:bg-amber-950/20 border-amber-100/50" :
                                             "bg-rose-50/50 dark:bg-rose-950/20 border-rose-100/50"
                                 )}>
-                                    <div className={cn("p-4 rounded-2xl mb-1 shadow-sm",
+                                    <div className={cn("p-3 rounded-2xl mb-1 shadow-sm",
                                         stat.color === 'slate' ? "bg-slate-50 text-slate-400" :
-                                            stat.color === 'emerald' ? "bg-white text-emerald-500" : "bg-white text-rose-500"
+                                            stat.color === 'emerald' ? "bg-white text-emerald-500" :
+                                            stat.color === 'amber' ? "bg-white text-amber-500" :
+                                            "bg-white text-rose-500"
                                     )}>
-                                        <stat.icon className="h-8 w-8" />
+                                        <stat.icon className="h-6 w-6" />
                                     </div>
-                                    <p className={cn("text-5xl font-black tracking-tight",
+                                    <p className={cn("text-4xl font-black tracking-tight",
                                         stat.color === 'slate' ? "text-slate-800" :
-                                            stat.color === 'emerald' ? "text-emerald-700" : "text-rose-700"
+                                            stat.color === 'emerald' ? "text-emerald-700" :
+                                            stat.color === 'amber' ? "text-amber-700" :
+                                            "text-rose-700"
                                     )}>{stat.value}</p>
                                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">{stat.label}</p>
                                 </div>
@@ -407,6 +483,31 @@ export default function CargaMasivaPage() {
 
                         {/* TABLAS DE DETALLES */}
                         <div className="grid grid-cols-1 gap-6">
+
+                            {/* DOCS VINCULADOS A ACTAS SIN DOCUMENTO */}
+                            {resumen.docs_vinculados > 0 && (
+                                <div className="space-y-3">
+                                    <div className="flex items-center gap-3 px-2">
+                                        <AlertTriangle className="h-5 w-5 text-amber-500" />
+                                        <h3 className="font-black text-amber-700 dark:text-amber-400 uppercase tracking-widest text-sm">Documentos Vinculados ({resumen.docs_vinculados})</h3>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto pr-2">
+                                        {resumen.resultados.filter(r => r.estado === "OMITIDO_DOC").map((r) => (
+                                            <div key={r.fila} className="flex gap-4 p-4 bg-white dark:bg-slate-800 border border-amber-100 dark:border-amber-900/30 rounded-2xl shadow-sm">
+                                                <div className="bg-amber-50 dark:bg-amber-950/40 w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0">
+                                                    <span className="font-black text-amber-600 text-xs">#{r.fila}</span>
+                                                </div>
+                                                <div className="flex-1 space-y-1">
+                                                    <p className="font-black text-slate-800 dark:text-slate-200 text-sm">{r.persona}</p>
+                                                    <p className="text-[10px] text-amber-700 dark:text-amber-400 font-bold">{r.acta}</p>
+                                                    <p className="text-[10px] text-amber-600 font-medium">📎 PDF vinculado correctamente</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
                             {/* LISTA DE ERRORES */}
                             {resumen.errores > 0 && (
                                 <div className="space-y-4">

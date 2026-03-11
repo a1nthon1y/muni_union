@@ -10,8 +10,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Solicitud } from "@/types/solicitud";
-import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { dateUtils } from "@/utils/dateUtils";
 import {
     User,
     Calendar,
@@ -117,7 +117,7 @@ export function SolicitudDetailSheet({
                                     <p className="text-xs text-muted-foreground font-medium mb-0.5">Fecha de Registro</p>
                                     <p className="text-sm font-semibold text-foreground flex items-center gap-1.5">
                                         <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-                                        {format(new Date(solicitud.fecha_solicitud), "dd/MM/yyyy", { locale: es })}
+                                        {dateUtils.formatDisplayDate(solicitud.fecha_solicitud)}
                                     </p>
                                 </div>
                                 <div>
@@ -244,7 +244,7 @@ export function SolicitudDetailSheet({
                                 </p>
                                 <div className="grid grid-cols-1 gap-1 mt-1 opacity-80">
                                     <p className="text-[9px] font-bold flex items-center gap-1.5 uppercase">
-                                        <Clock size={10} /> {solicitud.fecha_atencion ? format(new Date(solicitud.fecha_atencion), "dd/MM/yy HH:mm", { locale: es }) : '—'}
+                                        <Clock size={10} /> {dateUtils.formatDisplayTimestamp(solicitud.fecha_atencion)}
                                     </p>
                                     <p className="text-[9px] font-bold flex items-center gap-1.5 uppercase">
                                         <User size={10} /> {solicitud.usuario_atencion_nombres ? `${solicitud.usuario_atencion_nombres} ${solicitud.usuario_atencion_apellidos}` : 'SISTEMA'}

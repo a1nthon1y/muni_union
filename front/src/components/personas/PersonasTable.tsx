@@ -9,7 +9,7 @@ import {
     Phone,
     Calendar
 } from "lucide-react";
-import { format, parseISO } from "date-fns";
+import { dateUtils } from "@/utils/dateUtils";
 import {
     Table,
     TableBody,
@@ -129,9 +129,7 @@ export function PersonasTable({
                                     <TableCell className="std-table-cell text-center">
                                         <div className="flex flex-col items-center">
                                             <span className="text-xs text-foreground/80">
-                                                {persona.fecha_nacimiento
-                                                    ? format(parseISO(persona.fecha_nacimiento), 'dd/MM/yyyy')
-                                                    : "-"}
+                                                {dateUtils.formatDisplayDate(persona.fecha_nacimiento)}
                                             </span>
                                         </div>
                                     </TableCell>

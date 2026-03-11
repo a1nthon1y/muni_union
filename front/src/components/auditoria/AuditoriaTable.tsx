@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
+import { dateUtils } from "@/utils/dateUtils";
 import { cn } from "@/lib/utils";
 import {
     Activity,
@@ -212,10 +213,10 @@ export function AuditoriaTable({ logs, isLoading, pagination, onPageChange }: Au
                                         <TableCell className="std-table-cell">
                                             <div className="flex flex-col">
                                                 <span className="text-xs text-foreground/80 font-bold tracking-tight">
-                                                    {format(new Date(log.fecha), "dd MMM, yyyy", { locale: es })}
+                                                    {dateUtils.formatDisplayTimestamp(log.fecha).split(' ')[0]}
                                                 </span>
                                                 <span className="text-[10px] font-medium text-muted-foreground/60 uppercase tracking-widest mt-0.5">
-                                                    {format(new Date(log.fecha), "hh:mm:ss a")}
+                                                    {dateUtils.formatDisplayTimestamp(log.fecha).split(' ')[1]}
                                                 </span>
                                             </div>
                                         </TableCell>

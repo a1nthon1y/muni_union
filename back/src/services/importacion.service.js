@@ -57,11 +57,19 @@ export const importarActasMasivo = async (filas, archivosMap, soloNombreMap, usu
             console.log(`Procesando fila ${rowNum}:`, fila);
 
             // ── Validar campos obligatorios ───────────────────────────────────
-            const obligatorios = [
+            const obligatoriosBase = [
                 "nombres", "apellido_paterno", "apellido_materno",
-                "sexo", "tipo_acta", "libro", "numero_acta", "fecha_acta"
+                "sexo", "tipo_acta", "fecha_acta"
             ];
-            const faltantes = obligatorios.filter(campo => !fila[campo] || fila[campo] === "");
+            const faltantes = obligatoriosBase.filter(campo => !fila[campo] || fila[campo] === "");
+            
+            // Si no hay CUI, libro y numero_acta son obligatorios para el modo clásico
+            const hasCui = fila.cui && String(fila.cui).trim() !== "";
+            if (!hasCui) {
+                if (!fila.libro || String(fila.libro).trim() === "") faltantes.push("libro");
+                if (!fila.numero_acta || String(fila.numero_acta).trim() === "") faltantes.push("numero_acta");
+            }
+
             if (faltantes.length > 0) {
                 console.error(`Fila ${rowNum} ignorada por campos obligatorios faltantes:`, faltantes);
                 throw new Error(`Campos obligatorios vacíos: ${faltantes.join(", ")}`);
@@ -79,7 +87,11 @@ export const importarActasMasivo = async (filas, archivosMap, soloNombreMap, usu
             }
             if (isNaN(anioActa)) throw new Error(`anio inválido: "${fila.anio}"`);
 
-            const fullNumeroActa = buildNumeroActa(fila.tipo_acta, fila.libro, fila.numero_acta);
+            // ── Construir Identificador ──────────────────────────────────────
+            // Si hay CUI, ese es el numero_acta. Si no, buildNumeroActa clasico.
+            const fullNumeroActa = hasCui 
+                ? String(fila.cui).trim().toUpperCase() 
+                : buildNumeroActa(fila.tipo_acta, fila.libro, fila.numero_acta);
 
             // ── 1. Buscar o crear persona ────────────────────────────────────
             if (fila.dni && fila.dni.trim()) {
@@ -141,16 +153,87 @@ export const importarActasMasivo = async (filas, archivosMap, soloNombreMap, usu
                 personaId = nuevaPersona.rows[0].id;
             }
 
-            // ── 2. Verificar duplicado de acta ───────────────────────────────
+            // ── 2. Verificar si el acta ya existe ────────────────────────────────
             const actaExistente = await client.query(
-                "SELECT id FROM actas WHERE numero_acta = $1 AND fecha_eliminacion IS NULL LIMIT 1",
+                `SELECT a.id,
+                        EXISTS(
+                            SELECT 1 FROM documentos_digitales d
+                            WHERE d.acta_id = a.id AND d.fecha_eliminacion IS NULL
+                        ) AS tiene_documento
+                 FROM actas a
+                 WHERE a.numero_acta = $1 AND a.fecha_eliminacion IS NULL
+                 LIMIT 1`,
                 [fullNumeroActa]
             );
+
             if (actaExistente.rows.length > 0) {
-                throw new Error(`El acta ${fullNumeroActa} ya existe en el sistema`);
+                // El acta ya existe — verificar si tiene documento
+                const actaExistenteId = actaExistente.rows[0].id;
+                const tieneDocumento = actaExistente.rows[0].tiene_documento;
+
+                // Buscar archivo en el ZIP para esta fila
+                const nombreArchivoOmit = fila.nombre_archivo_pdf?.trim();
+                let archivoParaVincular = null;
+                if (nombreArchivoOmit) {
+                    const carpeta = fila.carpeta_ruta?.trim().replace(/\\/g, "/").replace(/\/$/, "");
+                    const claveCarpeta = carpeta ? `${carpeta}/${nombreArchivoOmit}` : null;
+                    if (claveCarpeta && archivosMap[claveCarpeta]) {
+                        archivoParaVincular = archivosMap[claveCarpeta];
+                    } else if (soloNombreMap[nombreArchivoOmit]) {
+                        archivoParaVincular = soloNombreMap[nombreArchivoOmit];
+                    }
+                }
+
+                if (!tieneDocumento && archivoParaVincular) {
+                    // Acta sin documento + ZIP trae el PDF → vincularlo
+                    let tipoArchivo = archivoParaVincular.mimetype;
+                    if (tipoArchivo.includes("pdf")) tipoArchivo = "PDF";
+                    else if (tipoArchivo.includes("image")) tipoArchivo = "IMG";
+                    if (tipoArchivo.length > 10) tipoArchivo = tipoArchivo.substring(0, 10);
+
+                    await client.query(
+                        `INSERT INTO documentos_digitales
+                           (acta_id, nombre_archivo, ruta_archivo, tipo_archivo, hash_archivo, usuario_registro)
+                         VALUES ($1,$2,$3,$4,$5,$6)`,
+                        [
+                            actaExistenteId,
+                            archivoParaVincular.originalname,
+                            archivoParaVincular.path,
+                            tipoArchivo,
+                            crypto.createHash("md5").update(fs.readFileSync(archivoParaVincular.path)).digest("hex"),
+                            usuario_id
+                        ]
+                    );
+
+                    await client.query("COMMIT");
+                    resultados.push({
+                        fila: rowNum,
+                        estado: "OMITIDO_DOC",
+                        acta: fullNumeroActa,
+                        persona: `${fila.apellido_paterno} ${fila.apellido_materno}, ${fila.nombres}`,
+                        con_documento: true,
+                        acta_id: actaExistenteId,
+                        mensaje: "Acta ya existía sin documento — se vinculó el PDF correctamente"
+                    });
+                } else {
+                    // Acta ya existe con documento (o sin PDF en ZIP) → omitir sin error
+                    await client.query("ROLLBACK");
+                    resultados.push({
+                        fila: rowNum,
+                        estado: "OMITIDO",
+                        acta: fullNumeroActa,
+                        persona: `${fila.apellido_paterno} ${fila.apellido_materno}, ${fila.nombres}`,
+                        con_documento: tieneDocumento,
+                        acta_id: actaExistenteId,
+                        mensaje: tieneDocumento
+                            ? "Acta ya registrada con documento — omitida"
+                            : "Acta ya registrada sin documento (no se encontró PDF en el ZIP)"
+                    });
+                }
+                continue;
             }
 
-            // ── 3. Crear acta ─────────────────────────────────────────────────
+            // ── 3. Crear acta nueva ───────────────────────────────────────────
             const nuevaActa = await client.query(
                 `INSERT INTO actas
                    (tipo_acta, numero_acta, anio, persona_principal_id, fecha_acta, observaciones, usuario_registro)
@@ -182,7 +265,7 @@ export const importarActasMasivo = async (filas, archivosMap, soloNombreMap, usu
             }
 
             if (archivoEncontrado) {
-                // El tipo_archivo en la BD es varchar(10). 
+                // El tipo_archivo en la BD es varchar(10).
                 // Si mimetype es application/pdf (15 chars), fallará.
                 let tipoArchivo = archivoEncontrado.mimetype;
                 if (tipoArchivo.includes("pdf")) tipoArchivo = "PDF";

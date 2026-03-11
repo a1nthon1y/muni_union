@@ -25,6 +25,7 @@ import { useState, useEffect } from "react";
 import { useDebounce } from "@/hooks/useDebounce";
 import { toast } from "sonner";
 import { reportesService } from "@/services/reportes.service";
+import { dateUtils } from "@/utils/dateUtils";
 import { Loader2 } from "lucide-react";
 
 import {
@@ -295,7 +296,7 @@ export function ActasTable({
                                     </TableCell>
                                     <TableCell className="std-table-cell">
                                         <div className="flex flex-col">
-                                            <span className="text-xs text-foreground/80 font-medium">{format(new Date(acta.fecha_acta), "dd/MM/yyyy")}</span>
+                                            <span className="text-xs text-foreground/80 font-medium">{dateUtils.formatDisplayDate(acta.fecha_acta)}</span>
                                             <span className="text-[10px] font-medium text-muted-foreground/60 uppercase tracking-wider">{acta.anio}</span>
                                         </div>
                                     </TableCell>

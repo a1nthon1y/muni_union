@@ -33,6 +33,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Save, UserPlus, Fingerprint, MapPin, Calendar, Phone } from "lucide-react";
 import { Persona, PersonaInput } from "@/types/persona";
 import { personasService } from "@/services/personas.service";
+import { dateUtils } from "@/utils/dateUtils";
 
 const personaSchema = z.object({
     tipo_documento: z.string().min(1, "Seleccione tipo"),
@@ -98,12 +99,6 @@ export function PersonaSheet({
     useEffect(() => {
         if (isOpen) {
             if (persona) {
-                // Formatear fecha para el input date
-                let fechaFormateada = "";
-                if (persona.fecha_nacimiento) {
-                    fechaFormateada = persona.fecha_nacimiento.split('T')[0];
-                }
-
                 form.reset({
                     tipo_documento: persona.tipo_documento || "DNI",
                     dni: persona.dni || "",
@@ -111,7 +106,7 @@ export function PersonaSheet({
                     apellido_paterno: persona.apellido_paterno || "",
                     apellido_materno: persona.apellido_materno || "",
                     sexo: (persona.sexo as any) || 'M',
-                    fecha_nacimiento: fechaFormateada,
+                    fecha_nacimiento: dateUtils.formatInputDate(persona.fecha_nacimiento),
                     telefono: persona.telefono || "",
                     direccion: persona.direccion || "",
                     observaciones: persona.observaciones || "",

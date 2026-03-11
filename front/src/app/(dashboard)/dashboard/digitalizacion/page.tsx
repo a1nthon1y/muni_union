@@ -48,6 +48,7 @@ import { actasService } from "@/services/actas.service";
 import { documentosService } from "@/services/documentos.service";
 import { Persona } from "@/types/persona";
 import { Acta } from "@/types/acta";
+import { dateUtils } from "@/utils/dateUtils";
 
 const formSchema = z.object({
     // Persona
@@ -62,12 +63,21 @@ const formSchema = z.object({
     persona_observaciones: z.string().optional(),
 
     // Acta
+    modo: z.enum(["CLASICO", "CUI"]),
     tipo_acta: z.enum(["NACIMIENTO", "MATRIMONIO", "DEFUNCION"]),
-    libro: z.string().min(1, "Libro"),
-    numero_acta: z.string().min(1, "Acta"),
+    libro: z.string().optional(),
+    numero_acta: z.string().min(1, "Campo obligatorio"),
     anio: z.coerce.number().min(1900),
     fecha_acta: z.string().min(1, "Obligatorio"),
     acta_observaciones: z.string().optional(),
+}).refine((data) => {
+    if (data.modo === "CLASICO" && (!data.libro || data.libro.trim() === "")) {
+        return false;
+    }
+    return true;
+}, {
+    message: "Libro es obligatorio en modo clásico",
+    path: ["libro"]
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -99,13 +109,16 @@ export default function DigitalizacionPage() {
             telefono: "",
             persona_observaciones: "",
             tipo_acta: "NACIMIENTO",
+            modo: "CLASICO",
             libro: "",
             numero_acta: "",
             anio: new Date().getFullYear(),
-            fecha_acta: new Date().toISOString().split('T')[0],
+            fecha_acta: dateUtils.formatInputDate(new Date().toISOString()),
             acta_observaciones: "",
         }
     });
+
+    const modoValue = form.watch("modo");
 
     const dniValue = form.watch("dni");
     const nombresValue = form.watch("nombres");
@@ -137,7 +150,7 @@ export default function DigitalizacionPage() {
                     form.setValue("apellido_paterno", p.apellido_paterno);
                     form.setValue("apellido_materno", p.apellido_materno);
                     form.setValue("sexo", p.sexo);
-                    form.setValue("fecha_nacimiento", p.fecha_nacimiento?.split('T')[0] || "");
+                    form.setValue("fecha_nacimiento", dateUtils.formatInputDate(p.fecha_nacimiento));
                     form.setValue("telefono", p.telefono || "");
                     form.setValue("persona_observaciones", p.observaciones || "");
                     toast.info("Ciudadano identificado.");
@@ -186,7 +199,7 @@ export default function DigitalizacionPage() {
 
     // Validación de Acta Duplicada por Número (Preventiva)
     useEffect(() => {
-        if (numActaValue && libroValue) {
+        if (numActaValue && (modoValue === 'CUI' || libroValue)) {
             const getPrefix = (tipo: string) => {
                 switch (tipo) {
                     case 'NACIMIENTO': return 'NAC';
@@ -195,7 +208,10 @@ export default function DigitalizacionPage() {
                     default: return 'ACT';
                 }
             };
-            const formattedNum = `${getPrefix(tipoActaValue)}-L${libroValue}-${numActaValue}`;
+            const formattedNum = modoValue === "CUI"
+                ? numActaValue.toUpperCase()
+                : `${getPrefix(tipoActaValue)}-L${libroValue}-${numActaValue}`;
+
             const timer = setTimeout(() => {
                 actasService.getAll({
                     numero: formattedNum
@@ -210,7 +226,7 @@ export default function DigitalizacionPage() {
                         const esMismaPersona = existente.dni === dniValue;
 
                         toast.warning(
-                            `Aviso: El acta N° ${numActaValue} ya está registrada en el sistema.`,
+                            `Aviso: El acta N° ${formattedNum} ya está registrada.`,
                             {
                                 duration: 10000,
                                 description: esMismaPersona
@@ -227,7 +243,7 @@ export default function DigitalizacionPage() {
             }, 600);
             return () => clearTimeout(timer);
         }
-    }, [numActaValue, tipoActaValue, dniValue]);
+    }, [numActaValue, libroValue, tipoActaValue, dniValue, modoValue]);
 
     const resetAll = () => {
         form.reset();
@@ -286,7 +302,9 @@ export default function DigitalizacionPage() {
                     default: return 'ACT';
                 }
             };
-            const fullNumeroActa = `${getPrefix(values.tipo_acta)}-L${values.libro}-${values.numero_acta}`.toUpperCase();
+            const fullNumeroActa = values.modo === "CUI"
+                ? values.numero_acta.trim().toUpperCase()
+                : `${getPrefix(values.tipo_acta)}-L${values.libro}-${values.numero_acta}`.toUpperCase();
 
             let currentActaId: number;
             if (actaEncontrada) {
@@ -562,6 +580,27 @@ export default function DigitalizacionPage() {
                                     </div>
                                 </CardHeader>
                                 <CardContent className="px-5 py-4 space-y-3.5">
+                                    <div className="flex p-1 bg-muted/60 rounded-xl mb-4 w-fit">
+                                        <Button
+                                            type="button"
+                                            variant={modoValue === 'CLASICO' ? 'default' : 'ghost'}
+                                            size="sm"
+                                            className={cn("rounded-lg h-7 text-[9px] font-black uppercase tracking-widest px-4", modoValue === 'CLASICO' && "shadow-sm bg-primary")}
+                                            onClick={() => form.setValue("modo", "CLASICO")}
+                                        >
+                                            Libro Clásico
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            variant={modoValue === 'CUI' ? 'default' : 'ghost'}
+                                            size="sm"
+                                            className={cn("rounded-lg h-7 text-[9px] font-black uppercase tracking-widest px-4", modoValue === 'CUI' && "shadow-sm bg-primary")}
+                                            onClick={() => form.setValue("modo", "CUI")}
+                                        >
+                                            RENIEC (CUI)
+                                        </Button>
+                                    </div>
+
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                         <div className="md:col-span-12 lg:col-span-7">
                                             <FormField
@@ -569,17 +608,17 @@ export default function DigitalizacionPage() {
                                                 name="tipo_acta"
                                                 render={({ field }) => (
                                                     <FormItem>
-                                                        <FormLabel className="std-label mb-1.5">Tipo de Acta</FormLabel>
-                                                        <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!!actaEncontrada}>
+                                                        <FormLabel className="std-label mb-1.5 uppercase font-bold text-[10px] text-primary">Tipo de Acta</FormLabel>
+                                                        <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!!actaEncontrada} value={field.value}>
                                                             <FormControl>
-                                                                <SelectTrigger className="std-input font-semibold text-xs">
+                                                                <SelectTrigger className="std-input font-bold text-xs h-10 border-primary/10">
                                                                     <SelectValue />
                                                                 </SelectTrigger>
                                                             </FormControl>
                                                             <SelectContent>
-                                                                <SelectItem value="NACIMIENTO" className="font-semibold">Nacimiento</SelectItem>
-                                                                <SelectItem value="MATRIMONIO" className="font-semibold">Matrimonio</SelectItem>
-                                                                <SelectItem value="DEFUNCION" className="font-semibold">Defunción</SelectItem>
+                                                                <SelectItem value="NACIMIENTO" className="font-semibold text-xs">NACIMIENTO</SelectItem>
+                                                                <SelectItem value="MATRIMONIO" className="font-semibold text-xs">MATRIMONIO</SelectItem>
+                                                                <SelectItem value="DEFUNCION" className="font-semibold text-xs">DEFUNCIÓN</SelectItem>
                                                             </SelectContent>
                                                         </Select>
                                                     </FormItem>
@@ -594,7 +633,7 @@ export default function DigitalizacionPage() {
                                                     <FormItem>
                                                         <FormLabel className="std-label mb-1.5">F. Registro</FormLabel>
                                                         <FormControl>
-                                                            <Input type="date" {...field} disabled={!!actaEncontrada} className="std-input text-xs" />
+                                                            <Input type="date" {...field} disabled={!!actaEncontrada} className="std-input text-xs font-semibold h-10" />
                                                         </FormControl>
                                                         <FormMessage />
                                                     </FormItem>
@@ -604,35 +643,39 @@ export default function DigitalizacionPage() {
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-12 gap-2">
-                                        <div className="md:col-span-4">
-                                            <FormField
-                                                control={form.control}
-                                                name="libro"
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel className="std-label mb-1.5">Libro N°</FormLabel>
-                                                        <FormControl>
-                                                            <Input
-                                                                {...field}
-                                                                placeholder="LIBRO"
-                                                                disabled={!!actaEncontrada}
-                                                                className="std-input font-bold bg-primary/5 border-primary/20 text-center text-sm"
-                                                            />
-                                                        </FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                        </div>
-                                        <div className="md:col-span-5">
+                                        {modoValue === 'CLASICO' && (
+                                            <div className="md:col-span-4">
+                                                <FormField
+                                                    control={form.control}
+                                                    name="libro"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel className="std-label mb-1.5 uppercase font-bold text-[10px] text-primary">Libro N°</FormLabel>
+                                                            <FormControl>
+                                                                <Input
+                                                                    {...field}
+                                                                    placeholder="LIBRO"
+                                                                    disabled={!!actaEncontrada}
+                                                                    className="std-input font-bold bg-primary/5 border-primary/20 text-center text-sm h-10"
+                                                                />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            </div>
+                                        )}
+                                        <div className={cn(modoValue === 'CLASICO' ? "md:col-span-5" : "md:col-span-9")}>
                                             <FormField
                                                 control={form.control}
                                                 name="numero_acta"
                                                 render={({ field }) => (
                                                     <FormItem>
                                                         <div className="flex items-center justify-between mb-1.5 ">
-                                                            <FormLabel className="std-label m-0 p-0 leading-none">N° DE ACTA</FormLabel>
-                                                            {(libroValue || numActaValue) && (
+                                                            <FormLabel className="std-label m-0 p-0 leading-none">
+                                                                {modoValue === 'CLASICO' ? 'N° DE ACTA' : 'CUI / IDENTIFICADOR'}
+                                                            </FormLabel>
+                                                            {modoValue === 'CLASICO' && (libroValue || numActaValue) && (
                                                                 <Badge variant="outline" className="h-4 px-1 text-[8px] bg-primary/5 text-primary border-primary/20 font-bold">
                                                                     PREVIEW: {tipoActaValue.substring(0, 3)}-L{libroValue || '?'}-{numActaValue || '?'}
                                                                 </Badge>
@@ -641,9 +684,9 @@ export default function DigitalizacionPage() {
                                                         <FormControl>
                                                             <Input
                                                                 {...field}
-                                                                placeholder="ACTA"
+                                                                placeholder={modoValue === 'CLASICO' ? "ACTA" : "CÓDIGO CUI"}
                                                                 disabled={!!actaEncontrada}
-                                                                className="std-input font-semibold uppercase text-sm"
+                                                                className="std-input font-black uppercase text-sm tracking-widest h-10"
                                                                 onChange={(e) => field.onChange(e.target.value.toUpperCase())}
                                                             />
                                                         </FormControl>
@@ -660,7 +703,7 @@ export default function DigitalizacionPage() {
                                                     <FormItem>
                                                         <FormLabel className="std-label mb-1.5">Año</FormLabel>
                                                         <FormControl>
-                                                            <Input type="number" {...field} disabled className="std-input bg-muted/50 text-muted-foreground font-bold text-xs" />
+                                                            <Input type="number" {...field} disabled className="std-input bg-muted/50 text-muted-foreground font-bold text-xs h-10" />
                                                         </FormControl>
                                                         <FormMessage />
                                                     </FormItem>

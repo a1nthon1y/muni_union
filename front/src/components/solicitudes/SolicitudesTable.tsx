@@ -33,6 +33,7 @@ import {
 import { Solicitud, EstadoSolicitud } from "@/types/solicitud";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { dateUtils } from "@/utils/dateUtils";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 
@@ -134,13 +135,13 @@ export function SolicitudesTable({
                                             <div className="flex items-center gap-2 text-muted-foreground">
                                                 <Calendar className="h-3.5 w-3.5 text-muted-foreground/50" />
                                                 <span className="text-xs">
-                                                    {format(new Date(solicitud.fecha_solicitud), "dd MMM yyyy", { locale: es })}
+                                                    {dateUtils.formatDisplayTimestamp(solicitud.fecha_solicitud).split(' ')[0]}
                                                 </span>
                                             </div>
                                             {solicitud.estado === 'ATENDIDO' && solicitud.fecha_atencion && (
                                                 <div className="flex items-center gap-1.5 text-[9px] text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-50 dark:bg-emerald-950/20 px-2 py-0.5 rounded-md w-fit border border-emerald-100 dark:border-emerald-900/30 uppercase tracking-wide">
                                                     <CheckCircle2 className="h-3 w-3" />
-                                                    Atendido: {format(new Date(solicitud.fecha_atencion), "dd/MM/yy", { locale: es })}
+                                                    Atendido: {dateUtils.formatDisplayTimestamp(solicitud.fecha_atencion).split(' ')[0]}
                                                 </div>
                                             )}
                                         </div>

@@ -2,6 +2,7 @@ import dotenv from "dotenv";
 import app from "./app.js";
 
 dotenv.config();
+process.env.TZ = 'America/Lima';
 
 const PORT = process.env.PORT || 4000;
 

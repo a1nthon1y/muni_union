@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Loader2, Save, FileEdit } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 import {
     Sheet,
@@ -35,14 +36,24 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Acta, TipoActa } from "@/types/acta";
 import { actasService } from "@/services/actas.service";
+import { dateUtils } from "@/utils/dateUtils";
 
 const actaSchema = z.object({
     tipo_acta: z.enum(['NACIMIENTO', 'MATRIMONIO', 'DEFUNCION']),
-    libro: z.string().min(1, "Libro obligatorio"),
+    modo: z.enum(['CLASICO', 'CUI']),
+    libro: z.string().optional(),
     numero_acta: z.string().min(1, "Número obligatorio"),
     anio: z.coerce.number().min(1900).max(new Date().getFullYear() + 1),
     fecha_acta: z.string().min(1, "Fecha obligatoria"),
     observaciones: z.string().optional(),
+}).refine((data) => {
+    if (data.modo === "CLASICO" && (!data.libro || data.libro.trim() === "")) {
+        return false;
+    }
+    return true;
+}, {
+    message: "Libro es obligatorio en modo clásico",
+    path: ["libro"]
 });
 
 type ActaFormData = z.infer<typeof actaSchema>;
@@ -58,15 +69,18 @@ export function ActaEditSheet({ isOpen, onClose, onSuccess, acta }: ActaEditShee
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const parseNumeroActa = (fullNum: string) => {
-        if (!fullNum) return { libro: "", acta: "" };
+        if (!fullNum) return { libro: "", acta: "", modo: 'CLASICO' as const };
         const parts = fullNum.split("-");
-        if (parts.length >= 3) {
+        // Formato clásico: Prefijo-LX-Num
+        if (parts.length >= 3 && parts[1].startsWith("L")) {
             return {
                 libro: parts[1].replace(/^L/, ""), // Quitar 'L' inicial
-                acta: parts[2]
+                acta: parts[2],
+                modo: 'CLASICO' as const
             };
         }
-        return { libro: "", acta: fullNum };
+        // Si no cumple el formato clásico, asumimos CUI (Modo Moderno)
+        return { libro: "", acta: fullNum, modo: 'CUI' as const };
     };
 
     const initialParsed = parseNumeroActa(acta?.numero_acta || "");
@@ -75,13 +89,16 @@ export function ActaEditSheet({ isOpen, onClose, onSuccess, acta }: ActaEditShee
         resolver: zodResolver(actaSchema) as any,
         defaultValues: {
             tipo_acta: (acta?.tipo_acta as 'NACIMIENTO' | 'MATRIMONIO' | 'DEFUNCION') || 'NACIMIENTO',
+            modo: initialParsed.modo,
             libro: initialParsed.libro,
             numero_acta: initialParsed.acta,
             anio: acta?.anio || new Date().getFullYear(),
-            fecha_acta: acta?.fecha_acta ? acta.fecha_acta.split('T')[0] : "",
+            fecha_acta: dateUtils.formatInputDate(acta?.fecha_acta),
             observaciones: acta?.observaciones || "",
         },
     });
+
+    const modoValue = form.watch("modo");
 
     const libroValue = form.watch("libro");
     const numeroValue = form.watch("numero_acta");
@@ -104,15 +121,17 @@ export function ActaEditSheet({ isOpen, onClose, onSuccess, acta }: ActaEditShee
             const parsed = parseNumeroActa(acta.numero_acta);
             form.reset({
                 tipo_acta: acta.tipo_acta,
+                modo: parsed.modo,
                 libro: parsed.libro,
                 numero_acta: parsed.acta,
                 anio: acta.anio,
-                fecha_acta: acta.fecha_acta.split('T')[0],
+                fecha_acta: dateUtils.formatInputDate(acta.fecha_acta),
                 observaciones: acta.observaciones || "",
             });
         } else if (!isOpen) {
             form.reset({
                 tipo_acta: 'NACIMIENTO',
+                modo: 'CLASICO',
                 libro: "",
                 numero_acta: "",
                 anio: new Date().getFullYear(),
@@ -125,7 +144,7 @@ export function ActaEditSheet({ isOpen, onClose, onSuccess, acta }: ActaEditShee
 
     // Validación de duplicados al editar (solo si cambia el número respecto al original)
     useEffect(() => {
-        if (numeroValue && libroValue) {
+        if (numeroValue && (modoValue === 'CUI' || libroValue)) {
             const getPrefix = (tipo: string) => {
                 switch (tipo) {
                     case 'NACIMIENTO': return 'NAC';
@@ -134,7 +153,9 @@ export function ActaEditSheet({ isOpen, onClose, onSuccess, acta }: ActaEditShee
                     default: return 'ACT';
                 }
             };
-            const formatted = `${getPrefix(tipoValue)}-L${libroValue}-${numeroValue}`.toUpperCase();
+            const formatted = modoValue === 'CUI' 
+                ? numeroValue.toUpperCase()
+                : `${getPrefix(tipoValue)}-L${libroValue}-${numeroValue}`.toUpperCase();
 
             if (formatted !== acta?.numero_acta?.toUpperCase()) {
                 const timer = setTimeout(() => {
@@ -155,7 +176,7 @@ export function ActaEditSheet({ isOpen, onClose, onSuccess, acta }: ActaEditShee
                 return () => clearTimeout(timer);
             }
         }
-    }, [numeroValue, libroValue, tipoValue, acta, isOpen]);
+    }, [numeroValue, libroValue, tipoValue, acta, isOpen, modoValue]);
 
     const onSubmit = async (values: ActaFormData) => {
         if (!acta) return;
@@ -169,7 +190,9 @@ export function ActaEditSheet({ isOpen, onClose, onSuccess, acta }: ActaEditShee
                     default: return 'ACT';
                 }
             };
-            const fullNumeroActa = `${getPrefix(values.tipo_acta)}-L${values.libro}-${values.numero_acta}`.toUpperCase();
+            const fullNumeroActa = values.modo === 'CUI' 
+                ? values.numero_acta.toUpperCase().trim()
+                : `${getPrefix(values.tipo_acta)}-L${values.libro}-${values.numero_acta}`.toUpperCase();
 
             await actasService.update(acta.id, {
                 ...values,
@@ -216,17 +239,17 @@ export function ActaEditSheet({ isOpen, onClose, onSuccess, acta }: ActaEditShee
                                 name="tipo_acta"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel className="std-label mb-1.5">Tipo de Acta</FormLabel>
+                                        <FormLabel className="std-label mb-1.5 uppercase font-bold text-[10px] text-primary">Tipo de Acta</FormLabel>
                                         <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
                                             <FormControl>
-                                                <SelectTrigger className="std-input h-10 font-semibold uppercase text-xs">
+                                                <SelectTrigger className="std-input h-10 font-bold uppercase text-xs">
                                                     <SelectValue placeholder="—" />
                                                 </SelectTrigger>
                                             </FormControl>
                                             <SelectContent>
-                                                <SelectItem value="NACIMIENTO" className="font-semibold">NACIMIENTO</SelectItem>
-                                                <SelectItem value="MATRIMONIO" className="font-semibold">MATRIMONIO</SelectItem>
-                                                <SelectItem value="DEFUNCION" className="font-semibold">DEFUNCIÓN</SelectItem>
+                                                <SelectItem value="NACIMIENTO" className="font-semibold text-xs text-info">NACIMIENTO</SelectItem>
+                                                <SelectItem value="MATRIMONIO" className="font-semibold text-xs">MATRIMONIO</SelectItem>
+                                                <SelectItem value="DEFUNCION" className="font-semibold text-xs">DEFUNCIÓN</SelectItem>
                                             </SelectContent>
                                         </Select>
                                         <FormMessage />
@@ -234,31 +257,56 @@ export function ActaEditSheet({ isOpen, onClose, onSuccess, acta }: ActaEditShee
                                 )}
                             />
 
+                            <div className="flex p-1 bg-muted/60 rounded-xl mb-2 w-fit">
+                                <Button
+                                    type="button"
+                                    variant={modoValue === 'CLASICO' ? 'default' : 'ghost'}
+                                    size="sm"
+                                    className={cn("rounded-lg h-7 text-[9px] font-black uppercase tracking-widest px-4", modoValue === 'CLASICO' && "shadow-sm bg-primary")}
+                                    onClick={() => form.setValue("modo", "CLASICO")}
+                                >
+                                    Libro Clásico
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant={modoValue === 'CUI' ? 'default' : 'ghost'}
+                                    size="sm"
+                                    className={cn("rounded-lg h-7 text-[9px] font-black uppercase tracking-widest px-4", modoValue === 'CUI' && "shadow-sm bg-primary")}
+                                    onClick={() => form.setValue("modo", "CUI")}
+                                >
+                                    RENIEC (CUI)
+                                </Button>
+                            </div>
+
                             <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
-                                <div className="md:col-span-4">
-                                    <FormField
-                                        control={form.control}
-                                        name="libro"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel className="std-label mb-1.5">Libro</FormLabel>
-                                                <FormControl>
-                                                    <Input {...field} className="std-input h-10 font-bold bg-primary/5 text-center" />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                </div>
-                                <div className="md:col-span-5">
+                                {modoValue === 'CLASICO' && (
+                                    <div className="md:col-span-4">
+                                        <FormField
+                                            control={form.control}
+                                            name="libro"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="std-label mb-1.5">Libro</FormLabel>
+                                                    <FormControl>
+                                                        <Input {...field} className="std-input h-10 font-bold bg-primary/5 text-center" />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </div>
+                                )}
+                                <div className={cn(modoValue === 'CLASICO' ? "md:col-span-5" : "md:col-span-9")}>
                                     <FormField
                                         control={form.control}
                                         name="numero_acta"
                                         render={({ field }) => (
                                             <FormItem>
                                                 <div className="flex items-center justify-between mb-1.5 ">
-                                                    <FormLabel className="std-label m-0 p-0 leading-none">N° Acta</FormLabel>
-                                                    {(libroValue || numeroValue) && (
+                                                    <FormLabel className="std-label m-0 p-0 leading-none">
+                                                        {modoValue === 'CLASICO' ? 'N° Acta' : 'CUI / Identificador'}
+                                                    </FormLabel>
+                                                    {modoValue === 'CLASICO' && (libroValue || numeroValue) && (
                                                         <Badge variant="outline" className="h-4 px-1 text-[8px] bg-primary/5 text-primary border-primary/20 font-bold">
                                                             PREVIEW: {tipoValue.substring(0, 3)}-L{libroValue || '?'}-{numeroValue || '?'}
                                                         </Badge>

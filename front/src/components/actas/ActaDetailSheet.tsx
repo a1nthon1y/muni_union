@@ -25,8 +25,7 @@ import {
     Eye
 } from "lucide-react";
 import { Acta } from "@/types/acta";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { dateUtils } from "@/utils/dateUtils";
 import { Button } from "@/components/ui/button";
 
 interface ActaDetailSheetProps {
@@ -119,7 +118,7 @@ export function ActaDetailSheet({ isOpen, onClose, acta, onEdit }: ActaDetailShe
                                     <p className="text-xs text-muted-foreground font-medium mb-0.5">Fecha de Nacimiento</p>
                                     <p className="text-sm text-foreground/70 flex items-center gap-1.5">
                                         <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-                                        {acta.fecha_nacimiento ? format(new Date(acta.fecha_nacimiento), "dd/MM/yyyy") : '—'}
+                                        {dateUtils.formatDisplayDate(acta.fecha_nacimiento)}
                                     </p>
                                 </div>
                             </div>
@@ -171,14 +170,14 @@ export function ActaDetailSheet({ isOpen, onClose, acta, onEdit }: ActaDetailShe
                                     <p className="text-xs text-muted-foreground font-medium mb-0.5">Fecha del Acta</p>
                                     <p className="text-sm text-foreground/70 flex items-center gap-1.5">
                                         <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                                        {format(new Date(acta.fecha_acta), "dd 'de' MMMM 'de' yyyy", { locale: es })}
+                                        {dateUtils.formatDisplayDate(acta.fecha_acta)}
                                     </p>
                                 </div>
                                 <div>
                                     <p className="text-xs text-muted-foreground font-medium mb-0.5">Fecha de Registro</p>
                                     <p className="text-sm text-foreground/70 flex items-center gap-1.5">
                                         <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-                                        {format(new Date(acta.fecha_registro), "dd/MM/yyyy HH:mm")}
+                                        {dateUtils.formatDisplayTimestamp(acta.fecha_registro)}
                                     </p>
                                 </div>
                             </div>
