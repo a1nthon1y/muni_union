@@ -85,7 +85,9 @@ export const listarSolicitudes = async (filtros = {}) => {
             CAST(s.id AS TEXT) LIKE $${params.length} OR
             sl.dni LIKE $${params.length} OR
             sl.nombres ILIKE $${params.length} OR
-            sl.apellidos ILIKE $${params.length}
+            sl.apellidos ILIKE $${params.length} OR
+            (sl.nombres || ' ' || sl.apellidos) ILIKE $${params.length} OR
+            (sl.apellidos || ' ' || sl.nombres) ILIKE $${params.length}
         )`;
     }
 

@@ -239,19 +239,25 @@ export const importarMasivo = async (req, res) => {
         );
 
         const exitosos = resultados.filter(r => r.estado === "OK").length;
+        const omitidos = resultados.filter(r => r.estado === "OMITIDO").length;
+        const docsVinculados = resultados.filter(r => r.estado === "OMITIDO_DOC").length;
+        const errores = resultados.filter(r => r.estado === "ERROR").length;
+
         await registrarAccion({
             usuario_id: req.user.id,
             tabla_afectada: "actas",
             operacion: "IMPORT",
             registro_id: 0,
             ip: req.ip,
-            descripcion: `Carga masiva: ${exitosos}/${filas.length} actas importadas`
+            descripcion: `Carga masiva: ${exitosos} nuevas, ${docsVinculados} docs vinculados, ${omitidos} omitidas, ${errores} errores (total ${filas.length})`
         });
 
         return res.json({
             total: filas.length,
             exitosos,
-            errores: resultados.filter(r => r.estado === "ERROR").length,
+            omitidos,
+            docs_vinculados: docsVinculados,
+            errores,
             resultados
         });
 

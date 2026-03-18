@@ -12,6 +12,7 @@ import documentosRoutes from "./routes/documentos.routes.js";
 import auditoriaRoutes from "./routes/auditoria.routes.js";
 import reportesRoutes from "./routes/reportes.routes.js";
 import importacionRoutes from "./routes/importacion.routes.js";
+import ocrRoutes from "./routes/ocr.routes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -36,6 +37,7 @@ app.use("/api/documentos", documentosRoutes);
 app.use("/api/auditoria", auditoriaRoutes);
 app.use("/api/reportes", reportesRoutes);
 app.use("/api/importacion", importacionRoutes);
+app.use("/api/ocr", ocrRoutes);
 
 // Ruta test
 app.get("/", (req, res) => {

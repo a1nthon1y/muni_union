@@ -29,7 +29,11 @@ export const listarPersonas = async (filtros = {}) => {
       dni LIKE $1 OR 
       nombres ILIKE $1 OR 
       apellido_paterno ILIKE $1 OR 
-      apellido_materno ILIKE $1
+      apellido_materno ILIKE $1 OR
+      (apellido_paterno || ' ' || apellido_materno) ILIKE $1 OR
+      (apellido_paterno || ' ' || apellido_materno || ' ' || nombres) ILIKE $1 OR
+      (nombres || ' ' || apellido_paterno || ' ' || apellido_materno) ILIKE $1 OR
+      (apellido_paterno || ' ' || nombres) ILIKE $1
     )`;
         params.push(`%${termino}%`);
     }

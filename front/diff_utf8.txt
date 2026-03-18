@@ -1,0 +1,1163 @@
+﻿diff --git a/back/src/config/db.js b/back/src/config/db.js
+index f8cd6eb..3899513 100644
+--- a/back/src/config/db.js
++++ b/back/src/config/db.js
+@@ -6,10 +6,11 @@ dotenv.config();
+ const { Pool, types } = pkg;
+ 
+ // Configurar parser de fechas para evitar problemas de zona horaria con PostgreSQL
+-// 1082 es el OID del tipo DATE en PostgreSQL
+-types.setTypeParser(1082, function(stringValue) {
+-  return stringValue; // Retorna "YYYY-MM-DD" directamente como string
+-});
++// 1082: DATE, 1114: TIMESTAMP, 1184: TIMESTAMPTZ
++const parseFn = (val) => val; 
++types.setTypeParser(1082, parseFn); // DATE
++types.setTypeParser(1114, parseFn); // TIMESTAMP
++types.setTypeParser(1184, parseFn); // TIMESTAMPTZ
+ 
+ const pool = new Pool({
+   host: process.env.DB_HOST,
+diff --git a/back/src/server.js b/back/src/server.js
+index 46cb15d..d7ca565 100644
+--- a/back/src/server.js
++++ b/back/src/server.js
+@@ -2,6 +2,7 @@ import dotenv from "dotenv";
+ import app from "./app.js";
+ 
+ dotenv.config();
++process.env.TZ = 'America/Lima';
+ 
+ const PORT = process.env.PORT || 4000;
+ 
+diff --git a/back/src/services/importacion.service.js b/back/src/services/importacion.service.js
+index 9d09846..78e105b 100644
+--- a/back/src/services/importacion.service.js
++++ b/back/src/services/importacion.service.js
+@@ -57,11 +57,19 @@ export const importarActasMasivo = async (filas, archivosMap, soloNombreMap, usu
+             console.log(`Procesando fila ${rowNum}:`, fila);
+ 
+             // ÔöÇÔöÇ Validar campos obligatorios ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+-            const obligatorios = [
++            const obligatoriosBase = [
+                 "nombres", "apellido_paterno", "apellido_materno",
+-                "sexo", "tipo_acta", "libro", "numero_acta", "fecha_acta"
++                "sexo", "tipo_acta", "fecha_acta"
+             ];
+-            const faltantes = obligatorios.filter(campo => !fila[campo] || fila[campo] === "");
++            const faltantes = obligatoriosBase.filter(campo => !fila[campo] || fila[campo] === "");
++            
++            // Si no hay CUI, libro y numero_acta son obligatorios para el modo cl├ísico
++            const hasCui = fila.cui && String(fila.cui).trim() !== "";
++            if (!hasCui) {
++                if (!fila.libro || String(fila.libro).trim() === "") faltantes.push("libro");
++                if (!fila.numero_acta || String(fila.numero_acta).trim() === "") faltantes.push("numero_acta");
++            }
++
+             if (faltantes.length > 0) {
+                 console.error(`Fila ${rowNum} ignorada por campos obligatorios faltantes:`, faltantes);
+                 throw new Error(`Campos obligatorios vac├¡os: ${faltantes.join(", ")}`);
+@@ -79,7 +87,11 @@ export const importarActasMasivo = async (filas, archivosMap, soloNombreMap, usu
+             }
+             if (isNaN(anioActa)) throw new Error(`anio inv├ílido: "${fila.anio}"`);
+ 
+-            const fullNumeroActa = buildNumeroActa(fila.tipo_acta, fila.libro, fila.numero_acta);
++            // ÔöÇÔöÇ Construir Identificador ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
++            // Si hay CUI, ese es el numero_acta. Si no, buildNumeroActa clasico.
++            const fullNumeroActa = hasCui 
++                ? String(fila.cui).trim().toUpperCase() 
++                : buildNumeroActa(fila.tipo_acta, fila.libro, fila.numero_acta);
+ 
+             // ÔöÇÔöÇ 1. Buscar o crear persona ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+             if (fila.dni && fila.dni.trim()) {
+@@ -141,16 +153,87 @@ export const importarActasMasivo = async (filas, archivosMap, soloNombreMap, usu
+                 personaId = nuevaPersona.rows[0].id;
+             }
+ 
+-            // ÔöÇÔöÇ 2. Verificar duplicado de acta ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
++            // ÔöÇÔöÇ 2. Verificar si el acta ya existe ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+             const actaExistente = await client.query(
+-                "SELECT id FROM actas WHERE numero_acta = $1 AND fecha_eliminacion IS NULL LIMIT 1",
++                `SELECT a.id,
++                        EXISTS(
++                            SELECT 1 FROM documentos_digitales d
++                            WHERE d.acta_id = a.id AND d.fecha_eliminacion IS NULL
++                        ) AS tiene_documento
++                 FROM actas a
++                 WHERE a.numero_acta = $1 AND a.fecha_eliminacion IS NULL
++                 LIMIT 1`,
+                 [fullNumeroActa]
+             );
++
+             if (actaExistente.rows.length > 0) {
+-                throw new Error(`El acta ${fullNumeroActa} ya existe en el sistema`);
++                // El acta ya existe ÔÇö verificar si tiene documento
++                const actaExistenteId = actaExistente.rows[0].id;
++                const tieneDocumento = actaExistente.rows[0].tiene_documento;
++
++                // Buscar archivo en el ZIP para esta fila
++                const nombreArchivoOmit = fila.nombre_archivo_pdf?.trim();
++                let archivoParaVincular = null;
++                if (nombreArchivoOmit) {
++                    const carpeta = fila.carpeta_ruta?.trim().replace(/\\/g, "/").replace(/\/$/, "");
++                    const claveCarpeta = carpeta ? `${carpeta}/${nombreArchivoOmit}` : null;
++                    if (claveCarpeta && archivosMap[claveCarpeta]) {
++                        archivoParaVincular = archivosMap[claveCarpeta];
++                    } else if (soloNombreMap[nombreArchivoOmit]) {
++                        archivoParaVincular = soloNombreMap[nombreArchivoOmit];
++                    }
++                }
++
++                if (!tieneDocumento && archivoParaVincular) {
++                    // Acta sin documento + ZIP trae el PDF ÔåÆ vincularlo
++                    let tipoArchivo = archivoParaVincular.mimetype;
++                    if (tipoArchivo.includes("pdf")) tipoArchivo = "PDF";
++                    else if (tipoArchivo.includes("image")) tipoArchivo = "IMG";
++                    if (tipoArchivo.length > 10) tipoArchivo = tipoArchivo.substring(0, 10);
++
++                    await client.query(
++                        `INSERT INTO documentos_digitales
++                           (acta_id, nombre_archivo, ruta_archivo, tipo_archivo, hash_archivo, usuario_registro)
++                         VALUES ($1,$2,$3,$4,$5,$6)`,
++                        [
++                            actaExistenteId,
++                            archivoParaVincular.originalname,
++                            archivoParaVincular.path,
++                            tipoArchivo,
++                            crypto.createHash("md5").update(fs.readFileSync(archivoParaVincular.path)).digest("hex"),
++                            usuario_id
++                        ]
++                    );
++
++                    await client.query("COMMIT");
++                    resultados.push({
++                        fila: rowNum,
++                        estado: "OMITIDO_DOC",
++                        acta: fullNumeroActa,
++                        persona: `${fila.apellido_paterno} ${fila.apellido_materno}, ${fila.nombres}`,
++                        con_documento: true,
++                        acta_id: actaExistenteId,
++                        mensaje: "Acta ya exist├¡a sin documento ÔÇö se vincul├│ el PDF correctamente"
++                    });
++                } else {
++                    // Acta ya existe con documento (o sin PDF en ZIP) ÔåÆ omitir sin error
++                    await client.query("ROLLBACK");
++                    resultados.push({
++                        fila: rowNum,
++                        estado: "OMITIDO",
++                        acta: fullNumeroActa,
++                        persona: `${fila.apellido_paterno} ${fila.apellido_materno}, ${fila.nombres}`,
++                        con_documento: tieneDocumento,
++                        acta_id: actaExistenteId,
++                        mensaje: tieneDocumento
++                            ? "Acta ya registrada con documento ÔÇö omitida"
++                            : "Acta ya registrada sin documento (no se encontr├│ PDF en el ZIP)"
++                    });
++                }
++                continue;
+             }
+ 
+-            // ÔöÇÔöÇ 3. Crear acta ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
++            // ÔöÇÔöÇ 3. Crear acta nueva ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+             const nuevaActa = await client.query(
+                 `INSERT INTO actas
+                    (tipo_acta, numero_acta, anio, persona_principal_id, fecha_acta, observaciones, usuario_registro)
+@@ -182,7 +265,7 @@ export const importarActasMasivo = async (filas, archivosMap, soloNombreMap, usu
+             }
+ 
+             if (archivoEncontrado) {
+-                // El tipo_archivo en la BD es varchar(10). 
++                // El tipo_archivo en la BD es varchar(10).
+                 // Si mimetype es application/pdf (15 chars), fallar├í.
+                 let tipoArchivo = archivoEncontrado.mimetype;
+                 if (tipoArchivo.includes("pdf")) tipoArchivo = "PDF";
+diff --git a/front/src/app/(dashboard)/dashboard/digitalizacion/carga-masiva/page.tsx b/front/src/app/(dashboard)/dashboard/digitalizacion/carga-masiva/page.tsx
+index 9e0585f..1381519 100644
+--- a/front/src/app/(dashboard)/dashboard/digitalizacion/carga-masiva/page.tsx
++++ b/front/src/app/(dashboard)/dashboard/digitalizacion/carga-masiva/page.tsx
+@@ -19,16 +19,19 @@ import { Separator } from "@/components/ui/separator";
+ 
+ interface ResultadoFila {
+     fila: number;
+-    estado: "OK" | "ERROR";
++    estado: "OK" | "ERROR" | "OMITIDO" | "OMITIDO_DOC";
+     acta: string;
+     persona: string;
+     con_documento: boolean;
+     error?: string;
++    mensaje?: string;
+ }
+ 
+ interface ResumenImportacion {
+     total: number;
+     exitosos: number;
++    omitidos: number;
++    docs_vinculados: number;
+     errores: number;
+     resultados: ResultadoFila[];
+ }
+@@ -96,10 +99,12 @@ export default function CargaMasivaPage() {
+ 
+             setResumen(data);
+ 
+-            if (data.errores === 0) {
+-                toast.success(`Ô£à Importaci├│n completada: ${data.exitosos} actas registradas.`);
++            if (data.errores === 0 && data.docs_vinculados === 0) {
++                toast.success(`Ô£à Importaci├│n completada: ${data.exitosos} actas nuevas, ${data.omitidos} omitidas.`);
++            } else if (data.docs_vinculados > 0) {
++                toast.info(`­ƒôÄ ${data.docs_vinculados} documentos vinculados a actas existentes sin PDF.`);
+             } else {
+-                toast.warning(`Importaci├│n finalizada: ${data.exitosos} exitosas, ${data.errores} con errores.`);
++                toast.warning(`Importaci├│n: ${data.exitosos} nuevas, ${data.docs_vinculados} docs vinculados, ${data.errores} errores.`);
+             }
+         } catch (error: any) {
+             const msg = error?.response?.data?.message || "Error inesperado durante la importaci├│n.";
+@@ -119,7 +124,7 @@ export default function CargaMasivaPage() {
+             "ACTA": r.acta,
+             "CIUDADANO": r.persona,
+             "VINCULO PDF": r.con_documento ? "SI" : "NO",
+-            "DETALLE/ERROR": r.error || "Operaci├│n exitosa"
++            "DETALLE/ERROR": r.error || r.mensaje || "Operaci├│n exitosa"
+         }));
+ 
+         const ws = XLSX.utils.json_to_sheet(dataArr);
+@@ -139,7 +144,9 @@ export default function CargaMasivaPage() {
+         XLSX.writeFile(wb, `Reporte_Importacion_${Date.now()}.xlsx`);
+     };
+ 
+-    const porcentajeExito = resumen ? Math.round((resumen.exitosos / resumen.total) * 100) : 0;
++    const porcentajeExito = resumen
++        ? Math.round(((resumen.exitosos + resumen.omitidos + resumen.docs_vinculados) / resumen.total) * 100)
++        : 0;
+ 
+     return (
+         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500 max-w-5xl mx-auto">
+@@ -177,11 +184,12 @@ export default function CargaMasivaPage() {
+             </div>
+ 
+             {/* GU├ìA R├üPIDA DE IMPORTACI├ôN */}
+-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
++            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                 {[
+-                    { step: "01", title: "PREPARA EL EXCEL", desc: "Usa la plantilla oficial con todos los campos obligatorios." },
+-                    { step: "02", title: "ORGANIZA EL ZIP", desc: "Sube tus PDFs/Im├ígenes en un ZIP con las rutas correctas." },
+-                    { step: "03", title: "VERIFICA Y CARGA", desc: "Revisa el reporte final para corregir posibles incidencias." }
++                    { step: "01", title: "PREPARA EL EXCEL", desc: "Usa la plantilla oficial. Soporta Modo Cl├ísico (Libro) y CUI." },
++                    { step: "02", title: "ORGANIZA EL ZIP", desc: "Pon tus PDFs en la ra├¡z o en carpetas. El nombre debe coincidir." },
++                    { step: "03", title: "CAMPOS M├ìNIMOS", desc: "Nombres, Apellidos, Tipo de Acta y Fecha son estrictos." },
++                    { step: "04", title: "VERIFICA Y CARGA", desc: "Revisa el reporte final de cada fila al terminar." }
+                 ].map((item, i) => (
+                     <div key={i} className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-sm border border-slate-200/60 dark:border-slate-800 p-4 rounded-2xl flex gap-4 items-start group hover:border-emerald-500/30 transition-all">
+                         <span className="text-xl font-black text-emerald-500/20 group-hover:text-emerald-500/40 transition-colors leading-none mt-1">{item.step}</span>
+@@ -193,6 +201,68 @@ export default function CargaMasivaPage() {
+                 ))}
+             </div>
+ 
++            {/* DETALLES DEL FORMATO EXCEL */}
++            <Card className="border-none shadow-sm bg-blue-50/30 dark:bg-blue-950/10 rounded-3xl overflow-hidden">
++                <CardHeader className="pb-2">
++                    <div className="flex items-center gap-2">
++                        <Info className="h-4 w-4 text-blue-600" />
++                        <CardTitle className="text-sm font-bold text-blue-900 dark:text-blue-300">Gu├¡a de Columnas del Excel</CardTitle>
++                    </div>
++                    <CardDescription className="text-[10px] font-medium uppercase tracking-tight">
++                        El sistema procesa autom├íticamente los siguientes encabezados (insensible a may├║sculas):
++                    </CardDescription>
++                </CardHeader>
++                <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6 pt-2">
++                    <div className="space-y-3">
++                        <h5 className="text-[10px] font-black text-blue-800/60 uppercase tracking-widest border-b border-blue-100 pb-1">Identificaci├│n del Acta</h5>
++                        <ul className="space-y-2">
++                            <li className="flex flex-col">
++                                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
++                                    cui <Badge className="h-3 text-[8px] px-1 bg-amber-500">NUEVO</Badge>
++                                </span>
++                                <span className="text-[9px] text-slate-500">Identificador RENIEC. Si se usa, no requiere Libro/N├║mero.</span>
++                            </li>
++                            <li className="flex flex-col">
++                                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">tipo_acta <Badge variant="outline" className="h-3 text-[8px] px-1 border-rose-400 text-rose-500 font-black">REQ</Badge></span>
++                                <span className="text-[9px] text-slate-500">NACIMIENTO, MATRIMONIO o DEFUNCION.</span>
++                            </li>
++                            <li className="flex flex-col">
++                                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">libro / numero_acta</span>
++                                <span className="text-[9px] text-slate-500">Obligatorios si NO hay CUI (Modo Cl├ísico).</span>
++                            </li>
++                        </ul>
++                    </div>
++                    
++                    <div className="space-y-3">
++                        <h5 className="text-[10px] font-black text-blue-800/60 uppercase tracking-widest border-b border-blue-100 pb-1">Datos del Ciudadano</h5>
++                        <ul className="space-y-2">
++                            <li className="flex flex-col">
++                                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">nombres / apellido_paterno <Badge variant="outline" className="h-3 text-[8px] px-1 border-rose-400 text-rose-500 font-black">REQ</Badge></span>
++                                <span className="text-[9px] text-slate-500">Identidad b├ísica del titular.</span>
++                            </li>
++                            <li className="flex flex-col">
++                                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">dni / sexo / fecha_nacimiento</span>
++                                <span className="text-[9px] text-slate-500">Datos adicionales de la persona.</span>
++                            </li>
++                        </ul>
++                    </div>
++
++                    <div className="space-y-3">
++                        <h5 className="text-[10px] font-black text-blue-800/60 uppercase tracking-widest border-b border-blue-100 pb-1">V├¡nculo con Archivos</h5>
++                        <ul className="space-y-2">
++                            <li className="flex flex-col">
++                                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">nombre_archivo_pdf</span>
++                                <span className="text-[9px] text-slate-500">Ejm: "acta_123.pdf". Debe estar dentro del ZIP.</span>
++                            </li>
++                            <li className="flex flex-col">
++                                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">carpeta_ruta</span>
++                                <span className="text-[9px] text-slate-500">Subcarpeta dentro del ZIP (opcional).</span>
++                            </li>
++                        </ul>
++                    </div>
++                </CardContent>
++            </Card>
++
+             {/* BARRA DE PROGRESO ESTRAT├ëGICA (DURANTE LA CARGA) */}
+             {loading && (
+                 <div className="w-full bg-slate-900/95 backdrop-blur-xl p-6 rounded-[32px] border border-emerald-500/20 shadow-2xl space-y-4 animate-in slide-in-from-top-4 duration-500">
+@@ -360,27 +430,33 @@ export default function CargaMasivaPage() {
+                         </div>
+ 
+                         {/* RESUMEN ESTAD├ìSTICO */}
+-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
++                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                             {[
+                                 { label: 'TOTAL FILAS', value: resumen.total, icon: FileSpreadsheet, color: 'slate' },
+-                                { label: 'REGISTROS EXITOSOS', value: resumen.exitosos, icon: CheckCircle2, color: 'emerald' },
+-                                { label: 'FALLIDOS / ERRORES', value: resumen.errores, icon: XCircle, color: 'rose' }
++                                { label: 'ACTAS NUEVAS', value: resumen.exitosos, icon: CheckCircle2, color: 'emerald' },
++                                { label: 'DOCS VINCULADOS', value: resumen.docs_vinculados, icon: AlertTriangle, color: 'amber' },
++                                { label: 'ERRORES', value: resumen.errores, icon: XCircle, color: 'rose' }
+                             ].map((stat, i) => (
+                                 <div key={i} className={cn(
+-                                    "p-8 rounded-[32px] border flex flex-col items-center justify-center gap-3 transition-all hover:translate-y-[-4px]",
++                                    "p-6 rounded-[28px] border flex flex-col items-center justify-center gap-2 transition-all hover:translate-y-[-4px]",
+                                     stat.color === 'slate' ? "bg-white dark:bg-slate-800 border-slate-100" :
+                                         stat.color === 'emerald' ? "bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-100/50" :
++                                        stat.color === 'amber' ? "bg-amber-50/50 dark:bg-amber-950/20 border-amber-100/50" :
+                                             "bg-rose-50/50 dark:bg-rose-950/20 border-rose-100/50"
+                                 )}>
+-                                    <div className={cn("p-4 rounded-2xl mb-1 shadow-sm",
++                                    <div className={cn("p-3 rounded-2xl mb-1 shadow-sm",
+                                         stat.color === 'slate' ? "bg-slate-50 text-slate-400" :
+-                                            stat.color === 'emerald' ? "bg-white text-emerald-500" : "bg-white text-rose-500"
++                                            stat.color === 'emerald' ? "bg-white text-emerald-500" :
++                                            stat.color === 'amber' ? "bg-white text-amber-500" :
++                                            "bg-white text-rose-500"
+                                     )}>
+-                                        <stat.icon className="h-8 w-8" />
++                                        <stat.icon className="h-6 w-6" />
+                                     </div>
+-                                    <p className={cn("text-5xl font-black tracking-tight",
++                                    <p className={cn("text-4xl font-black tracking-tight",
+                                         stat.color === 'slate' ? "text-slate-800" :
+-                                            stat.color === 'emerald' ? "text-emerald-700" : "text-rose-700"
++                                            stat.color === 'emerald' ? "text-emerald-700" :
++                                            stat.color === 'amber' ? "text-amber-700" :
++                                            "text-rose-700"
+                                     )}>{stat.value}</p>
+                                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">{stat.label}</p>
+                                 </div>
+@@ -407,6 +483,31 @@ export default function CargaMasivaPage() {
+ 
+                         {/* TABLAS DE DETALLES */}
+                         <div className="grid grid-cols-1 gap-6">
++
++                            {/* DOCS VINCULADOS A ACTAS SIN DOCUMENTO */}
++                            {resumen.docs_vinculados > 0 && (
++                                <div className="space-y-3">
++                                    <div className="flex items-center gap-3 px-2">
++                                        <AlertTriangle className="h-5 w-5 text-amber-500" />
++                                        <h3 className="font-black text-amber-700 dark:text-amber-400 uppercase tracking-widest text-sm">Documentos Vinculados ({resumen.docs_vinculados})</h3>
++                                    </div>
++                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto pr-2">
++                                        {resumen.resultados.filter(r => r.estado === "OMITIDO_DOC").map((r) => (
++                                            <div key={r.fila} className="flex gap-4 p-4 bg-white dark:bg-slate-800 border border-amber-100 dark:border-amber-900/30 rounded-2xl shadow-sm">
++                                                <div className="bg-amber-50 dark:bg-amber-950/40 w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0">
++                                                    <span className="font-black text-amber-600 text-xs">#{r.fila}</span>
++                                                </div>
++                                                <div className="flex-1 space-y-1">
++                                                    <p className="font-black text-slate-800 dark:text-slate-200 text-sm">{r.persona}</p>
++                                                    <p className="text-[10px] text-amber-700 dark:text-amber-400 font-bold">{r.acta}</p>
++                                                    <p className="text-[10px] text-amber-600 font-medium">­ƒôÄ PDF vinculado correctamente</p>
++                                                </div>
++                                            </div>
++                                        ))}
++                                    </div>
++                                </div>
++                            )}
++
+                             {/* LISTA DE ERRORES */}
+                             {resumen.errores > 0 && (
+                                 <div className="space-y-4">
+diff --git a/front/src/app/(dashboard)/dashboard/digitalizacion/page.tsx b/front/src/app/(dashboard)/dashboard/digitalizacion/page.tsx
+index ee731ba..ac194d2 100644
+--- a/front/src/app/(dashboard)/dashboard/digitalizacion/page.tsx
++++ b/front/src/app/(dashboard)/dashboard/digitalizacion/page.tsx
+@@ -48,6 +48,7 @@ import { actasService } from "@/services/actas.service";
+ import { documentosService } from "@/services/documentos.service";
+ import { Persona } from "@/types/persona";
+ import { Acta } from "@/types/acta";
++import { dateUtils } from "@/utils/dateUtils";
+ 
+ const formSchema = z.object({
+     // Persona
+@@ -62,12 +63,21 @@ const formSchema = z.object({
+     persona_observaciones: z.string().optional(),
+ 
+     // Acta
++    modo: z.enum(["CLASICO", "CUI"]),
+     tipo_acta: z.enum(["NACIMIENTO", "MATRIMONIO", "DEFUNCION"]),
+-    libro: z.string().min(1, "Libro"),
+-    numero_acta: z.string().min(1, "Acta"),
++    libro: z.string().optional(),
++    numero_acta: z.string().min(1, "Campo obligatorio"),
+     anio: z.coerce.number().min(1900),
+     fecha_acta: z.string().min(1, "Obligatorio"),
+     acta_observaciones: z.string().optional(),
++}).refine((data) => {
++    if (data.modo === "CLASICO" && (!data.libro || data.libro.trim() === "")) {
++        return false;
++    }
++    return true;
++}, {
++    message: "Libro es obligatorio en modo cl├ísico",
++    path: ["libro"]
+ });
+ 
+ type FormValues = z.infer<typeof formSchema>;
+@@ -99,14 +109,17 @@ export default function DigitalizacionPage() {
+             telefono: "",
+             persona_observaciones: "",
+             tipo_acta: "NACIMIENTO",
++            modo: "CLASICO",
+             libro: "",
+             numero_acta: "",
+             anio: new Date().getFullYear(),
+-            fecha_acta: new Date().toISOString().split('T')[0],
++            fecha_acta: dateUtils.formatInputDate(new Date().toISOString()),
+             acta_observaciones: "",
+         }
+     });
+ 
++    const modoValue = form.watch("modo");
++
+     const dniValue = form.watch("dni");
+     const nombresValue = form.watch("nombres");
+     const paternoValue = form.watch("apellido_paterno");
+@@ -137,7 +150,7 @@ export default function DigitalizacionPage() {
+                     form.setValue("apellido_paterno", p.apellido_paterno);
+                     form.setValue("apellido_materno", p.apellido_materno);
+                     form.setValue("sexo", p.sexo);
+-                    form.setValue("fecha_nacimiento", p.fecha_nacimiento?.split('T')[0] || "");
++                    form.setValue("fecha_nacimiento", dateUtils.formatInputDate(p.fecha_nacimiento));
+                     form.setValue("telefono", p.telefono || "");
+                     form.setValue("persona_observaciones", p.observaciones || "");
+                     toast.info("Ciudadano identificado.");
+@@ -186,7 +199,7 @@ export default function DigitalizacionPage() {
+ 
+     // Validaci├│n de Acta Duplicada por N├║mero (Preventiva)
+     useEffect(() => {
+-        if (numActaValue && libroValue) {
++        if (numActaValue && (modoValue === 'CUI' || libroValue)) {
+             const getPrefix = (tipo: string) => {
+                 switch (tipo) {
+                     case 'NACIMIENTO': return 'NAC';
+@@ -195,7 +208,10 @@ export default function DigitalizacionPage() {
+                     default: return 'ACT';
+                 }
+             };
+-            const formattedNum = `${getPrefix(tipoActaValue)}-L${libroValue}-${numActaValue}`;
++            const formattedNum = modoValue === "CUI"
++                ? numActaValue.toUpperCase()
++                : `${getPrefix(tipoActaValue)}-L${libroValue}-${numActaValue}`;
++
+             const timer = setTimeout(() => {
+                 actasService.getAll({
+                     numero: formattedNum
+@@ -210,7 +226,7 @@ export default function DigitalizacionPage() {
+                         const esMismaPersona = existente.dni === dniValue;
+ 
+                         toast.warning(
+-                            `Aviso: El acta N┬░ ${numActaValue} ya est├í registrada en el sistema.`,
++                            `Aviso: El acta N┬░ ${formattedNum} ya est├í registrada.`,
+                             {
+                                 duration: 10000,
+                                 description: esMismaPersona
+@@ -227,7 +243,7 @@ export default function DigitalizacionPage() {
+             }, 600);
+             return () => clearTimeout(timer);
+         }
+-    }, [numActaValue, tipoActaValue, dniValue]);
++    }, [numActaValue, libroValue, tipoActaValue, dniValue, modoValue]);
+ 
+     const resetAll = () => {
+         form.reset();
+@@ -286,7 +302,9 @@ export default function DigitalizacionPage() {
+                     default: return 'ACT';
+                 }
+             };
+-            const fullNumeroActa = `${getPrefix(values.tipo_acta)}-L${values.libro}-${values.numero_acta}`.toUpperCase();
++            const fullNumeroActa = values.modo === "CUI"
++                ? values.numero_acta.trim().toUpperCase()
++                : `${getPrefix(values.tipo_acta)}-L${values.libro}-${values.numero_acta}`.toUpperCase();
+ 
+             let currentActaId: number;
+             if (actaEncontrada) {
+@@ -562,6 +580,27 @@ export default function DigitalizacionPage() {
+                                     </div>
+                                 </CardHeader>
+                                 <CardContent className="px-5 py-4 space-y-3.5">
++                                    <div className="flex p-1 bg-muted/60 rounded-xl mb-4 w-fit">
++                                        <Button
++                                            type="button"
++                                            variant={modoValue === 'CLASICO' ? 'default' : 'ghost'}
++                                            size="sm"
++                                            className={cn("rounded-lg h-7 text-[9px] font-black uppercase tracking-widest px-4", modoValue === 'CLASICO' && "shadow-sm bg-primary")}
++                                            onClick={() => form.setValue("modo", "CLASICO")}
++                                        >
++                                            Libro Cl├ísico
++                                        </Button>
++                                        <Button
++                                            type="button"
++                                            variant={modoValue === 'CUI' ? 'default' : 'ghost'}
++                                            size="sm"
++                                            className={cn("rounded-lg h-7 text-[9px] font-black uppercase tracking-widest px-4", modoValue === 'CUI' && "shadow-sm bg-primary")}
++                                            onClick={() => form.setValue("modo", "CUI")}
++                                        >
++                                            RENIEC (CUI)
++                                        </Button>
++                                    </div>
++
+                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                         <div className="md:col-span-12 lg:col-span-7">
+                                             <FormField
+@@ -569,17 +608,17 @@ export default function DigitalizacionPage() {
+                                                 name="tipo_acta"
+                                                 render={({ field }) => (
+                                                     <FormItem>
+-                                                        <FormLabel className="std-label mb-1.5">Tipo de Acta</FormLabel>
+-                                                        <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!!actaEncontrada}>
++                                                        <FormLabel className="std-label mb-1.5 uppercase font-bold text-[10px] text-primary">Tipo de Acta</FormLabel>
++                                                        <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!!actaEncontrada} value={field.value}>
+                                                             <FormControl>
+-                                                                <SelectTrigger className="std-input font-semibold text-xs">
++                                                                <SelectTrigger className="std-input font-bold text-xs h-10 border-primary/10">
+                                                                     <SelectValue />
+                                                                 </SelectTrigger>
+                                                             </FormControl>
+                                                             <SelectContent>
+-                                                                <SelectItem value="NACIMIENTO" className="font-semibold">Nacimiento</SelectItem>
+-                                                                <SelectItem value="MATRIMONIO" className="font-semibold">Matrimonio</SelectItem>
+-                                                                <SelectItem value="DEFUNCION" className="font-semibold">Defunci├│n</SelectItem>
++                                                                <SelectItem value="NACIMIENTO" className="font-semibold text-xs">NACIMIENTO</SelectItem>
++                                                                <SelectItem value="MATRIMONIO" className="font-semibold text-xs">MATRIMONIO</SelectItem>
++                                                                <SelectItem value="DEFUNCION" className="font-semibold text-xs">DEFUNCI├ôN</SelectItem>
+                                                             </SelectContent>
+                                                         </Select>
+                                                     </FormItem>
+@@ -594,7 +633,7 @@ export default function DigitalizacionPage() {
+                                                     <FormItem>
+                                                         <FormLabel className="std-label mb-1.5">F. Registro</FormLabel>
+                                                         <FormControl>
+-                                                            <Input type="date" {...field} disabled={!!actaEncontrada} className="std-input text-xs" />
++                                                            <Input type="date" {...field} disabled={!!actaEncontrada} className="std-input text-xs font-semibold h-10" />
+                                                         </FormControl>
+                                                         <FormMessage />
+                                                     </FormItem>
+@@ -604,35 +643,39 @@ export default function DigitalizacionPage() {
+                                     </div>
+ 
+                                     <div className="grid grid-cols-1 md:grid-cols-12 gap-2">
+-                                        <div className="md:col-span-4">
+-                                            <FormField
+-                                                control={form.control}
+-                                                name="libro"
+-                                                render={({ field }) => (
+-                                                    <FormItem>
+-                                                        <FormLabel className="std-label mb-1.5">Libro N┬░</FormLabel>
+-                                                        <FormControl>
+-                                                            <Input
+-                                                                {...field}
+-                                                                placeholder="LIBRO"
+-                                                                disabled={!!actaEncontrada}
+-                                                                className="std-input font-bold bg-primary/5 border-primary/20 text-center text-sm"
+-                                                            />
+-                                                        </FormControl>
+-                                                        <FormMessage />
+-                                                    </FormItem>
+-                                                )}
+-                                            />
+-                                        </div>
+-                                        <div className="md:col-span-5">
++                                        {modoValue === 'CLASICO' && (
++                                            <div className="md:col-span-4">
++                                                <FormField
++                                                    control={form.control}
++                                                    name="libro"
++                                                    render={({ field }) => (
++                                                        <FormItem>
++                                                            <FormLabel className="std-label mb-1.5 uppercase font-bold text-[10px] text-primary">Libro N┬░</FormLabel>
++                                                            <FormControl>
++                                                                <Input
++                                                                    {...field}
++                                                                    placeholder="LIBRO"
++                                                                    disabled={!!actaEncontrada}
++                                                                    className="std-input font-bold bg-primary/5 border-primary/20 text-center text-sm h-10"
++                                                                />
++                                                            </FormControl>
++                                                            <FormMessage />
++                                                        </FormItem>
++                                                    )}
++                                                />
++                                            </div>
++                                        )}
++                                        <div className={cn(modoValue === 'CLASICO' ? "md:col-span-5" : "md:col-span-9")}>
+                                             <FormField
+                                                 control={form.control}
+                                                 name="numero_acta"
+                                                 render={({ field }) => (
+                                                     <FormItem>
+                                                         <div className="flex items-center justify-between mb-1.5 ">
+-                                                            <FormLabel className="std-label m-0 p-0 leading-none">N┬░ DE ACTA</FormLabel>
+-                                                            {(libroValue || numActaValue) && (
++                                                            <FormLabel className="std-label m-0 p-0 leading-none">
++                                                                {modoValue === 'CLASICO' ? 'N┬░ DE ACTA' : 'CUI / IDENTIFICADOR'}
++                                                            </FormLabel>
++                                                            {modoValue === 'CLASICO' && (libroValue || numActaValue) && (
+                                                                 <Badge variant="outline" className="h-4 px-1 text-[8px] bg-primary/5 text-primary border-primary/20 font-bold">
+                                                                     PREVIEW: {tipoActaValue.substring(0, 3)}-L{libroValue || '?'}-{numActaValue || '?'}
+                                                                 </Badge>
+@@ -641,9 +684,9 @@ export default function DigitalizacionPage() {
+                                                         <FormControl>
+                                                             <Input
+                                                                 {...field}
+-                                                                placeholder="ACTA"
++                                                                placeholder={modoValue === 'CLASICO' ? "ACTA" : "C├ôDIGO CUI"}
+                                                                 disabled={!!actaEncontrada}
+-                                                                className="std-input font-semibold uppercase text-sm"
++                                                                className="std-input font-black uppercase text-sm tracking-widest h-10"
+                                                                 onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+                                                             />
+                                                         </FormControl>
+@@ -660,7 +703,7 @@ export default function DigitalizacionPage() {
+                                                     <FormItem>
+                                                         <FormLabel className="std-label mb-1.5">A├▒o</FormLabel>
+                                                         <FormControl>
+-                                                            <Input type="number" {...field} disabled className="std-input bg-muted/50 text-muted-foreground font-bold text-xs" />
++                                                            <Input type="number" {...field} disabled className="std-input bg-muted/50 text-muted-foreground font-bold text-xs h-10" />
+                                                         </FormControl>
+                                                         <FormMessage />
+                                                     </FormItem>
+diff --git a/front/src/components/actas/ActaDetailSheet.tsx b/front/src/components/actas/ActaDetailSheet.tsx
+index 0df32fe..1b11b9a 100644
+--- a/front/src/components/actas/ActaDetailSheet.tsx
++++ b/front/src/components/actas/ActaDetailSheet.tsx
+@@ -25,8 +25,7 @@ import {
+     Eye
+ } from "lucide-react";
+ import { Acta } from "@/types/acta";
+-import { format } from "date-fns";
+-import { es } from "date-fns/locale";
++import { dateUtils } from "@/utils/dateUtils";
+ import { Button } from "@/components/ui/button";
+ 
+ interface ActaDetailSheetProps {
+@@ -119,7 +118,7 @@ export function ActaDetailSheet({ isOpen, onClose, acta, onEdit }: ActaDetailShe
+                                     <p className="text-xs text-muted-foreground font-medium mb-0.5">Fecha de Nacimiento</p>
+                                     <p className="text-sm text-foreground/70 flex items-center gap-1.5">
+                                         <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+-                                        {acta.fecha_nacimiento ? format(new Date(acta.fecha_nacimiento), "dd/MM/yyyy") : 'ÔÇö'}
++                                        {dateUtils.formatDisplayDate(acta.fecha_nacimiento)}
+                                     </p>
+                                 </div>
+                             </div>
+@@ -171,14 +170,14 @@ export function ActaDetailSheet({ isOpen, onClose, acta, onEdit }: ActaDetailShe
+                                     <p className="text-xs text-muted-foreground font-medium mb-0.5">Fecha del Acta</p>
+                                     <p className="text-sm text-foreground/70 flex items-center gap-1.5">
+                                         <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+-                                        {format(new Date(acta.fecha_acta), "dd 'de' MMMM 'de' yyyy", { locale: es })}
++                                        {dateUtils.formatDisplayDate(acta.fecha_acta)}
+                                     </p>
+                                 </div>
+                                 <div>
+                                     <p className="text-xs text-muted-foreground font-medium mb-0.5">Fecha de Registro</p>
+                                     <p className="text-sm text-foreground/70 flex items-center gap-1.5">
+                                         <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+-                                        {format(new Date(acta.fecha_registro), "dd/MM/yyyy HH:mm")}
++                                        {dateUtils.formatDisplayTimestamp(acta.fecha_registro)}
+                                     </p>
+                                 </div>
+                             </div>
+diff --git a/front/src/components/actas/ActaEditSheet.tsx b/front/src/components/actas/ActaEditSheet.tsx
+index d887b8b..4500fdb 100644
+--- a/front/src/components/actas/ActaEditSheet.tsx
++++ b/front/src/components/actas/ActaEditSheet.tsx
+@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
+ import * as z from "zod";
+ import { Loader2, Save, FileEdit } from "lucide-react";
+ import { toast } from "sonner";
++import { cn } from "@/lib/utils";
+ 
+ import {
+     Sheet,
+@@ -35,14 +36,24 @@ import {
+ import { Textarea } from "@/components/ui/textarea";
+ import { Acta, TipoActa } from "@/types/acta";
+ import { actasService } from "@/services/actas.service";
++import { dateUtils } from "@/utils/dateUtils";
+ 
+ const actaSchema = z.object({
+     tipo_acta: z.enum(['NACIMIENTO', 'MATRIMONIO', 'DEFUNCION']),
+-    libro: z.string().min(1, "Libro obligatorio"),
++    modo: z.enum(['CLASICO', 'CUI']),
++    libro: z.string().optional(),
+     numero_acta: z.string().min(1, "N├║mero obligatorio"),
+     anio: z.coerce.number().min(1900).max(new Date().getFullYear() + 1),
+     fecha_acta: z.string().min(1, "Fecha obligatoria"),
+     observaciones: z.string().optional(),
++}).refine((data) => {
++    if (data.modo === "CLASICO" && (!data.libro || data.libro.trim() === "")) {
++        return false;
++    }
++    return true;
++}, {
++    message: "Libro es obligatorio en modo cl├ísico",
++    path: ["libro"]
+ });
+ 
+ type ActaFormData = z.infer<typeof actaSchema>;
+@@ -58,15 +69,18 @@ export function ActaEditSheet({ isOpen, onClose, onSuccess, acta }: ActaEditShee
+     const [isSubmitting, setIsSubmitting] = useState(false);
+ 
+     const parseNumeroActa = (fullNum: string) => {
+-        if (!fullNum) return { libro: "", acta: "" };
++        if (!fullNum) return { libro: "", acta: "", modo: 'CLASICO' as const };
+         const parts = fullNum.split("-");
+-        if (parts.length >= 3) {
++        // Formato cl├ísico: Prefijo-LX-Num
++        if (parts.length >= 3 && parts[1].startsWith("L")) {
+             return {
+                 libro: parts[1].replace(/^L/, ""), // Quitar 'L' inicial
+-                acta: parts[2]
++                acta: parts[2],
++                modo: 'CLASICO' as const
+             };
+         }
+-        return { libro: "", acta: fullNum };
++        // Si no cumple el formato cl├ísico, asumimos CUI (Modo Moderno)
++        return { libro: "", acta: fullNum, modo: 'CUI' as const };
+     };
+ 
+     const initialParsed = parseNumeroActa(acta?.numero_acta || "");
+@@ -75,14 +89,17 @@ export function ActaEditSheet({ isOpen, onClose, onSuccess, acta }: ActaEditShee
+         resolver: zodResolver(actaSchema) as any,
+         defaultValues: {
+             tipo_acta: (acta?.tipo_acta as 'NACIMIENTO' | 'MATRIMONIO' | 'DEFUNCION') || 'NACIMIENTO',
++            modo: initialParsed.modo,
+             libro: initialParsed.libro,
+             numero_acta: initialParsed.acta,
+             anio: acta?.anio || new Date().getFullYear(),
+-            fecha_acta: acta?.fecha_acta ? acta.fecha_acta.split('T')[0] : "",
++            fecha_acta: dateUtils.formatInputDate(acta?.fecha_acta),
+             observaciones: acta?.observaciones || "",
+         },
+     });
+ 
++    const modoValue = form.watch("modo");
++
+     const libroValue = form.watch("libro");
+     const numeroValue = form.watch("numero_acta");
+     const tipoValue = form.watch("tipo_acta");
+@@ -104,15 +121,17 @@ export function ActaEditSheet({ isOpen, onClose, onSuccess, acta }: ActaEditShee
+             const parsed = parseNumeroActa(acta.numero_acta);
+             form.reset({
+                 tipo_acta: acta.tipo_acta,
++                modo: parsed.modo,
+                 libro: parsed.libro,
+                 numero_acta: parsed.acta,
+                 anio: acta.anio,
+-                fecha_acta: acta.fecha_acta.split('T')[0],
++                fecha_acta: dateUtils.formatInputDate(acta.fecha_acta),
+                 observaciones: acta.observaciones || "",
+             });
+         } else if (!isOpen) {
+             form.reset({
+                 tipo_acta: 'NACIMIENTO',
++                modo: 'CLASICO',
+                 libro: "",
+                 numero_acta: "",
+                 anio: new Date().getFullYear(),
+@@ -125,7 +144,7 @@ export function ActaEditSheet({ isOpen, onClose, onSuccess, acta }: ActaEditShee
+ 
+     // Validaci├│n de duplicados al editar (solo si cambia el n├║mero respecto al original)
+     useEffect(() => {
+-        if (numeroValue && libroValue) {
++        if (numeroValue && (modoValue === 'CUI' || libroValue)) {
+             const getPrefix = (tipo: string) => {
+                 switch (tipo) {
+                     case 'NACIMIENTO': return 'NAC';
+@@ -134,7 +153,9 @@ export function ActaEditSheet({ isOpen, onClose, onSuccess, acta }: ActaEditShee
+                     default: return 'ACT';
+                 }
+             };
+-            const formatted = `${getPrefix(tipoValue)}-L${libroValue}-${numeroValue}`.toUpperCase();
++            const formatted = modoValue === 'CUI' 
++                ? numeroValue.toUpperCase()
++                : `${getPrefix(tipoValue)}-L${libroValue}-${numeroValue}`.toUpperCase();
+ 
+             if (formatted !== acta?.numero_acta?.toUpperCase()) {
+                 const timer = setTimeout(() => {
+@@ -155,7 +176,7 @@ export function ActaEditSheet({ isOpen, onClose, onSuccess, acta }: ActaEditShee
+                 return () => clearTimeout(timer);
+             }
+         }
+-    }, [numeroValue, libroValue, tipoValue, acta, isOpen]);
++    }, [numeroValue, libroValue, tipoValue, acta, isOpen, modoValue]);
+ 
+     const onSubmit = async (values: ActaFormData) => {
+         if (!acta) return;
+@@ -169,7 +190,9 @@ export function ActaEditSheet({ isOpen, onClose, onSuccess, acta }: ActaEditShee
+                     default: return 'ACT';
+                 }
+             };
+-            const fullNumeroActa = `${getPrefix(values.tipo_acta)}-L${values.libro}-${values.numero_acta}`.toUpperCase();
++            const fullNumeroActa = values.modo === 'CUI' 
++                ? values.numero_acta.toUpperCase().trim()
++                : `${getPrefix(values.tipo_acta)}-L${values.libro}-${values.numero_acta}`.toUpperCase();
+ 
+             await actasService.update(acta.id, {
+                 ...values,
+@@ -216,17 +239,17 @@ export function ActaEditSheet({ isOpen, onClose, onSuccess, acta }: ActaEditShee
+                                 name="tipo_acta"
+                                 render={({ field }) => (
+                                     <FormItem>
+-                                        <FormLabel className="std-label mb-1.5">Tipo de Acta</FormLabel>
++                                        <FormLabel className="std-label mb-1.5 uppercase font-bold text-[10px] text-primary">Tipo de Acta</FormLabel>
+                                         <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                                             <FormControl>
+-                                                <SelectTrigger className="std-input h-10 font-semibold uppercase text-xs">
++                                                <SelectTrigger className="std-input h-10 font-bold uppercase text-xs">
+                                                     <SelectValue placeholder="ÔÇö" />
+                                                 </SelectTrigger>
+                                             </FormControl>
+                                             <SelectContent>
+-                                                <SelectItem value="NACIMIENTO" className="font-semibold">NACIMIENTO</SelectItem>
+-                                                <SelectItem value="MATRIMONIO" className="font-semibold">MATRIMONIO</SelectItem>
+-                                                <SelectItem value="DEFUNCION" className="font-semibold">DEFUNCI├ôN</SelectItem>
++                                                <SelectItem value="NACIMIENTO" className="font-semibold text-xs text-info">NACIMIENTO</SelectItem>
++                                                <SelectItem value="MATRIMONIO" className="font-semibold text-xs">MATRIMONIO</SelectItem>
++                                                <SelectItem value="DEFUNCION" className="font-semibold text-xs">DEFUNCI├ôN</SelectItem>
+                                             </SelectContent>
+                                         </Select>
+                                         <FormMessage />
+@@ -234,31 +257,56 @@ export function ActaEditSheet({ isOpen, onClose, onSuccess, acta }: ActaEditShee
+                                 )}
+                             />
+ 
++                            <div className="flex p-1 bg-muted/60 rounded-xl mb-2 w-fit">
++                                <Button
++                                    type="button"
++                                    variant={modoValue === 'CLASICO' ? 'default' : 'ghost'}
++                                    size="sm"
++                                    className={cn("rounded-lg h-7 text-[9px] font-black uppercase tracking-widest px-4", modoValue === 'CLASICO' && "shadow-sm bg-primary")}
++                                    onClick={() => form.setValue("modo", "CLASICO")}
++                                >
++                                    Libro Cl├ísico
++                                </Button>
++                                <Button
++                                    type="button"
++                                    variant={modoValue === 'CUI' ? 'default' : 'ghost'}
++                                    size="sm"
++                                    className={cn("rounded-lg h-7 text-[9px] font-black uppercase tracking-widest px-4", modoValue === 'CUI' && "shadow-sm bg-primary")}
++                                    onClick={() => form.setValue("modo", "CUI")}
++                                >
++                                    RENIEC (CUI)
++                                </Button>
++                            </div>
++
+                             <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+-                                <div className="md:col-span-4">
+-                                    <FormField
+-                                        control={form.control}
+-                                        name="libro"
+-                                        render={({ field }) => (
+-                                            <FormItem>
+-                                                <FormLabel className="std-label mb-1.5">Libro</FormLabel>
+-                                                <FormControl>
+-                                                    <Input {...field} className="std-input h-10 font-bold bg-primary/5 text-center" />
+-                                                </FormControl>
+-                                                <FormMessage />
+-                                            </FormItem>
+-                                        )}
+-                                    />
+-                                </div>
+-                                <div className="md:col-span-5">
++                                {modoValue === 'CLASICO' && (
++                                    <div className="md:col-span-4">
++                                        <FormField
++                                            control={form.control}
++                                            name="libro"
++                                            render={({ field }) => (
++                                                <FormItem>
++                                                    <FormLabel className="std-label mb-1.5">Libro</FormLabel>
++                                                    <FormControl>
++                                                        <Input {...field} className="std-input h-10 font-bold bg-primary/5 text-center" />
++                                                    </FormControl>
++                                                    <FormMessage />
++                                                </FormItem>
++                                            )}
++                                        />
++                                    </div>
++                                )}
++                                <div className={cn(modoValue === 'CLASICO' ? "md:col-span-5" : "md:col-span-9")}>
+                                     <FormField
+                                         control={form.control}
+                                         name="numero_acta"
+                                         render={({ field }) => (
+                                             <FormItem>
+                                                 <div className="flex items-center justify-between mb-1.5 ">
+-                                                    <FormLabel className="std-label m-0 p-0 leading-none">N┬░ Acta</FormLabel>
+-                                                    {(libroValue || numeroValue) && (
++                                                    <FormLabel className="std-label m-0 p-0 leading-none">
++                                                        {modoValue === 'CLASICO' ? 'N┬░ Acta' : 'CUI / Identificador'}
++                                                    </FormLabel>
++                                                    {modoValue === 'CLASICO' && (libroValue || numeroValue) && (
+                                                         <Badge variant="outline" className="h-4 px-1 text-[8px] bg-primary/5 text-primary border-primary/20 font-bold">
+                                                             PREVIEW: {tipoValue.substring(0, 3)}-L{libroValue || '?'}-{numeroValue || '?'}
+                                                         </Badge>
+diff --git a/front/src/components/actas/ActasTable.tsx b/front/src/components/actas/ActasTable.tsx
+index 31f0b57..2ea8e4f 100644
+--- a/front/src/components/actas/ActasTable.tsx
++++ b/front/src/components/actas/ActasTable.tsx
+@@ -25,6 +25,7 @@ import { useState, useEffect } from "react";
+ import { useDebounce } from "@/hooks/useDebounce";
+ import { toast } from "sonner";
+ import { reportesService } from "@/services/reportes.service";
++import { dateUtils } from "@/utils/dateUtils";
+ import { Loader2 } from "lucide-react";
+ 
+ import {
+@@ -295,7 +296,7 @@ export function ActasTable({
+                                     </TableCell>
+                                     <TableCell className="std-table-cell">
+                                         <div className="flex flex-col">
+-                                            <span className="text-xs text-foreground/80 font-medium">{format(new Date(acta.fecha_acta), "dd/MM/yyyy")}</span>
++                                            <span className="text-xs text-foreground/80 font-medium">{dateUtils.formatDisplayDate(acta.fecha_acta)}</span>
+                                             <span className="text-[10px] font-medium text-muted-foreground/60 uppercase tracking-wider">{acta.anio}</span>
+                                         </div>
+                                     </TableCell>
+diff --git a/front/src/components/auditoria/AuditoriaTable.tsx b/front/src/components/auditoria/AuditoriaTable.tsx
+index 3b23070..025cd2c 100644
+--- a/front/src/components/auditoria/AuditoriaTable.tsx
++++ b/front/src/components/auditoria/AuditoriaTable.tsx
+@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
+ import { format } from "date-fns";
+ import { es } from "date-fns/locale";
+ import { Button } from "@/components/ui/button";
++import { dateUtils } from "@/utils/dateUtils";
+ import { cn } from "@/lib/utils";
+ import {
+     Activity,
+@@ -212,10 +213,10 @@ export function AuditoriaTable({ logs, isLoading, pagination, onPageChange }: Au
+                                         <TableCell className="std-table-cell">
+                                             <div className="flex flex-col">
+                                                 <span className="text-xs text-foreground/80 font-bold tracking-tight">
+-                                                    {format(new Date(log.fecha), "dd MMM, yyyy", { locale: es })}
++                                                    {dateUtils.formatDisplayTimestamp(log.fecha).split(' ')[0]}
+                                                 </span>
+                                                 <span className="text-[10px] font-medium text-muted-foreground/60 uppercase tracking-widest mt-0.5">
+-                                                    {format(new Date(log.fecha), "hh:mm:ss a")}
++                                                    {dateUtils.formatDisplayTimestamp(log.fecha).split(' ')[1]}
+                                                 </span>
+                                             </div>
+                                         </TableCell>
+diff --git a/front/src/components/personas/PersonaSheet.tsx b/front/src/components/personas/PersonaSheet.tsx
+index b712159..564c347 100644
+--- a/front/src/components/personas/PersonaSheet.tsx
++++ b/front/src/components/personas/PersonaSheet.tsx
+@@ -33,6 +33,7 @@ import { Textarea } from "@/components/ui/textarea";
+ import { Loader2, Save, UserPlus, Fingerprint, MapPin, Calendar, Phone } from "lucide-react";
+ import { Persona, PersonaInput } from "@/types/persona";
+ import { personasService } from "@/services/personas.service";
++import { dateUtils } from "@/utils/dateUtils";
+ 
+ const personaSchema = z.object({
+     tipo_documento: z.string().min(1, "Seleccione tipo"),
+@@ -98,12 +99,6 @@ export function PersonaSheet({
+     useEffect(() => {
+         if (isOpen) {
+             if (persona) {
+-                // Formatear fecha para el input date
+-                let fechaFormateada = "";
+-                if (persona.fecha_nacimiento) {
+-                    fechaFormateada = persona.fecha_nacimiento.split('T')[0];
+-                }
+-
+                 form.reset({
+                     tipo_documento: persona.tipo_documento || "DNI",
+                     dni: persona.dni || "",
+@@ -111,7 +106,7 @@ export function PersonaSheet({
+                     apellido_paterno: persona.apellido_paterno || "",
+                     apellido_materno: persona.apellido_materno || "",
+                     sexo: (persona.sexo as any) || 'M',
+-                    fecha_nacimiento: fechaFormateada,
++                    fecha_nacimiento: dateUtils.formatInputDate(persona.fecha_nacimiento),
+                     telefono: persona.telefono || "",
+                     direccion: persona.direccion || "",
+                     observaciones: persona.observaciones || "",
+diff --git a/front/src/components/personas/PersonasTable.tsx b/front/src/components/personas/PersonasTable.tsx
+index f532422..6a9f80b 100644
+--- a/front/src/components/personas/PersonasTable.tsx
++++ b/front/src/components/personas/PersonasTable.tsx
+@@ -9,7 +9,7 @@ import {
+     Phone,
+     Calendar
+ } from "lucide-react";
+-import { format, parseISO } from "date-fns";
++import { dateUtils } from "@/utils/dateUtils";
+ import {
+     Table,
+     TableBody,
+@@ -129,9 +129,7 @@ export function PersonasTable({
+                                     <TableCell className="std-table-cell text-center">
+                                         <div className="flex flex-col items-center">
+                                             <span className="text-xs text-foreground/80">
+-                                                {persona.fecha_nacimiento
+-                                                    ? format(parseISO(persona.fecha_nacimiento), 'dd/MM/yyyy')
+-                                                    : "-"}
++                                                {dateUtils.formatDisplayDate(persona.fecha_nacimiento)}
+                                             </span>
+                                         </div>
+                                     </TableCell>
+diff --git a/front/src/components/solicitudes/SolicitudDetailSheet.tsx b/front/src/components/solicitudes/SolicitudDetailSheet.tsx
+index 5bde477..fb0ff57 100644
+--- a/front/src/components/solicitudes/SolicitudDetailSheet.tsx
++++ b/front/src/components/solicitudes/SolicitudDetailSheet.tsx
+@@ -10,8 +10,8 @@ import {
+ import { Button } from "@/components/ui/button";
+ import { Badge } from "@/components/ui/badge";
+ import { Solicitud } from "@/types/solicitud";
+-import { format } from "date-fns";
+ import { es } from "date-fns/locale";
++import { dateUtils } from "@/utils/dateUtils";
+ import {
+     User,
+     Calendar,
+@@ -117,7 +117,7 @@ export function SolicitudDetailSheet({
+                                     <p className="text-xs text-muted-foreground font-medium mb-0.5">Fecha de Registro</p>
+                                     <p className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                                         <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+-                                        {format(new Date(solicitud.fecha_solicitud), "dd/MM/yyyy", { locale: es })}
++                                        {dateUtils.formatDisplayDate(solicitud.fecha_solicitud)}
+                                     </p>
+                                 </div>
+                                 <div>
+@@ -244,7 +244,7 @@ export function SolicitudDetailSheet({
+                                 </p>
+                                 <div className="grid grid-cols-1 gap-1 mt-1 opacity-80">
+                                     <p className="text-[9px] font-bold flex items-center gap-1.5 uppercase">
+-                                        <Clock size={10} /> {solicitud.fecha_atencion ? format(new Date(solicitud.fecha_atencion), "dd/MM/yy HH:mm", { locale: es }) : 'ÔÇö'}
++                                        <Clock size={10} /> {dateUtils.formatDisplayTimestamp(solicitud.fecha_atencion)}
+                                     </p>
+                                     <p className="text-[9px] font-bold flex items-center gap-1.5 uppercase">
+                                         <User size={10} /> {solicitud.usuario_atencion_nombres ? `${solicitud.usuario_atencion_nombres} ${solicitud.usuario_atencion_apellidos}` : 'SISTEMA'}
+diff --git a/front/src/components/solicitudes/SolicitudesTable.tsx b/front/src/components/solicitudes/SolicitudesTable.tsx
+index c1c7e1a..0f2b86c 100644
+--- a/front/src/components/solicitudes/SolicitudesTable.tsx
++++ b/front/src/components/solicitudes/SolicitudesTable.tsx
+@@ -33,6 +33,7 @@ import {
+ import { Solicitud, EstadoSolicitud } from "@/types/solicitud";
+ import { format } from "date-fns";
+ import { es } from "date-fns/locale";
++import { dateUtils } from "@/utils/dateUtils";
+ import { Input } from "@/components/ui/input";
+ import { useState } from "react";
+ 
+@@ -134,13 +135,13 @@ export function SolicitudesTable({
+                                             <div className="flex items-center gap-2 text-muted-foreground">
+                                                 <Calendar className="h-3.5 w-3.5 text-muted-foreground/50" />
+                                                 <span className="text-xs">
+-                                                    {format(new Date(solicitud.fecha_solicitud), "dd MMM yyyy", { locale: es })}
++                                                    {dateUtils.formatDisplayTimestamp(solicitud.fecha_solicitud).split(' ')[0]}
+                                                 </span>
+                                             </div>
+                                             {solicitud.estado === 'ATENDIDO' && solicitud.fecha_atencion && (
+                                                 <div className="flex items-center gap-1.5 text-[9px] text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-50 dark:bg-emerald-950/20 px-2 py-0.5 rounded-md w-fit border border-emerald-100 dark:border-emerald-900/30 uppercase tracking-wide">
+                                                     <CheckCircle2 className="h-3 w-3" />
+-                                                    Atendido: {format(new Date(solicitud.fecha_atencion), "dd/MM/yy", { locale: es })}
++                                                    Atendido: {dateUtils.formatDisplayTimestamp(solicitud.fecha_atencion).split(' ')[0]}
+                                                 </div>
+                                             )}
+                                         </div>
+diff --git a/front/src/utils/dateUtils.ts b/front/src/utils/dateUtils.ts
+new file mode 100644
+index 0000000..be6005a
+--- /dev/null
++++ b/front/src/utils/dateUtils.ts
+@@ -0,0 +1,62 @@
++import { format, parseISO } from "date-fns";
++import { es } from "date-fns/locale";
++
++/**
++ * Funci├│n robusta para formatear fechas desde la base de datos (Postgres).
++ * Evita el desfase de zona horaria que ocurre con 'new Date()'.
++ */
++export const dateUtils = {
++    /**
++     * Formatea una fecha simple (YYYY-MM-DD) para mostrar en la UI.
++     * Ejemplo: "1995-05-20" -> "20 de mayo de 1995"
++     */
++    formatDisplayDate: (dateStr: string | null | undefined): string => {
++        if (!dateStr) return "ÔÇö";
++        
++        // Si ya viene formateada (ej: DD/MM/YYYY), devolverla
++        if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) return dateStr;
++
++        try {
++            // Dividir para evitar que JS interprete como UTC al usar parseISO
++            const parts = dateStr.split('T')[0].split(/[-/]/);
++            if (parts.length === 3) {
++                const year = parseInt(parts[0]);
++                const month = parseInt(parts[1]) - 1;
++                const day = parseInt(parts[2]);
++                const localDate = new Date(year, month, day);
++                return format(localDate, "dd 'de' MMMM 'de' yyyy", { locale: es });
++            }
++            return dateStr;
++        } catch (e) {
++            return dateStr;
++        }
++    },
++
++    /**
++     * Formatea un timestamp (2024-03-11 15:30:00) para mostrar en la UI.
++     */
++    formatDisplayTimestamp: (dateStr: string | null | undefined): string => {
++        if (!dateStr) return "ÔÇö";
++        try {
++            // Si el backend viene estandarizado como string ISO o simple
++            // Reemplazamos el espacio por 'T' si no lo tiene para que parseISO funcione mejor
++            const isoStr = dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T');
++            const date = parseISO(isoStr);
++            return format(date, "dd/MM/yyyy HH:mm", { locale: es });
++        } catch (e) {
++            return dateStr;
++        }
++    },
++
++    /**
++     * Prepara una fecha para un input de tipo date (YYYY-MM-DD).
++     */
++    formatInputDate: (dateStr: string | null | undefined): string => {
++        if (!dateStr) return "";
++        try {
++            return dateStr.split('T')[0];
++        } catch (e) {
++            return "";
++        }
++    }
++};

@@ -49,6 +49,7 @@ import { documentosService } from "@/services/documentos.service";
 import { Persona } from "@/types/persona";
 import { Acta } from "@/types/acta";
 import { dateUtils } from "@/utils/dateUtils";
+import { OCRScanner } from "@/components/digitalizacion/OCRScanner";
 
 const formSchema = z.object({
     // Persona
@@ -245,6 +246,30 @@ export default function DigitalizacionPage() {
         }
     }, [numActaValue, libroValue, tipoActaValue, dniValue, modoValue]);
 
+    const handleOCRExtracted = (data: any) => {
+        if (!data) return;
+
+        // Mapear datos de la persona
+        if (data.dni) form.setValue("dni", data.dni);
+        if (data.nombres) form.setValue("nombres", data.nombres.toUpperCase());
+        if (data.apellido_paterno) form.setValue("apellido_paterno", data.apellido_paterno.toUpperCase());
+        if (data.apellido_materno) form.setValue("apellido_materno", data.apellido_materno.toUpperCase());
+        if (data.sexo) form.setValue("sexo", data.sexo as "M" | "F");
+        if (data.fecha_evento) form.setValue("fecha_nacimiento", data.fecha_evento);
+
+        // Mapear datos del acta
+        if (data.tipo_acta) form.setValue("tipo_acta", data.tipo_acta as any);
+        if (data.libro) {
+            form.setValue("modo", "CLASICO");
+            form.setValue("libro", data.libro);
+        }
+        if (data.numero_acta) form.setValue("numero_acta", data.numero_acta);
+        if (data.fecha_evento) form.setValue("fecha_acta", data.fecha_evento);
+        if (data.anio) form.setValue("anio", Number(data.anio));
+
+        toast.success("Campos completados por la IA. Por favor, verifique la información.");
+    };
+
     const resetAll = () => {
         form.reset();
         setFile(null);
@@ -364,6 +389,8 @@ export default function DigitalizacionPage() {
                         Gestión eficiente y procesamiento de archivo digital de actas y documentos.
                     </p>
                 </div>
+
+                <OCRScanner onDataExtracted={handleOCRExtracted} />
             </div>
 
             <Form {...form}>

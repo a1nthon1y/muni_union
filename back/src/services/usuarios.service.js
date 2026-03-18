@@ -59,7 +59,14 @@ export const listarUsuarios = async (filtros = {}) => {
 
   if (q) {
     params.push(`%${q}%`);
-    whereClause += ` AND (u.username ILIKE $1 OR u.nombres ILIKE $1 OR u.apellidos ILIKE $1 OR u.dni LIKE $1)`;
+    whereClause += ` AND (
+      u.username ILIKE $1 OR 
+      u.nombres ILIKE $1 OR 
+      u.apellidos ILIKE $1 OR 
+      u.dni LIKE $1 OR
+      (u.nombres || ' ' || u.apellidos) ILIKE $1 OR
+      (u.apellidos || ' ' || u.nombres) ILIKE $1
+    )`;
   }
 
   const queryBase = `

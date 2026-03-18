@@ -29,7 +29,17 @@ export const listarActas = async (filtros = {}) => {
 
     if (q) {
         params.push(`%${q}%`);
-        queryBase += ` AND (a.numero_acta ILIKE $${params.length} OR p.dni LIKE $${params.length} OR p.nombres ILIKE $${params.length} OR p.apellido_paterno ILIKE $${params.length} OR p.apellido_materno ILIKE $${params.length})`;
+        queryBase += ` AND (
+          a.numero_acta ILIKE $${params.length} OR
+          p.dni LIKE $${params.length} OR
+          p.nombres ILIKE $${params.length} OR
+          p.apellido_paterno ILIKE $${params.length} OR
+          p.apellido_materno ILIKE $${params.length} OR
+          (p.apellido_paterno || ' ' || p.apellido_materno) ILIKE $${params.length} OR
+          (p.apellido_paterno || ' ' || p.apellido_materno || ' ' || p.nombres) ILIKE $${params.length} OR
+          (p.nombres || ' ' || p.apellido_paterno || ' ' || p.apellido_materno) ILIKE $${params.length} OR
+          (p.apellido_paterno || ' ' || p.nombres) ILIKE $${params.length}
+        )`;
     }
 
     if (tipo) {
@@ -46,7 +56,16 @@ export const listarActas = async (filtros = {}) => {
     }
     if (dni) {
         params.push(`%${dni}%`);
-        queryBase += ` AND (p.dni LIKE $${params.length} OR p.nombres ILIKE $${params.length} OR p.apellido_paterno ILIKE $${params.length} OR p.apellido_materno ILIKE $${params.length})`;
+        queryBase += ` AND (
+            p.dni LIKE $${params.length} OR 
+            p.nombres ILIKE $${params.length} OR 
+            p.apellido_paterno ILIKE $${params.length} OR 
+            p.apellido_materno ILIKE $${params.length} OR
+            (p.apellido_paterno || ' ' || p.apellido_materno) ILIKE $${params.length} OR
+            (p.apellido_paterno || ' ' || p.apellido_materno || ' ' || p.nombres) ILIKE $${params.length} OR
+            (p.nombres || ' ' || p.apellido_paterno || ' ' || p.apellido_materno) ILIKE $${params.length} OR
+            (p.apellido_paterno || ' ' || p.nombres) ILIKE $${params.length}
+        )`;
     }
 
     // Consulta para el total de registros (para paginación)
