@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, User, LogOut, Menu, Home, History } from "lucide-react";
+import { LogOut, Menu } from "lucide-react";
 import { useState } from "react";
 import {
     DropdownMenu,
@@ -24,7 +24,6 @@ import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { NavContent } from "./Sidebar";
 import { usePathname, useRouter } from "next/navigation";
-import { Separator } from "@/components/ui/separator";
 import api from "@/utils/api";
 
 export function Header() {
@@ -87,7 +86,6 @@ export function Header() {
                                 isCollapsed={false}
                                 pathname={pathname}
                                 usuario={usuario}
-                                logout={logout}
                                 onNavClick={() => setMobileOpen(false)}
                             />
                         </div>
@@ -105,7 +103,7 @@ export function Header() {
                     </SheetContent>
                 </Sheet>
 
-                <div className="h-6 w-[1px] bg-border/50 mx-1 md:hidden" />
+                <div className="h-6 w-px bg-border/50 mx-1 md:hidden" />
 
                 <h2 className="text-muted-foreground font-semibold text-[10px] md:text-[11px] uppercase tracking-widest hidden sm:block">
                     Panel de Control /
@@ -165,7 +163,7 @@ export function Header() {
               hover:scale-105
             ">
                                     <AvatarFallback className="
-                bg-gradient-to-br 
+                bg-linear-to-br 
                 from-primary 
                 to-primary/70 
                 text-white 

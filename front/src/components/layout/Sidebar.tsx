@@ -6,7 +6,6 @@ import {
     FileText,
     Home,
     Users,
-    FileDigit,
     ClipboardList,
     Activity,
     UserCircle2,
@@ -14,9 +13,10 @@ import {
     ChevronLeft,
     ChevronRight,
     LucideIcon,
-    ChevronDown
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import Image from "next/image";
+import { Usuario } from "@/types/auth";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -59,11 +59,10 @@ const navGroups: NavGroup[] = [
     }
 ];
 
-export function NavContent({ isCollapsed, pathname, usuario, logout, onNavClick }: {
+export function NavContent({ isCollapsed, pathname, usuario, onNavClick }: {
     isCollapsed: boolean;
     pathname: string;
-    usuario: any;
-    logout: () => void;
+    usuario: Usuario;
     onNavClick?: () => void;
 }) {
     return (
@@ -128,7 +127,6 @@ export function NavContent({ isCollapsed, pathname, usuario, logout, onNavClick 
 export function Sidebar() {
     const pathname = usePathname();
     const [isCollapsed, setIsCollapsed] = useState(false);
-    const [isMobile, setIsMobile] = useState(false);
     const usuario = useAuthStore((state) => state.usuario);
     const logout = useAuthStore((state) => state.logout);
 
@@ -136,10 +134,6 @@ export function Sidebar() {
     useEffect(() => {
         const handleResize = () => {
             const width = window.innerWidth;
-            const mobile = width < 768;
-            setIsMobile(mobile);
-
-            // Si es tablet o móvil, auto-colapsar por defecto
             if (width < 1024) {
                 setIsCollapsed(true);
             } else {
@@ -165,19 +159,23 @@ export function Sidebar() {
             <div className="p-6 h-20 flex items-center justify-center border-b border-sidebar-border/30 bg-black/5 overflow-hidden">
                 {!isCollapsed && (
                     <div className="flex items-center justify-center animate-in fade-in slide-in-from-left-2 duration-300 w-full px-2">
-                        <img
+                        <Image
                             src="/Logo_blanco.svg"
                             alt="Logo Blanco Unión"
+                            width={120}
+                            height={40}
                             className="h-10 w-auto object-contain"
                         />
                     </div>
                 )}
                 {isCollapsed && (
                     <div className="flex items-center justify-center animate-in fade-in zoom-in duration-300">
-                        <img
+                        <Image
                             src="/Logo_blanco.svg"
                             alt="Logo Blanco Unión"
-                            className="h-6 w-auto object-contain max-w-[40px]"
+                            width={40}
+                            height={24}
+                            className="h-6 w-auto object-contain"
                         />
                     </div>
                 )}
@@ -190,7 +188,7 @@ export function Sidebar() {
                     variant="ghost"
                     size="icon"
                     className={cn(
-                        "absolute top-8 h-7 w-7 rounded-full bg-primary text-white shadow-xl border-2 border-background hover:bg-primary-hover hover:scale-110 transition-all z-[70]",
+                        "absolute top-8 h-7 w-7 rounded-full bg-primary text-white shadow-xl border-2 border-background hover:bg-primary-hover hover:scale-110 transition-all z-70",
                         isCollapsed ? "-right-3.5" : "-right-3.5"
                     )}
                     onClick={() => setIsCollapsed(!isCollapsed)}
@@ -202,7 +200,6 @@ export function Sidebar() {
                     isCollapsed={isCollapsed}
                     pathname={pathname}
                     usuario={usuario}
-                    logout={logout}
                 />
             </div>
 
