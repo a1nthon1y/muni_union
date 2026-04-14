@@ -106,6 +106,8 @@ export function ActasTable({
     const [searchNumero, setSearchNumero] = useState("");
     const [searchAnio, setSearchAnio] = useState("");
     const [searchTipo, setSearchTipo] = useState("TODOS");
+    const [fechaDesde, setFechaDesde] = useState("");
+    const [fechaHasta, setFechaHasta] = useState("");
     const [exporting, setExporting] = useState(false);
 
     const debouncedSearch = useDebounce(searchTerm, 500);
@@ -118,7 +120,9 @@ export function ActasTable({
             tipo: searchTipo !== "TODOS" ? searchTipo : "",
             anio: searchAnio,
             numero: searchNumero,
-            q: searchTerm
+            q: searchTerm,
+            fecha_desde: fechaDesde,
+            fecha_hasta: fechaHasta,
         };
 
         const toastId = toast.loading("Generando Excel de actas...");
@@ -133,21 +137,12 @@ export function ActasTable({
         }
     };
 
-    useEffect(() => {
-        onSearch({ dni: debouncedSearch });
-    }, [debouncedSearch]);
-
-    useEffect(() => {
-        onSearch({ numero: debouncedNumero });
-    }, [debouncedNumero]);
-
-    useEffect(() => {
-        onSearch({ anio: debouncedAnio });
-    }, [debouncedAnio]);
-
-    useEffect(() => {
-        onSearch({ tipo: searchTipo === "TODOS" ? "" : searchTipo });
-    }, [searchTipo]);
+    useEffect(() => { onSearch({ dni: debouncedSearch }); }, [debouncedSearch]);
+    useEffect(() => { onSearch({ numero: debouncedNumero }); }, [debouncedNumero]);
+    useEffect(() => { onSearch({ anio: debouncedAnio }); }, [debouncedAnio]);
+    useEffect(() => { onSearch({ tipo: searchTipo === "TODOS" ? "" : searchTipo }); }, [searchTipo]);
+    useEffect(() => { onSearch({ fecha_desde: fechaDesde }); }, [fechaDesde]);
+    useEffect(() => { onSearch({ fecha_hasta: fechaHasta }); }, [fechaHasta]);
 
     const getTipoActaBadge = (tipo: string) => {
         switch (tipo) {
@@ -188,55 +183,77 @@ export function ActasTable({
             {/* HERRAMIENTAS DE TABLA: FILTROS Y ACCIONES SEPARADOS */}
             <div className="flex flex-col xl:flex-row gap-4 items-center">
 
-                {/* CONTENEDOR DE FILTROS (70px de alto) */}
-                <div className="flex-1 flex items-center gap-3 bg-card h-[70px] px-5 rounded-2xl border border-border shadow-sm">
-                    <div className="relative flex-1">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 icon-std text-slate-400" />
+                {/* FILTROS FILA 1: texto + número + año + tipo */}
+                <div className="flex-1 space-y-2">
+                    <div className="flex items-center gap-3 bg-card h-[70px] px-5 rounded-2xl border border-border shadow-sm">
+                        <div className="relative flex-1">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 icon-std text-slate-400" />
+                            <Input
+                                placeholder="Buscar por DNI o Nombres..."
+                                className="pl-9 std-input border-none bg-transparent focus-visible:ring-0 h-11 w-full font-semibold"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+                        <Separator orientation="vertical" className="h-8 mx-1 opacity-50" />
                         <Input
-                            placeholder="Buscar por DNI o Nombres..."
-                            className="pl-9 std-input border-none bg-transparent focus-visible:ring-0 h-11 w-full font-semibold"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
+                            placeholder="N° Acta"
+                            className="std-input w-28 border-none bg-transparent focus-visible:ring-0 h-11 font-semibold"
+                            value={searchNumero}
+                            onChange={(e) => setSearchNumero(e.target.value)}
                         />
+                        <Input
+                            placeholder="Año"
+                            type="number"
+                            className="std-input w-20 border-none bg-transparent focus-visible:ring-0 h-11 font-semibold"
+                            value={searchAnio}
+                            onChange={(e) => setSearchAnio(e.target.value)}
+                        />
+                        <Select value={searchTipo} onValueChange={setSearchTipo}>
+                            <SelectTrigger className="w-36 border-none bg-transparent focus:ring-0 h-11 text-xs font-bold uppercase truncate">
+                                <SelectValue placeholder="Tipo" />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-xl shadow-xl border-border">
+                                <SelectItem value="TODOS" className="font-medium text-xs">TODOS</SelectItem>
+                                <SelectItem value="NACIMIENTO" className="font-medium text-xs">NACIMIENTO</SelectItem>
+                                <SelectItem value="MATRIMONIO" className="font-medium text-xs">MATRIMONIO</SelectItem>
+                                <SelectItem value="DEFUNCION" className="font-medium text-xs">DEFUNCION</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <Separator orientation="vertical" className="h-8 mx-1 opacity-50" />
+                        {/* Rango de fechas */}
+                        <div className="flex items-center gap-2 shrink-0">
+                            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Desde</span>
+                            <Input
+                                type="date"
+                                className="std-input w-36 border-none bg-transparent focus-visible:ring-0 h-9 text-xs"
+                                value={fechaDesde}
+                                onChange={(e) => setFechaDesde(e.target.value)}
+                            />
+                            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Hasta</span>
+                            <Input
+                                type="date"
+                                className="std-input w-36 border-none bg-transparent focus-visible:ring-0 h-9 text-xs"
+                                value={fechaHasta}
+                                onChange={(e) => setFechaHasta(e.target.value)}
+                            />
+                        </div>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-9 w-9 text-slate-400 hover:text-primary hover:bg-primary/5 shrink-0"
+                            onClick={() => {
+                                setSearchTerm("");
+                                setSearchNumero("");
+                                setSearchAnio("");
+                                setSearchTipo("TODOS");
+                                setFechaDesde("");
+                                setFechaHasta("");
+                            }}
+                        >
+                            <RefreshCw className="h-4 w-4" />
+                        </Button>
                     </div>
-                    <Separator orientation="vertical" className="h-8 mx-1 opacity-50" />
-                    <Input
-                        placeholder="N° Acta"
-                        className="std-input w-32 border-none bg-transparent focus-visible:ring-0 h-11 font-semibold"
-                        value={searchNumero}
-                        onChange={(e) => setSearchNumero(e.target.value)}
-                    />
-                    <Input
-                        placeholder="Año"
-                        type="number"
-                        className="std-input w-24 border-none bg-transparent focus-visible:ring-0 h-11 font-semibold"
-                        value={searchAnio}
-                        onChange={(e) => setSearchAnio(e.target.value)}
-                    />
-                    <Select value={searchTipo} onValueChange={setSearchTipo}>
-                        <SelectTrigger className="w-40 border-none bg-transparent focus:ring-0 h-11 text-xs font-bold uppercase truncate">
-                            <SelectValue placeholder="Tipo" />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-xl shadow-xl border-border">
-                            <SelectItem value="TODOS" className="font-medium text-xs">TODOS</SelectItem>
-                            <SelectItem value="NACIMIENTO" className="font-medium text-xs">NACIMIENTO</SelectItem>
-                            <SelectItem value="MATRIMONIO" className="font-medium text-xs">MATRIMONIO</SelectItem>
-                            <SelectItem value="DEFUNCION" className="font-medium text-xs">DEFUNCION</SelectItem>
-                        </SelectContent>
-                    </Select>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-9 w-9 text-slate-400 hover:text-primary hover:bg-primary/5 shrink-0"
-                        onClick={() => {
-                            setSearchTerm("");
-                            setSearchNumero("");
-                            setSearchAnio("");
-                            setSearchTipo("TODOS");
-                        }}
-                    >
-                        <RefreshCw className="h-4 w-4" />
-                    </Button>
                 </div>
 
                 <Button

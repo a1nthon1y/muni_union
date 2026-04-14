@@ -9,9 +9,32 @@ export interface DashboardResumen {
     totalUsuarios: number;
 }
 
+export interface ActaEvolucion {
+    mes: string;
+    anio: number;
+    mes_num: number;
+    tipo_acta: string;
+    cantidad: number;
+}
+
+export interface SolicitudEstado {
+    estado: string;
+    cantidad: number;
+}
+
 export const reportesService = {
     async getResumen() {
         const { data } = await api.get<DashboardResumen>("/reportes/resumen");
+        return data;
+    },
+
+    async getActasEvolucion() {
+        const { data } = await api.get<ActaEvolucion[]>("/reportes/actas-evolucion");
+        return data;
+    },
+
+    async getSolicitudesEstados() {
+        const { data } = await api.get<SolicitudEstado[]>("/reportes/solicitudes-estados");
         return data;
     },
 

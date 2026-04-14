@@ -48,9 +48,10 @@ export default function LoginForm() {
         setIsLoading(true);
         try {
             const response = await api.post("/auth/login", values);
-            const { token, usuario } = response.data;
+            const { usuario } = response.data;
 
-            login(token, usuario);
+            // El token JWT queda en cookie httpOnly — aquí solo guardamos la info del usuario
+            login(usuario);
             toast.success(`Bienvenido, ${usuario.nombres}`);
             router.push("/dashboard");
         } catch (error: any) {

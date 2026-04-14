@@ -12,7 +12,10 @@ export const crearSolicitante = async (datos) => {
 };
 
 export const buscarSolicitantePorDni = async (dni) => {
-    const { rows } = await pool.query("SELECT * FROM solicitantes WHERE dni = $1", [dni]);
+    const { rows } = await pool.query(
+        "SELECT id, dni, nombres, apellidos, telefono, direccion FROM solicitantes WHERE dni = $1",
+        [dni]
+    );
     return rows[0];
 };
 
@@ -65,12 +68,14 @@ export const crearSolicitud = async (datos, usuario_id) => {
 };
 
 export const listarSolicitudes = async (filtros = {}) => {
-    const { estado, q, limit = 10, offset = 0 } = filtros;
+    const { estado, q, fecha_desde, fecha_hasta, page = 1, limit = 10 } = filtros;
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+
     let query = `
     FROM solicitudes s
     JOIN solicitantes sl ON s.solicitante_id = sl.id
     LEFT JOIN usuarios ua ON s.usuario_atencion = ua.id
-    WHERE 1=1
+    WHERE s.fecha_eliminacion IS NULL
   `;
     const params = [];
 
@@ -80,45 +85,70 @@ export const listarSolicitudes = async (filtros = {}) => {
     }
 
     if (q) {
-        params.push(`%${q}%`);
-        query += ` AND (
-            CAST(s.id AS TEXT) LIKE $${params.length} OR
-            sl.dni LIKE $${params.length} OR
-            sl.nombres ILIKE $${params.length} OR
-            sl.apellidos ILIKE $${params.length} OR
-            (sl.nombres || ' ' || sl.apellidos) ILIKE $${params.length} OR
-            (sl.apellidos || ' ' || sl.nombres) ILIKE $${params.length}
-        )`;
+        // Búsqueda por ID exacto si el término es numérico, o texto en nombre/DNI
+        if (/^\d+$/.test(q.trim())) {
+            params.push(parseInt(q.trim()));
+            query += ` AND s.id = $${params.length}`;
+        } else {
+            params.push(`%${q}%`);
+            query += ` AND (
+                sl.dni ILIKE $${params.length} OR
+                sl.nombres ILIKE $${params.length} OR
+                sl.apellidos ILIKE $${params.length} OR
+                (sl.nombres || ' ' || sl.apellidos) ILIKE $${params.length} OR
+                (sl.apellidos || ' ' || sl.nombres) ILIKE $${params.length}
+            )`;
+        }
     }
 
-    // Obtener total
-    const totalRes = await pool.query(`SELECT COUNT(*) as total ${query}`, params);
-    const total = parseInt(totalRes.rows[0].total);
+    if (fecha_desde) {
+        params.push(fecha_desde);
+        query += ` AND s.fecha_solicitud >= $${params.length}`;
+    }
 
-    // Obtener datos
-    const dataRes = await pool.query(
-        `SELECT s.*, 
-                sl.nombres as solicitante_nombres, sl.apellidos as solicitante_apellidos, sl.dni as solicitante_dni, sl.telefono as solicitante_telefono, sl.direccion as solicitante_direccion,
-                ua.nombres as usuario_atencion_nombres, ua.apellidos as usuario_atencion_apellidos
-         ${query} 
-         ORDER BY s.fecha_solicitud DESC 
-         LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
-        [...params, limit, offset]
+    if (fecha_hasta) {
+        params.push(fecha_hasta);
+        query += ` AND s.fecha_solicitud <= $${params.length}::date + INTERVAL '1 day'`;
+    }
+
+    const total = parseInt(
+        (await pool.query(`SELECT COUNT(*) as total ${query}`, params)).rows[0].total
     );
 
-    return { data: dataRes.rows, total };
+    const dataRes = await pool.query(
+        `SELECT s.*,
+                sl.nombres as solicitante_nombres, sl.apellidos as solicitante_apellidos,
+                sl.dni as solicitante_dni, sl.telefono as solicitante_telefono, sl.direccion as solicitante_direccion,
+                ua.nombres as usuario_atencion_nombres, ua.apellidos as usuario_atencion_apellidos
+         ${query}
+         ORDER BY s.fecha_solicitud DESC
+         LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
+        [...params, parseInt(limit), offset]
+    );
+
+    return {
+        data: dataRes.rows,
+        total,
+        pagination: {
+            total,
+            page:       parseInt(page),
+            limit:      parseInt(limit),
+            totalPages: Math.ceil(total / parseInt(limit)),
+        },
+    };
 };
 
 export const obtenerSolicitudPorId = async (id) => {
     const { rows: cabecera } = await pool.query(
-        `SELECT 
-            s.*, 
-            sl.nombres as solicitante_nombres, sl.apellidos as solicitante_apellidos, sl.dni as solicitante_dni, sl.telefono as solicitante_telefono, sl.direccion as solicitante_direccion,
+        `SELECT
+            s.*,
+            sl.nombres as solicitante_nombres, sl.apellidos as solicitante_apellidos,
+            sl.dni as solicitante_dni, sl.telefono as solicitante_telefono, sl.direccion as solicitante_direccion,
             ua.nombres as usuario_atencion_nombres, ua.apellidos as usuario_atencion_apellidos
-         FROM solicitudes s 
-         JOIN solicitantes sl ON s.solicitante_id = sl.id 
+         FROM solicitudes s
+         JOIN solicitantes sl ON s.solicitante_id = sl.id
          LEFT JOIN usuarios ua ON s.usuario_atencion = ua.id
-         WHERE s.id = $1`,
+         WHERE s.id = $1 AND s.fecha_eliminacion IS NULL`,
         [id]
     );
 
@@ -138,9 +168,10 @@ export const obtenerSolicitudPorId = async (id) => {
 
 export const atenderSolicitud = async (id, usuario_id) => {
     const { rows } = await pool.query(
-        `UPDATE solicitudes 
-     SET estado = 'ATENDIDO', fecha_atencion = NOW(), usuario_atencion = $1 
-     WHERE id = $2 RETURNING *`,
+        `UPDATE solicitudes
+         SET estado = 'ATENDIDO', fecha_atencion = NOW(), usuario_atencion = $1
+         WHERE id = $2 AND fecha_eliminacion IS NULL
+         RETURNING *`,
         [usuario_id, id]
     );
     return rows[0];
@@ -148,28 +179,38 @@ export const atenderSolicitud = async (id, usuario_id) => {
 
 export const anularSolicitud = async (id, usuario_id, motivo = "") => {
     const { rows } = await pool.query(
-        `UPDATE solicitudes 
-     SET estado = 'ANULADO', 
-         fecha_atencion = NOW(), 
-         usuario_atencion = $1,
-         observaciones = CASE 
-            WHEN observaciones IS NULL OR observaciones = '' THEN $2
-            ELSE observaciones || E'\n' || $2
-         END
-     WHERE id = $3 RETURNING *`,
+        `UPDATE solicitudes
+         SET estado = 'ANULADO',
+             fecha_atencion = NOW(),
+             usuario_atencion = $1,
+             observaciones = CASE
+                WHEN observaciones IS NULL OR observaciones = '' THEN $2
+                ELSE observaciones || E'\n' || $2
+             END
+         WHERE id = $3 AND fecha_eliminacion IS NULL
+         RETURNING *`,
         [usuario_id, motivo ? `[ANULACIÓN] ${motivo}` : '[ANULACIÓN SIN MOTIVO]', id]
     );
     return rows[0];
 };
 
-export const eliminarSolicitud = async (id) => {
+export const eliminarSolicitud = async (id, usuario_id) => {
     const client = await pool.connect();
     try {
         await client.query("BEGIN");
-        // 1. Borrar detalles primero por integridad referencial
-        await client.query("DELETE FROM detalle_solicitud WHERE solicitud_id = $1", [id]);
-        // 2. Borrar cabecera
-        const { rows } = await client.query("DELETE FROM solicitudes WHERE id = $1 RETURNING *", [id]);
+        // Soft delete en detalle
+        await client.query(
+            "UPDATE detalle_solicitud SET fecha_eliminacion = NOW() WHERE solicitud_id = $1",
+            [id]
+        );
+        // Soft delete en cabecera
+        const { rows } = await client.query(
+            `UPDATE solicitudes 
+             SET fecha_eliminacion = NOW(), usuario_eliminacion = $1
+             WHERE id = $2 AND fecha_eliminacion IS NULL
+             RETURNING *`,
+            [usuario_id, id]
+        );
         await client.query("COMMIT");
         return rows[0];
     } catch (error) {

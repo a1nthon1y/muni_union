@@ -52,7 +52,8 @@ export const crearUsuario = async ({
    LISTAR USUARIOS
 ============================== */
 export const listarUsuarios = async (filtros = {}) => {
-  const { q, limit = 10, offset = 0 } = filtros;
+  const { q, page = 1, limit = 10 } = filtros;
+  const offset = (parseInt(page) - 1) * parseInt(limit);
 
   let whereClause = " WHERE u.fecha_eliminacion IS NULL";
   const params = [];
@@ -60,10 +61,10 @@ export const listarUsuarios = async (filtros = {}) => {
   if (q) {
     params.push(`%${q}%`);
     whereClause += ` AND (
-      u.username ILIKE $1 OR 
-      u.nombres ILIKE $1 OR 
-      u.apellidos ILIKE $1 OR 
-      u.dni LIKE $1 OR
+      u.username ILIKE $1 OR
+      u.nombres ILIKE $1 OR
+      u.apellidos ILIKE $1 OR
+      u.dni ILIKE $1 OR
       (u.nombres || ' ' || u.apellidos) ILIKE $1 OR
       (u.apellidos || ' ' || u.nombres) ILIKE $1
     )`;
@@ -75,13 +76,12 @@ export const listarUsuarios = async (filtros = {}) => {
     ${whereClause}
   `;
 
-  // Obtener total
-  const totalRes = await pool.query(`SELECT COUNT(*) as total ${queryBase}`, params);
-  const total = parseInt(totalRes.rows[0].total);
+  const total = parseInt(
+    (await pool.query(`SELECT COUNT(*) as total ${queryBase}`, params)).rows[0].total
+  );
 
-  // Obtener datos
   const dataQuery = `
-    SELECT 
+    SELECT
       u.id,
       u.username,
       u.nombres,
@@ -93,13 +93,22 @@ export const listarUsuarios = async (filtros = {}) => {
       u.activo,
       u.fecha_registro
     ${queryBase}
-    ORDER BY u.id
+    ORDER BY u.apellidos, u.nombres
     LIMIT $${params.length + 1} OFFSET $${params.length + 2}
   `;
 
-  const dataRes = await pool.query(dataQuery, [...params, limit, offset]);
+  const dataRes = await pool.query(dataQuery, [...params, parseInt(limit), offset]);
 
-  return { data: dataRes.rows, total };
+  return {
+    data: dataRes.rows,
+    total,
+    pagination: {
+      total,
+      page:       parseInt(page),
+      limit:      parseInt(limit),
+      totalPages: Math.ceil(total / parseInt(limit)),
+    },
+  };
 };
 
 /* ==============================

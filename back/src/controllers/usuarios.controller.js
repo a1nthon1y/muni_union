@@ -5,7 +5,8 @@ export const crearUsuario = async (req, res) => {
   try {
     const usuario = await usuariosService.crearUsuario(req.body);
 
-    await registrarAccion({
+    req.auditHandled = true;
+        await registrarAccion({
       usuario_id: req.user.id,
       tabla_afectada: "usuarios",
       operacion: "INSERT",
@@ -45,7 +46,8 @@ export const actualizarUsuario = async (req, res) => {
       req.body
     );
 
-    await registrarAccion({
+    req.auditHandled = true;
+        await registrarAccion({
       usuario_id: req.user.id,
       tabla_afectada: "usuarios",
       operacion: "UPDATE",
@@ -67,7 +69,8 @@ export const cambiarEstadoUsuario = async (req, res) => {
       req.body.activo
     );
 
-    await registrarAccion({
+    req.auditHandled = true;
+        await registrarAccion({
       usuario_id: req.user.id,
       tabla_afectada: "usuarios",
       operacion: "UPDATE_STATUS",
@@ -86,7 +89,8 @@ export const eliminarUsuario = async (req, res) => {
   try {
     const usuario = await usuariosService.eliminarUsuario(req.params.id);
 
-    await registrarAccion({
+    req.auditHandled = true;
+        await registrarAccion({
       usuario_id: req.user.id,
       tabla_afectada: "usuarios",
       operacion: "DELETE_LOGIC",
@@ -115,7 +119,8 @@ export const cambiarMiPassword = async (req, res) => {
       passwordNuevo
     );
 
-    await registrarAccion({
+    req.auditHandled = true;
+        await registrarAccion({
       usuario_id: req.user.id,
       tabla_afectada: "usuarios",
       operacion: "UPDATE_PASSWORD",

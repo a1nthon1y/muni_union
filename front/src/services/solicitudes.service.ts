@@ -14,12 +14,9 @@ export const solicitudesService = {
     },
 
     // Solicitudes
-    async getAll(filtros: { estado?: string; q?: string; page?: number; limit?: number } = {}) {
+    async getAll(filtros: { estado?: string; q?: string; fecha_desde?: string; fecha_hasta?: string; page?: number; limit?: number } = {}) {
         const { data } = await api.get<{ data: Solicitud[]; total: number }>("/solicitudes", {
-            params: {
-                ...filtros,
-                offset: ((filtros.page || 1) - 1) * (filtros.limit || 10)
-            }
+            params: filtros
         });
         return data;
     },

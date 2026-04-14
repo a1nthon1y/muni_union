@@ -41,7 +41,7 @@ export function ActaPrintView({ acta }: ActaPrintViewProps) {
                         <div className="flex items-center gap-2 mb-2">
                             <div className="bg-slate-900 text-white px-2 py-0.5 font-black text-[10px] uppercase tracking-widest">01</div>
                             <h4 className="text-[11px] font-black uppercase tracking-widest text-slate-900 underline underline-offset-4 decoration-2">
-                                Información del Titular
+                                {acta.tipo_acta === 'MATRIMONIO' ? 'Contrayente 1' : 'Información del Titular'}
                             </h4>
                         </div>
 
@@ -74,6 +74,40 @@ export function ActaPrintView({ acta }: ActaPrintViewProps) {
                             </div>
                         </div>
                     </section>
+
+                    {/* Section 1b: Cónyuge — solo MATRIMONIO */}
+                    {acta.tipo_acta === 'MATRIMONIO' && acta.p2_nombres && (
+                        <section>
+                            <div className="flex items-center gap-2 mb-2">
+                                <div className="bg-slate-700 text-white px-2 py-0.5 font-black text-[10px] uppercase tracking-widest">01B</div>
+                                <h4 className="text-[11px] font-black uppercase tracking-widest text-slate-900 underline underline-offset-4 decoration-2">
+                                    Contrayente 2
+                                </h4>
+                            </div>
+                            <div className="grid grid-cols-2 gap-x-12 gap-y-4 px-2">
+                                <div className="col-span-2 border-b border-slate-100 pb-2">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Apellidos y Nombres Completos</p>
+                                    <p className="text-lg font-black text-slate-900 uppercase">{acta.p2_apellido_paterno} {acta.p2_apellido_materno}, {acta.p2_nombres}</p>
+                                </div>
+                                <div className="border-b border-slate-100 pb-2">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">DNI / Documento</p>
+                                    <p className="text-base font-black text-slate-900 font-mono tracking-widest">{acta.p2_dni || '—'}</p>
+                                </div>
+                                <div className="border-b border-slate-100 pb-2">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Sexo / Género</p>
+                                    <p className="text-base font-black text-slate-900 uppercase">{acta.p2_sexo === 'M' ? 'Masculino' : 'Femenino'}</p>
+                                </div>
+                                {acta.p2_fecha_nacimiento && (
+                                    <div className="border-b border-slate-100 pb-2">
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Fecha de Nacimiento</p>
+                                        <p className="text-base font-black text-slate-900">
+                                            {format(new Date(acta.p2_fecha_nacimiento), "dd 'de' MMMM 'de' yyyy", { locale: es })}
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        </section>
+                    )}
 
                     {/* Section 2: Datos del Acta */}
                     <section>

@@ -59,11 +59,12 @@ const navGroups: NavGroup[] = [
     }
 ];
 
-export function NavContent({ isCollapsed, pathname, usuario, logout }: {
+export function NavContent({ isCollapsed, pathname, usuario, logout, onNavClick }: {
     isCollapsed: boolean;
     pathname: string;
     usuario: any;
-    logout: () => void
+    logout: () => void;
+    onNavClick?: () => void;
 }) {
     return (
         <div className="flex-1 overflow-y-auto overflow-x-hidden pt-6 pb-2 custom-scrollbar">
@@ -87,6 +88,7 @@ export function NavContent({ isCollapsed, pathname, usuario, logout }: {
                                     <Link
                                         key={item.href}
                                         href={item.href}
+                                        onClick={onNavClick}
                                         className={cn(
                                             "flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-300 group relative",
                                             isActive

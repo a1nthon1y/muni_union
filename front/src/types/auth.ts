@@ -11,9 +11,8 @@ export interface Usuario {
 }
 
 export interface AuthState {
-    token: string | null;
     usuario: Usuario | null;
     isAuthenticated: boolean;
-    login: (token: string, usuario: Usuario) => void;
+    login: (usuario: Usuario) => void;
     logout: () => void;
 }

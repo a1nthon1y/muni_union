@@ -48,6 +48,7 @@ export const registrarDocumento = async (req, res) => {
 
         const documento = await documentosService.registrarDocumento(datosDocumento, req.user.id);
 
+        req.auditHandled = true;
         await registrarAccion({
             usuario_id: req.user.id,
             tabla_afectada: "documentos_digitales",
@@ -93,6 +94,7 @@ export const eliminarDocumento = async (req, res) => {
         const resultado = await documentosService.eliminarDocumento(req.params.id, req.user.id);
         if (!resultado) return res.status(404).json({ message: "Documento no encontrado" });
 
+        req.auditHandled = true;
         await registrarAccion({
             usuario_id: req.user.id,
             tabla_afectada: "documentos_digitales",

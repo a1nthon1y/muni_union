@@ -31,6 +31,7 @@ export const crearSolicitud = async (req, res) => {
     try {
         const solicitud = await solicitudesService.crearSolicitud(req.body, req.user.id);
 
+        req.auditHandled = true;
         await registrarAccion({
             usuario_id: req.user.id,
             tabla_afectada: "solicitudes",
@@ -73,6 +74,7 @@ export const atenderSolicitud = async (req, res) => {
         const solicitud = await solicitudesService.atenderSolicitud(req.params.id, req.user.id);
         if (!solicitud) return res.status(404).json({ message: "Solicitud no encontrada" });
 
+        req.auditHandled = true;
         await registrarAccion({
             usuario_id: req.user.id,
             tabla_afectada: "solicitudes",
@@ -94,6 +96,7 @@ export const anularSolicitud = async (req, res) => {
         const solicitud = await solicitudesService.anularSolicitud(req.params.id, req.user.id, motivo);
         if (!solicitud) return res.status(404).json({ message: "Solicitud no encontrada" });
 
+        req.auditHandled = true;
         await registrarAccion({
             usuario_id: req.user.id,
             tabla_afectada: "solicitudes",
@@ -111,9 +114,10 @@ export const anularSolicitud = async (req, res) => {
 
 export const eliminarSolicitud = async (req, res) => {
     try {
-        const solicitud = await solicitudesService.eliminarSolicitud(req.params.id);
+        const solicitud = await solicitudesService.eliminarSolicitud(req.params.id, req.user.id);
         if (!solicitud) return res.status(404).json({ message: "Solicitud no encontrada" });
 
+        req.auditHandled = true;
         await registrarAccion({
             usuario_id: req.user.id,
             tabla_afectada: "solicitudes",

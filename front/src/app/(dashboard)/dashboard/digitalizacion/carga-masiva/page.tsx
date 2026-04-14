@@ -212,7 +212,7 @@ export default function CargaMasivaPage() {
                         El sistema procesa automáticamente los siguientes encabezados (insensible a mayúsculas):
                     </CardDescription>
                 </CardHeader>
-                <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6 pt-2">
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 p-6 pt-2">
                     <div className="space-y-3">
                         <h5 className="text-[10px] font-black text-blue-800/60 uppercase tracking-widest border-b border-blue-100 pb-1">Identificación del Acta</h5>
                         <ul className="space-y-2">
@@ -241,8 +241,27 @@ export default function CargaMasivaPage() {
                                 <span className="text-[9px] text-slate-500">Identidad básica del titular.</span>
                             </li>
                             <li className="flex flex-col">
-                                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">dni / sexo / fecha_nacimiento</span>
-                                <span className="text-[9px] text-slate-500">Datos adicionales de la persona.</span>
+                                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">apellido_materno <Badge variant="outline" className="h-3 text-[8px] px-1 border-rose-400 text-rose-500 font-black">REQ</Badge></span>
+                                <span className="text-[9px] text-slate-500">Segundo apellido del titular.</span>
+                            </li>
+                            <li className="flex flex-col">
+                                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">dni / tipo_documento / sexo / fecha_nacimiento</span>
+                                <span className="text-[9px] text-slate-500">Datos adicionales. tipo_documento: DNI, CARNET EXTR., PASAPORTE, etc.</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div className="space-y-3">
+                        <h5 className="text-[10px] font-black text-purple-700/60 uppercase tracking-widest border-b border-purple-100 pb-1">Cónyuge (solo MATRIMONIO)</h5>
+                        <ul className="space-y-2">
+                            <li className="flex flex-col">
+                                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                                    conyuge_nombres / conyuge_apellido_paterno / conyuge_apellido_materno
+                                </span>
+                                <span className="text-[9px] text-slate-500">Obligatorios para actas de MATRIMONIO. Se busca o crea automáticamente.</span>
+                            </li>
+                            <li className="flex flex-col">
+                                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">conyuge_dni / conyuge_sexo / conyuge_fecha_nacimiento</span>
+                                <span className="text-[9px] text-slate-500">Datos opcionales del cónyuge.</span>
                             </li>
                         </ul>
                     </div>

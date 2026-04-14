@@ -17,20 +17,66 @@ import {
     ArrowRight,
     History as HistoryIcon
 } from "lucide-react";
-import { reportesService, DashboardResumen } from "@/services/reportes.service";
+import { reportesService, DashboardResumen, ActaEvolucion, SolicitudEstado } from "@/services/reportes.service";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import {
+    BarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    Tooltip,
+    ResponsiveContainer,
+    Legend,
+    PieChart,
+    Pie,
+    Cell,
+} from "recharts";
+
+// Colores para gráficas
+const TIPO_COLORS: Record<string, string> = {
+    NACIMIENTO: "#3b82f6",
+    MATRIMONIO: "#8b5cf6",
+    DEFUNCION:  "#6b7280",
+};
+const ESTADO_COLORS: Record<string, string> = {
+    PENDIENTE: "#f59e0b",
+    ATENDIDO:  "#10b981",
+    ANULADO:   "#ef4444",
+};
 
 export default function DashboardPage() {
     const usuario = useAuthStore((state) => state.usuario);
     const [statsData, setStatsData] = useState<DashboardResumen | null>(null);
+    const [evolucion, setEvolucion] = useState<ActaEvolucion[]>([]);
+    const [solicitudesEstados, setSolicitudesEstados] = useState<SolicitudEstado[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(false);
 
     useEffect(() => {
-        reportesService.getResumen()
-            .then(setStatsData)
+        Promise.all([
+            reportesService.getResumen(),
+            reportesService.getActasEvolucion(),
+            reportesService.getSolicitudesEstados(),
+        ])
+            .then(([resumen, evol, estados]) => {
+                setStatsData(resumen);
+                setEvolucion(evol);
+                setSolicitudesEstados(estados);
+            })
+            .catch(() => setError(true))
             .finally(() => setLoading(false));
     }, []);
+
+    // Transformar datos de evolución para BarChart agrupado por mes
+    const barData = (() => {
+        const map: Record<string, Record<string, number>> = {};
+        for (const row of evolucion) {
+            if (!map[row.mes]) map[row.mes] = { mes: row.mes };
+            map[row.mes][row.tipo_acta] = parseInt(String(row.cantidad));
+        }
+        return Object.values(map);
+    })();
 
     const stats = [
         {
@@ -75,6 +121,14 @@ export default function DashboardPage() {
         },
     ];
 
+    if (error) {
+        return (
+            <div className="flex items-center justify-center h-48 text-muted-foreground text-sm">
+                No se pudo cargar el resumen. Verifique su conexión e intente recargar la página.
+            </div>
+        );
+    }
+
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -111,6 +165,87 @@ export default function DashboardPage() {
                 ))}
             </div>
 
+            {/* GRÁFICAS */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                {/* Evolución de actas (6 meses) */}
+                <Card className="lg:col-span-2 border-border shadow-sm rounded-2xl overflow-hidden">
+                    <CardHeader className="bg-muted/40 border-b border-border">
+                        <CardTitle className="text-base font-semibold text-foreground">Evolución de Actas — Últimos 6 meses</CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-4">
+                        {loading ? (
+                            <div className="h-48 flex items-center justify-center text-muted-foreground text-sm animate-pulse">Cargando gráfica...</div>
+                        ) : barData.length === 0 ? (
+                            <div className="h-48 flex items-center justify-center text-muted-foreground text-sm">Sin datos en el período</div>
+                        ) : (
+                            <ResponsiveContainer width="100%" height={220}>
+                                <BarChart data={barData} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
+                                    <XAxis dataKey="mes" tick={{ fontSize: 11, fontWeight: 600 }} />
+                                    <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                                    <Tooltip
+                                        contentStyle={{ borderRadius: 12, fontSize: 12, border: "1px solid hsl(var(--border))" }}
+                                        cursor={{ fill: "hsl(var(--muted))" }}
+                                    />
+                                    <Legend wrapperStyle={{ fontSize: 11, fontWeight: 600 }} />
+                                    <Bar dataKey="NACIMIENTO" name="Nacimiento" fill={TIPO_COLORS.NACIMIENTO} radius={[4, 4, 0, 0]} />
+                                    <Bar dataKey="MATRIMONIO" name="Matrimonio" fill={TIPO_COLORS.MATRIMONIO} radius={[4, 4, 0, 0]} />
+                                    <Bar dataKey="DEFUNCION"  name="Defunción"  fill={TIPO_COLORS.DEFUNCION}  radius={[4, 4, 0, 0]} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        )}
+                    </CardContent>
+                </Card>
+
+                {/* Estado de solicitudes */}
+                <Card className="border-border shadow-sm rounded-2xl overflow-hidden">
+                    <CardHeader className="bg-muted/40 border-b border-border">
+                        <CardTitle className="text-base font-semibold text-foreground">Estado de Trámites</CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-4 flex flex-col items-center gap-4">
+                        {loading ? (
+                            <div className="h-48 flex items-center justify-center text-muted-foreground text-sm animate-pulse">Cargando...</div>
+                        ) : solicitudesEstados.length === 0 ? (
+                            <div className="h-48 flex items-center justify-center text-muted-foreground text-sm">Sin datos</div>
+                        ) : (
+                            <>
+                                <ResponsiveContainer width="100%" height={180}>
+                                    <PieChart>
+                                        <Pie
+                                            data={solicitudesEstados}
+                                            dataKey="cantidad"
+                                            nameKey="estado"
+                                            cx="50%"
+                                            cy="50%"
+                                            outerRadius={75}
+                                            innerRadius={42}
+                                            paddingAngle={3}
+                                        >
+                                            {solicitudesEstados.map((entry) => (
+                                                <Cell key={entry.estado} fill={ESTADO_COLORS[entry.estado] ?? "#94a3b8"} />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip
+                                            contentStyle={{ borderRadius: 12, fontSize: 12, border: "1px solid hsl(var(--border))" }}
+                                        />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                                <div className="flex flex-wrap justify-center gap-3">
+                                    {solicitudesEstados.map((e) => (
+                                        <div key={e.estado} className="flex items-center gap-1.5 text-xs font-semibold">
+                                            <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: ESTADO_COLORS[e.estado] ?? "#94a3b8" }} />
+                                            <span className="text-muted-foreground">{e.estado}</span>
+                                            <span className="font-bold text-foreground">{e.cantidad}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </>
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
+
+            {/* Accesos directos */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <Card className="lg:col-span-2 border-border shadow-sm overflow-hidden rounded-2xl">
                     <CardHeader className="bg-muted/40 border-b border-border">

@@ -1,7 +1,8 @@
-# Evitar subir el backup de la base de datos
-backup.sql
+# Backups de base de datos
+*.sql
+backup*/
 
-# Carpetas de dependencias
+# Dependencias
 node_modules/
 
 # Archivos de entorno
@@ -10,3 +11,13 @@ node_modules/
 
 # Docker
 .docker_data/
+
+# Logs
+*.log
+error*.log
+
+# Archivos temporales / basura de dev
+diff*.txt
+null
+tmp/
+backups/

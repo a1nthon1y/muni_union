@@ -1,6 +1,7 @@
 "use client";
 
 import { Bell, User, LogOut, Menu, Home, History } from "lucide-react";
+import { useState } from "react";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -22,18 +23,29 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { NavContent } from "./Sidebar";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
+import api from "@/utils/api";
 
 export function Header() {
     const usuario = useAuthStore((state) => state.usuario);
-    const logout = useAuthStore((state) => state.logout);
+    const logoutStore = useAuthStore((state) => state.logout);
     const pathname = usePathname();
+    const router = useRouter();
+    const [mobileOpen, setMobileOpen] = useState(false);
+
+    const logout = async () => {
+        try { await api.post("/auth/logout"); } catch { /* ignorar errores de red */ }
+        logoutStore();
+        router.push("/login");
+    };
 
     if (!usuario) return null;
 
-    const getInitials = (nombres: string, apellidos: string) => {
-        return `${nombres[0]}${apellidos[0]}`.toUpperCase();
+    const getInitials = (nombres?: string, apellidos?: string) => {
+        const a = nombres?.[0] ?? '';
+        const b = apellidos?.[0] ?? '';
+        return (a + b).toUpperCase() || '??';
     };
 
     return (
@@ -51,7 +63,7 @@ export function Header() {
             {/* LEFT */}
             <div className="flex items-center gap-3">
                 {/* Mobile Menu Trigger */}
-                <Sheet>
+                <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
                     <SheetTrigger asChild>
                         <Button variant="ghost" size="icon" className="md:hidden h-10 w-10 rounded-xl hover:bg-muted/60">
                             <Menu size={20} className="text-foreground" />
@@ -76,6 +88,7 @@ export function Header() {
                                 pathname={pathname}
                                 usuario={usuario}
                                 logout={logout}
+                                onNavClick={() => setMobileOpen(false)}
                             />
                         </div>
 
@@ -83,7 +96,7 @@ export function Header() {
                             <Button
                                 variant="ghost"
                                 className="w-full justify-start gap-3 text-sidebar-foreground/70 hover:text-rose-400 hover:bg-rose-500/10 h-11 rounded-xl transition-all"
-                                onClick={logout}
+                                onClick={() => { logout(); setMobileOpen(false); }}
                             >
                                 <LogOut size={18} />
                                 <span className="font-bold text-[11px] uppercase tracking-wider">Cerrar Sesión</span>

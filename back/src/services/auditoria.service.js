@@ -1,4 +1,8 @@
 import { pool } from "../config/db.js";
+import logger from "../config/logger.js";
+
+// Días de retención — entradas más antiguas se purgan automáticamente
+const RETENTION_DAYS = parseInt(process.env.AUDIT_RETENTION_DAYS ?? "730"); // 2 años por defecto
 
 export const registrarAccion = async ({
   usuario_id,
@@ -26,7 +30,7 @@ export const registrarAccion = async ({
       [usuario_id, tabla_afectada, operacion, registro_id, formattedIp, descripcion]
     );
   } catch (error) {
-    console.error("Error al registrar auditoría:", error.message);
+    logger.warn({ err: error }, "Error al registrar auditoría");
   }
 };
 
@@ -105,4 +109,13 @@ export const listarAuditoria = async (filtros = {}) => {
     data: rows,
     total
   };
+};
+
+// Purgar registros de auditoría más antiguos que RETENTION_DAYS.
+// Se llama automáticamente al arrancar el servidor (ver server.js).
+export const purgarAuditoriaAntigua = async () => {
+  const { rowCount } = await pool.query(
+    `DELETE FROM auditoria WHERE fecha < NOW() - INTERVAL '${RETENTION_DAYS} days'`
+  );
+  return rowCount;
 };

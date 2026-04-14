@@ -15,8 +15,8 @@ import {
     CheckCircle2,
     Trash2,
     AlertCircle,
-    Calendar,
-    Phone
+    Phone,
+    Heart
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -49,10 +49,9 @@ import { documentosService } from "@/services/documentos.service";
 import { Persona } from "@/types/persona";
 import { Acta } from "@/types/acta";
 import { dateUtils } from "@/utils/dateUtils";
-import { OCRScanner } from "@/components/digitalizacion/OCRScanner";
 
 const formSchema = z.object({
-    // Persona
+    // Persona principal
     tipo_documento: z.string().min(1, "Seleccione tipo"),
     dni: z.string().max(15, "Máximo 15 caracteres").optional().or(z.literal("")),
     nombres: z.string().min(2, "Min. 2 caracteres").regex(/^[A-ZÁÉÍÓÚÑ ]+$/i, "Solo letras y espacios").transform(v => v.toUpperCase()),
@@ -63,6 +62,15 @@ const formSchema = z.object({
     telefono: z.string().optional(),
     persona_observaciones: z.string().optional(),
 
+    // Cónyuge (solo para MATRIMONIO)
+    conyuge_tipo_documento: z.string().optional(),
+    conyuge_dni: z.string().max(15).optional().or(z.literal("")),
+    conyuge_nombres: z.string().optional().transform(v => v?.toUpperCase() ?? ""),
+    conyuge_apellido_paterno: z.string().optional().transform(v => v?.toUpperCase() ?? ""),
+    conyuge_apellido_materno: z.string().optional().transform(v => v?.toUpperCase() ?? ""),
+    conyuge_sexo: z.enum(["M", "F"]).optional(),
+    conyuge_fecha_nacimiento: z.string().optional(),
+
     // Acta
     modo: z.enum(["CLASICO", "CUI"]),
     tipo_acta: z.enum(["NACIMIENTO", "MATRIMONIO", "DEFUNCION"]),
@@ -72,14 +80,13 @@ const formSchema = z.object({
     fecha_acta: z.string().min(1, "Obligatorio"),
     acta_observaciones: z.string().optional(),
 }).refine((data) => {
-    if (data.modo === "CLASICO" && (!data.libro || data.libro.trim() === "")) {
-        return false;
-    }
+    if (data.modo === "CLASICO" && (!data.libro || data.libro.trim() === "")) return false;
     return true;
-}, {
-    message: "Libro es obligatorio en modo clásico",
-    path: ["libro"]
-});
+}, { message: "Libro es obligatorio en modo clásico", path: ["libro"] })
+.refine((data) => {
+    if (data.tipo_acta !== "MATRIMONIO") return true;
+    return !!(data.conyuge_nombres?.trim() && data.conyuge_apellido_paterno?.trim() && data.conyuge_apellido_materno?.trim());
+}, { message: "Los datos del cónyuge son obligatorios para matrimonios", path: ["conyuge_nombres"] });
 
 type FormValues = z.infer<typeof formSchema>;
 
@@ -90,6 +97,10 @@ export default function DigitalizacionPage() {
     const [actaEncontrada, setActaEncontrada] = useState<Acta | null>(null);
 
     const [tiposDocumento, setTiposDocumento] = useState<{ id: number, nombre: string }[]>([]);
+    const [personaSecundariaEncontrada, setPersonaSecundariaEncontrada] = useState<Persona | null>(null);
+    const [sugerencia, setSugerencia] = useState<number | null>(null);
+    // Indica si el valor actual del campo fue puesto por la sugerencia automática (no por el usuario)
+    const [esSugerencia, setEsSugerencia] = useState(false);
 
     useEffect(() => {
         personasService.getTiposDocumento()
@@ -116,19 +127,28 @@ export default function DigitalizacionPage() {
             anio: new Date().getFullYear(),
             fecha_acta: dateUtils.formatInputDate(new Date().toISOString()),
             acta_observaciones: "",
+            conyuge_tipo_documento: "DNI",
+            conyuge_dni: "",
+            conyuge_nombres: "",
+            conyuge_apellido_paterno: "",
+            conyuge_apellido_materno: "",
+            conyuge_sexo: "F",
+            conyuge_fecha_nacimiento: "",
         }
     });
 
     const modoValue = form.watch("modo");
 
-    const dniValue = form.watch("dni");
-    const nombresValue = form.watch("nombres");
+    const dniValue      = form.watch("dni");
+    const conygeDniValue = form.watch("conyuge_dni");
+    const nombresValue  = form.watch("nombres");
     const paternoValue = form.watch("apellido_paterno");
     const maternoValue = form.watch("apellido_materno");
     const libroValue = form.watch("libro");
     const numActaValue = form.watch("numero_acta");
     const fechaActaValue = form.watch("fecha_acta");
     const tipoActaValue = form.watch("tipo_acta");
+    const esMatrimonio  = tipoActaValue === "MATRIMONIO";
 
     // Sincronizar año automáticamente con la fecha del acta
     useEffect(() => {
@@ -140,7 +160,39 @@ export default function DigitalizacionPage() {
         }
     }, [fechaActaValue, form]);
 
-    // Autocompletado al digitar DNI / Documento
+    // Auto-fill del siguiente número de acta
+    const anioValue = form.watch("anio");
+    useEffect(() => {
+        const readyClasico = modoValue === "CLASICO" && tipoActaValue && anioValue >= 1900 && libroValue?.trim();
+        const readyCui     = modoValue === "CUI"     && tipoActaValue && anioValue >= 1900;
+        if (!readyClasico && !readyCui) { setSugerencia(null); return; }
+
+        const timer = setTimeout(async () => {
+            try {
+                const res = await actasService.getSiguienteNumero({
+                    tipo_acta: tipoActaValue,
+                    anio:      anioValue,
+                    modo:      modoValue,
+                    libro:     modoValue === "CLASICO" ? libroValue : undefined,
+                });
+                setSugerencia(res.siguiente);
+                // Auto-fill: solo si el campo está vacío o si el valor actual era la sugerencia anterior
+                if (res.siguiente !== null) {
+                    const current = form.getValues("numero_acta");
+                    if (!current || esSugerencia) {
+                        form.setValue("numero_acta", String(res.siguiente));
+                        setEsSugerencia(true);
+                    }
+                }
+            } catch {
+                setSugerencia(null);
+            }
+        }, 400);
+        return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [tipoActaValue, anioValue, libroValue, modoValue]);
+
+    // Autocompletado al digitar DNI / Documento — ciudadano principal
     useEffect(() => {
         if (dniValue && dniValue.length >= 8) {
             personasService.checkDni(dniValue).then(p => {
@@ -156,7 +208,6 @@ export default function DigitalizacionPage() {
                     form.setValue("persona_observaciones", p.observaciones || "");
                     toast.info("Ciudadano identificado.");
                 } else {
-                    // Si no se encuentra, limpiar datos previos para permitir registro nuevo
                     setPersonaEncontrada(null);
                     form.setValue("nombres", "");
                     form.setValue("apellido_paterno", "");
@@ -168,6 +219,43 @@ export default function DigitalizacionPage() {
             });
         }
     }, [dniValue, form]);
+
+    // Autocompletado al digitar DNI / Documento — cónyuge (mismo comportamiento)
+    useEffect(() => {
+        if (!conygeDniValue || conygeDniValue.length < 8) {
+            if (!conygeDniValue) {
+                setPersonaSecundariaEncontrada(null);
+                form.setValue("conyuge_nombres", "");
+                form.setValue("conyuge_apellido_paterno", "");
+                form.setValue("conyuge_apellido_materno", "");
+                form.setValue("conyuge_sexo", "F");
+                form.setValue("conyuge_fecha_nacimiento", "");
+            }
+            return;
+        }
+        const timer = setTimeout(() => {
+            personasService.getAll({ termino: conygeDniValue }).then(res => {
+                const found = res.data?.[0];
+                if (found) {
+                    setPersonaSecundariaEncontrada(found);
+                    form.setValue("conyuge_nombres", found.nombres);
+                    form.setValue("conyuge_apellido_paterno", found.apellido_paterno);
+                    form.setValue("conyuge_apellido_materno", found.apellido_materno);
+                    form.setValue("conyuge_sexo", found.sexo as "M" | "F");
+                    form.setValue("conyuge_fecha_nacimiento", found.fecha_nacimiento ?? "");
+                    toast.info("Cónyuge identificado.");
+                } else {
+                    setPersonaSecundariaEncontrada(null);
+                    form.setValue("conyuge_nombres", "");
+                    form.setValue("conyuge_apellido_paterno", "");
+                    form.setValue("conyuge_apellido_materno", "");
+                    form.setValue("conyuge_sexo", "F");
+                    form.setValue("conyuge_fecha_nacimiento", "");
+                }
+            }).catch(() => {/* silencioso — el usuario puede ingresar manualmente */});
+        }, 400);
+        return () => clearTimeout(timer);
+    }, [conygeDniValue, form]);
 
     // Búsqueda de duplicados por nombre (para verificar homonimias)
     useEffect(() => {
@@ -246,35 +334,15 @@ export default function DigitalizacionPage() {
         }
     }, [numActaValue, libroValue, tipoActaValue, dniValue, modoValue]);
 
-    const handleOCRExtracted = (data: any) => {
-        if (!data) return;
 
-        // Mapear datos de la persona
-        if (data.dni) form.setValue("dni", data.dni);
-        if (data.nombres) form.setValue("nombres", data.nombres.toUpperCase());
-        if (data.apellido_paterno) form.setValue("apellido_paterno", data.apellido_paterno.toUpperCase());
-        if (data.apellido_materno) form.setValue("apellido_materno", data.apellido_materno.toUpperCase());
-        if (data.sexo) form.setValue("sexo", data.sexo as "M" | "F");
-        if (data.fecha_evento) form.setValue("fecha_nacimiento", data.fecha_evento);
-
-        // Mapear datos del acta
-        if (data.tipo_acta) form.setValue("tipo_acta", data.tipo_acta as any);
-        if (data.libro) {
-            form.setValue("modo", "CLASICO");
-            form.setValue("libro", data.libro);
-        }
-        if (data.numero_acta) form.setValue("numero_acta", data.numero_acta);
-        if (data.fecha_evento) form.setValue("fecha_acta", data.fecha_evento);
-        if (data.anio) form.setValue("anio", Number(data.anio));
-
-        toast.success("Campos completados por la IA. Por favor, verifique la información.");
-    };
 
     const resetAll = () => {
         form.reset();
         setFile(null);
         setPersonaEncontrada(null);
         setActaEncontrada(null);
+        setSugerencia(null);
+        setEsSugerencia(false);
         toast.info("Formulario reiniciado");
     };
 
@@ -318,7 +386,33 @@ export default function DigitalizacionPage() {
                 personaId = newPersona.id;
             }
 
-            // 2. Crear o Actualizar Acta
+            // 2. Registrar cónyuge si es matrimonio
+            let personaSecundariaId: number | undefined = personaSecundariaEncontrada?.id;
+            if (values.tipo_acta === "MATRIMONIO") {
+                if (personaSecundariaId) {
+                    await personasService.update(personaSecundariaId, {
+                        tipo_documento_id: tiposDocumento.find(t => t.nombre === values.conyuge_tipo_documento)?.id ?? 1,
+                        nombres: values.conyuge_nombres!,
+                        apellido_paterno: values.conyuge_apellido_paterno!,
+                        apellido_materno: values.conyuge_apellido_materno!,
+                        sexo: values.conyuge_sexo,
+                        fecha_nacimiento: values.conyuge_fecha_nacimiento,
+                    });
+                } else {
+                    const newConyuge = await personasService.create({
+                        tipo_documento_id: tiposDocumento.find(t => t.nombre === values.conyuge_tipo_documento)?.id ?? 1,
+                        dni: values.conyuge_dni,
+                        nombres: values.conyuge_nombres!,
+                        apellido_paterno: values.conyuge_apellido_paterno!,
+                        apellido_materno: values.conyuge_apellido_materno!,
+                        sexo: values.conyuge_sexo,
+                        fecha_nacimiento: values.conyuge_fecha_nacimiento,
+                    });
+                    personaSecundariaId = newConyuge.id;
+                }
+            }
+
+            // 3. Crear o Actualizar Acta
             const getPrefix = (tipo: string) => {
                 switch (tipo) {
                     case 'NACIMIENTO': return 'NAC';
@@ -339,6 +433,7 @@ export default function DigitalizacionPage() {
                     anio: values.anio,
                     fecha_acta: values.fecha_acta,
                     persona_principal_id: personaId,
+                    persona_secundaria_id: personaSecundariaId ?? null,
                     observaciones: values.acta_observaciones
                 });
                 currentActaId = updatedActa.id;
@@ -349,6 +444,7 @@ export default function DigitalizacionPage() {
                     anio: values.anio,
                     fecha_acta: values.fecha_acta,
                     persona_principal_id: personaId as number,
+                    persona_secundaria_id: personaSecundariaId ?? null,
                     observaciones: values.acta_observaciones
                 });
                 currentActaId = newActa.id;
@@ -375,406 +471,469 @@ export default function DigitalizacionPage() {
     };
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-500">
-            {/* Header de la Página */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="space-y-1">
-                    <div className="flex items-center gap-3 text-foreground">
-                        <div className="bg-primary p-2.5 rounded-xl shadow-primary/20 shadow-lg">
-                            <FileDigit className="h-6 w-6 text-white" />
-                        </div>
-                        <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">Consola de Digitalización</h1>
-                    </div>
-                    <p className="text-muted-foreground font-medium text-xs ml-1">
-                        Gestión eficiente y procesamiento de archivo digital de actas y documentos.
-                    </p>
-                </div>
+        <div className="animate-in fade-in duration-500 pb-24">
 
-                <OCRScanner onDataExtracted={handleOCRExtracted} />
+            {/* ── Header ─────────────────────────────────────────────────────── */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+                <div className="flex items-center gap-3 text-foreground">
+                    <div className="bg-primary p-2.5 rounded-xl shadow-primary/20 shadow-lg shrink-0">
+                        <FileDigit className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                        <h1 className="text-xl sm:text-2xl font-semibold tracking-tight leading-none">
+                            Consola de Digitalización
+                        </h1>
+                        <p className="text-muted-foreground font-medium text-[11px] mt-0.5">
+                            Registro integral de actas y archivo digital
+                        </p>
+                    </div>
+                </div>
+                {/* indicador compacto visible en tablet+ */}
+                <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl border bg-card text-xs font-semibold">
+                    <div className={cn("h-2 w-2 rounded-full shrink-0", file ? "bg-emerald-500" : "bg-amber-400")} />
+                    {file ? `Archivo: ${file.name.slice(0, 22)}…` : "Sin documento adjunto"}
+                </div>
             </div>
 
             <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 space-y-4">
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 items-start">
+                <form onSubmit={form.handleSubmit(onSubmit)}>
 
-                        {/* COLUMNA IZQUIERDA: DATOS DEL CIUDADANO (7/12) */}
-                        <div className="lg:col-span-7 space-y-3">
+                    {/* ── Grid principal ─────────────────────────────────────────── */}
+                    {/*  mobile:  1 col stacked                                       */}
+                    {/*  md:      2 col — 7 + 5                                       */}
+                    {/*  xl:      3 col — 5 + 4 + 3  (ciudadano | acta | upload)      */}
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-start">
+
+                        {/* ╔══════════════════════════════╗
+                            ║  1. INFORMACIÓN DEL CIUDADANO  ║  md:7  xl:5
+                            ╚══════════════════════════════╝ */}
+                        <div className="md:col-span-7 xl:col-span-5 space-y-3">
                             <Card className="shadow-sm border-border rounded-2xl overflow-hidden bg-card py-0 gap-0">
-                                <CardHeader className="h-9 flex items-center px-5 border-b bg-muted/40 !py-0 !pb-0">
-                                    <div className="flex items-center gap-2 text-foreground">
-                                        <User size={14} className="text-primary" />
-                                        <CardTitle className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/80 leading-none">1. INFORMACIÓN DEL CIUDADANO</CardTitle>
+                                <CardHeader className="h-9 flex items-center px-4 border-b bg-muted/40 py-0! pb-0!">
+                                    <div className="flex items-center gap-2">
+                                        <User size={13} className="text-primary shrink-0" />
+                                        <CardTitle className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/80 leading-none">
+                                            1. Información del Ciudadano
+                                        </CardTitle>
                                     </div>
                                 </CardHeader>
-                                <CardContent className="px-5 py-4 space-y-3.5">
-                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                                        <FormField
-                                            control={form.control}
-                                            name="tipo_documento"
-                                            render={({ field }) => (
+                                <CardContent className="px-4 py-4 space-y-3">
+
+                                    {/* Fila 1: Tipo(3) | N°Doc(4) | F.Nac(3) | Sexo(2) = 12 cols */}
+                                    <div className="grid grid-cols-12 gap-2">
+                                        <div className="col-span-3">
+                                            <FormField control={form.control} name="tipo_documento" render={({ field }) => (
                                                 <FormItem>
-                                                    <FormLabel className="std-label mb-1.5 uppercase font-bold text-[10px] text-primary">Tipo Doc.</FormLabel>
+                                                    <FormLabel className="std-label">Tipo Doc.</FormLabel>
                                                     <Select onValueChange={field.onChange} value={field.value} disabled={!!personaEncontrada}>
                                                         <FormControl>
-                                                            <SelectTrigger className={cn("std-input h-10 font-bold bg-muted/20 border-primary/20", !!personaEncontrada && "opacity-80")}>
+                                                            <SelectTrigger className={cn("std-input h-9 text-xs font-semibold", !!personaEncontrada && "opacity-70")}>
                                                                 <SelectValue placeholder="—" />
                                                             </SelectTrigger>
                                                         </FormControl>
                                                         <SelectContent>
-                                                            {tiposDocumento.length > 0 ? (
-                                                                tiposDocumento.map((tipo) => (
-                                                                    <SelectItem key={tipo.id} value={tipo.nombre} className="font-semibold text-xs">
-                                                                        {tipo.nombre}
-                                                                    </SelectItem>
-                                                                ))
-                                                            ) : (
-                                                                <SelectItem value="DNI" className="font-semibold text-xs">DNI</SelectItem>
-                                                            )}
+                                                            {tiposDocumento.length > 0
+                                                                ? tiposDocumento.map(t => <SelectItem key={t.id} value={t.nombre} className="font-semibold text-xs">{t.nombre}</SelectItem>)
+                                                                : <SelectItem value="DNI" className="font-semibold text-xs">DNI</SelectItem>}
                                                         </SelectContent>
                                                     </Select>
                                                     <FormMessage />
                                                 </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name="dni"
-                                            render={({ field }) => (
+                                            )} />
+                                        </div>
+
+                                        <div className="col-span-4">
+                                            <FormField control={form.control} name="dni" render={({ field }) => (
                                                 <FormItem>
-                                                    <FormLabel className="std-label mb-1.5">N° Documento</FormLabel>
+                                                    <FormLabel className="std-label">N° Documento</FormLabel>
                                                     <FormControl>
-                                                        <Input
-                                                            placeholder="Número..."
-                                                            {...field}
-                                                            maxLength={15}
-                                                            className="std-input text-sm font-semibold tracking-widest focus-visible:ring-primary"
-                                                        />
+                                                        <Input {...field} maxLength={15} placeholder="Número..."
+                                                            className="std-input h-9 text-sm font-semibold tracking-widest" />
                                                     </FormControl>
                                                     <FormMessage />
                                                 </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name="fecha_nacimiento"
-                                            render={({ field }) => (
+                                            )} />
+                                        </div>
+
+                                        <div className="col-span-3">
+                                            <FormField control={form.control} name="fecha_nacimiento" render={({ field }) => (
                                                 <FormItem>
-                                                    <FormLabel className="std-label mb-1.5">F. Nacimiento</FormLabel>
+                                                    <FormLabel className="std-label">F. Nacimiento</FormLabel>
                                                     <FormControl>
-                                                        <div className="relative">
-                                                            <Input type="date" {...field} className="std-input pl-9 text-xs" disabled={!!personaEncontrada} />
-                                                            <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground/50" />
-                                                        </div>
+                                                        <Input type="date" {...field}
+                                                            className="std-input h-9 text-xs"
+                                                            disabled={!!personaEncontrada} />
                                                     </FormControl>
                                                     <FormMessage />
                                                 </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name="sexo"
-                                            render={({ field }) => (
+                                            )} />
+                                        </div>
+
+                                        <div className="col-span-2">
+                                            <FormField control={form.control} name="sexo" render={({ field }) => (
                                                 <FormItem>
-                                                    <FormLabel className="std-label mb-1.5">Sexo</FormLabel>
-                                                    <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value} disabled={!!personaEncontrada}>
+                                                    <FormLabel className="std-label">Sexo</FormLabel>
+                                                    <Select onValueChange={field.onChange} value={field.value} disabled={!!personaEncontrada}>
                                                         <FormControl>
-                                                            <SelectTrigger className="std-input font-semibold text-sm">
-                                                                <SelectValue />
+                                                            <SelectTrigger className="std-input h-9 font-bold text-xs justify-center gap-1 px-2 [&>span]:flex-none">
+                                                                <span className="font-bold">{field.value || "—"}</span>
                                                             </SelectTrigger>
                                                         </FormControl>
                                                         <SelectContent>
-                                                            <SelectItem value="M" className="font-semibold">M</SelectItem>
-                                                            <SelectItem value="F" className="font-semibold">F</SelectItem>
+                                                            <SelectItem value="M" className="font-semibold text-xs">M — Masculino</SelectItem>
+                                                            <SelectItem value="F" className="font-semibold text-xs">F — Femenino</SelectItem>
                                                         </SelectContent>
                                                     </Select>
                                                     <FormMessage />
                                                 </FormItem>
-                                            )}
-                                        />
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                                        <FormField
-                                            control={form.control}
-                                            name="nombres"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel className="std-label mb-1.5">Nombres</FormLabel>
-                                                    <FormControl>
-                                                        <Input
-                                                            {...field}
-                                                            disabled={!!personaEncontrada}
-                                                            placeholder="Nombres"
-                                                            className="std-input font-semibold uppercase tracking-tight text-xs"
-                                                            onChange={(e) => field.onChange(e.target.value.toUpperCase())}
-                                                        />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name="apellido_paterno"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel className="std-label mb-1.5">Ap. Paterno</FormLabel>
-                                                    <FormControl>
-                                                        <Input
-                                                            {...field}
-                                                            disabled={!!personaEncontrada}
-                                                            placeholder="Paterno"
-                                                            className="std-input font-semibold uppercase tracking-tight text-xs"
-                                                            onChange={(e) => field.onChange(e.target.value.toUpperCase())}
-                                                        />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name="apellido_materno"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel className="std-label mb-1.5">Ap. Materno</FormLabel>
-                                                    <FormControl>
-                                                        <Input
-                                                            {...field}
-                                                            disabled={!!personaEncontrada}
-                                                            placeholder="Materno"
-                                                            className="std-input font-semibold uppercase tracking-tight text-xs"
-                                                            onChange={(e) => field.onChange(e.target.value.toUpperCase())}
-                                                        />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-12 gap-2">
-                                        <div className="md:col-span-4">
-                                            <FormField
-                                                control={form.control}
-                                                name="telefono"
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel className="std-label mb-1.5">Teléfono</FormLabel>
-                                                        <FormControl>
-                                                            <div className="relative">
-                                                                <Input placeholder="Opcional" {...field} disabled={!!personaEncontrada} className="std-input pl-9 text-xs" />
-                                                                <Phone size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/50" />
-                                                            </div>
-                                                        </FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                        </div>
-                                        <div className="md:col-span-8">
-                                            <FormField
-                                                control={form.control}
-                                                name="persona_observaciones"
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel className="std-label mb-1.5 text-muted-foreground">Observaciones del Ciudadano</FormLabel>
-                                                        <FormControl>
-                                                            <Textarea
-                                                                {...field}
-                                                                disabled={!!personaEncontrada}
-                                                                placeholder="Aclaraciones..."
-                                                                className="std-input min-h-[40px] py-2 resize-none border-border/60 bg-muted/20 text-xs"
-                                                            />
-                                                        </FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
+                                            )} />
                                         </div>
                                     </div>
+
+                                    {/* Fila 2: nombres */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                                        <FormField control={form.control} name="nombres" render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="std-label">Nombres</FormLabel>
+                                                <FormControl>
+                                                    <Input {...field} disabled={!!personaEncontrada} placeholder="NOMBRES"
+                                                        className="std-input h-9 font-semibold uppercase text-xs"
+                                                        onChange={(e) => field.onChange(e.target.value.toUpperCase())} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
+                                        <FormField control={form.control} name="apellido_paterno" render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="std-label">Ap. Paterno</FormLabel>
+                                                <FormControl>
+                                                    <Input {...field} disabled={!!personaEncontrada} placeholder="PATERNO"
+                                                        className="std-input h-9 font-semibold uppercase text-xs"
+                                                        onChange={(e) => field.onChange(e.target.value.toUpperCase())} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
+                                        <FormField control={form.control} name="apellido_materno" render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="std-label">Ap. Materno</FormLabel>
+                                                <FormControl>
+                                                    <Input {...field} disabled={!!personaEncontrada} placeholder="MATERNO"
+                                                        className="std-input h-9 font-semibold uppercase text-xs"
+                                                        onChange={(e) => field.onChange(e.target.value.toUpperCase())} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
+                                    </div>
+
+                                    {/* Fila 3: teléfono + observaciones */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                                        <FormField control={form.control} name="telefono" render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="std-label">Teléfono</FormLabel>
+                                                <FormControl>
+                                                    <div className="relative">
+                                                        <Input {...field} disabled={!!personaEncontrada} placeholder="Opcional"
+                                                            className="std-input h-9 pl-8 text-xs" />
+                                                        <Phone size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/40 pointer-events-none" />
+                                                    </div>
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
+                                        <FormField control={form.control} name="persona_observaciones" render={({ field }) => (
+                                            <FormItem className="sm:col-span-2">
+                                                <FormLabel className="std-label">Observaciones</FormLabel>
+                                                <FormControl>
+                                                    <Textarea {...field} disabled={!!personaEncontrada} placeholder="Aclaraciones adicionales..."
+                                                        className="std-input min-h-[36px] py-2 resize-none text-xs" rows={1} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
+                                    </div>
+
+                                    {/* Persona identificada */}
+                                    {personaEncontrada && (
+                                        <div className="flex items-center gap-2 px-3 py-2 bg-emerald-50 dark:bg-emerald-950/20 rounded-xl border border-emerald-200 dark:border-emerald-900/30">
+                                            <CheckCircle2 size={13} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
+                                            <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide">
+                                                Ciudadano identificado — ID #{personaEncontrada.id}
+                                            </span>
+                                        </div>
+                                    )}
                                 </CardContent>
                             </Card>
+
+                            {/* ── CÓNYUGE: en mobile/md debajo del ciudadano; en xl debajo también ── */}
+                            {esMatrimonio && (
+                                <Card className="shadow-sm border-purple-200 dark:border-purple-900/40 rounded-2xl overflow-hidden bg-card py-0 gap-0">
+                                    <CardHeader className="h-9 flex items-center px-4 border-b bg-purple-50/60 dark:bg-purple-950/20 py-0! pb-0!">
+                                        <div className="flex items-center gap-2">
+                                            <Heart size={13} className="text-purple-500 shrink-0" />
+                                            <CardTitle className="text-[11px] font-bold uppercase tracking-widest text-purple-600 dark:text-purple-400 leading-none">
+                                                Cónyuge — Obligatorio en Matrimonio
+                                            </CardTitle>
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent className="px-4 py-4 space-y-3">
+                                        {/* N° documento cónyuge — búsqueda automática al tipear ≥8 caracteres */}
+                                        <FormField control={form.control} name="conyuge_dni" render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="std-label">N° Documento Cónyuge</FormLabel>
+                                                <FormControl>
+                                                    <Input {...field} maxLength={15} placeholder="Número de documento..."
+                                                        className={cn(
+                                                            "std-input h-9 text-sm font-semibold tracking-widest",
+                                                            personaSecundariaEncontrada && "border-purple-300 dark:border-purple-700"
+                                                        )} />
+                                                </FormControl>
+                                            </FormItem>
+                                        )} />
+
+                                        {/* nombres cónyuge */}
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                                            <FormField control={form.control} name="conyuge_nombres" render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="std-label">Nombres</FormLabel>
+                                                    <FormControl><Input {...field} placeholder="NOMBRES" className="std-input h-9 text-xs uppercase" onChange={(e) => field.onChange(e.target.value.toUpperCase())} /></FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )} />
+                                            <FormField control={form.control} name="conyuge_apellido_paterno" render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="std-label">Ap. Paterno</FormLabel>
+                                                    <FormControl><Input {...field} placeholder="PATERNO" className="std-input h-9 text-xs uppercase" onChange={(e) => field.onChange(e.target.value.toUpperCase())} /></FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )} />
+                                            <FormField control={form.control} name="conyuge_apellido_materno" render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="std-label">Ap. Materno</FormLabel>
+                                                    <FormControl><Input {...field} placeholder="MATERNO" className="std-input h-9 text-xs uppercase" onChange={(e) => field.onChange(e.target.value.toUpperCase())} /></FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )} />
+                                        </div>
+
+                                        {/* Sexo (2/12) + F.Nacimiento (5/12) */}
+                                        <div className="grid grid-cols-12 gap-2">
+                                            <div className="col-span-2">
+                                                <FormField control={form.control} name="conyuge_sexo" render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel className="std-label">Sexo</FormLabel>
+                                                        <Select onValueChange={field.onChange} value={field.value} defaultValue="F">
+                                                            <FormControl>
+                                                                <SelectTrigger className="std-input h-9 font-bold text-xs justify-center gap-1 px-2 [&>span]:flex-none">
+                                                                    <span className="font-bold">{field.value || "—"}</span>
+                                                                </SelectTrigger>
+                                                            </FormControl>
+                                                            <SelectContent>
+                                                                <SelectItem value="M" className="font-semibold text-xs">M — Masculino</SelectItem>
+                                                                <SelectItem value="F" className="font-semibold text-xs">F — Femenino</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </FormItem>
+                                                )} />
+                                            </div>
+                                            <div className="col-span-5">
+                                                <FormField control={form.control} name="conyuge_fecha_nacimiento" render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel className="std-label">F. Nacimiento</FormLabel>
+                                                        <FormControl><Input type="date" {...field} className="std-input h-9 text-xs" /></FormControl>
+                                                    </FormItem>
+                                                )} />
+                                            </div>
+                                        </div>
+
+                                        {personaSecundariaEncontrada && (
+                                            <div className="flex items-center gap-2 px-3 py-2 bg-purple-50 dark:bg-purple-950/20 rounded-xl border border-purple-200 dark:border-purple-900/30">
+                                                <CheckCircle2 size={13} className="text-purple-500 shrink-0" />
+                                                <span className="text-[10px] font-bold text-purple-600 dark:text-purple-400 uppercase">
+                                                    Vinculado a registro existente ID #{personaSecundariaEncontrada.id}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            )}
                         </div>
 
-                        {/* COLUMNA DERECHA: DATOS DEL ACTA Y ARCHIVO (5/12) */}
-                        <div className="lg:col-span-5 space-y-3">
+                        {/* ╔════════════════╗
+                            ║  2. ACTA + FILE  ║  md:5  xl:4
+                            ╚════════════════╝ */}
+                        <div className="md:col-span-5 xl:col-span-4 space-y-3">
                             <Card className="shadow-sm border-border rounded-2xl overflow-hidden bg-card py-0 gap-0">
-                                <CardHeader className="h-9 flex items-center px-5 border-b bg-muted/40 !py-0 !pb-0">
-                                    <div className="flex items-center gap-2 text-foreground">
-                                        <FileText size={14} className="text-primary" />
-                                        <CardTitle className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/80 leading-none">2. Especificaciones del Acta</CardTitle>
+                                <CardHeader className="h-9 flex items-center px-4 border-b bg-muted/40 py-0! pb-0!">
+                                    <div className="flex items-center gap-2">
+                                        <FileText size={13} className="text-primary shrink-0" />
+                                        <CardTitle className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/80 leading-none">
+                                            2. Especificaciones del Acta
+                                        </CardTitle>
                                     </div>
                                 </CardHeader>
-                                <CardContent className="px-5 py-4 space-y-3.5">
-                                    <div className="flex p-1 bg-muted/60 rounded-xl mb-4 w-fit">
-                                        <Button
-                                            type="button"
-                                            variant={modoValue === 'CLASICO' ? 'default' : 'ghost'}
-                                            size="sm"
-                                            className={cn("rounded-lg h-7 text-[9px] font-black uppercase tracking-widest px-4", modoValue === 'CLASICO' && "shadow-sm bg-primary")}
-                                            onClick={() => form.setValue("modo", "CLASICO")}
-                                        >
+                                <CardContent className="px-4 py-4 space-y-3">
+
+                                    {/* Toggle libro / CUI */}
+                                    <div className="flex p-1 bg-muted/60 rounded-xl w-fit">
+                                        <Button type="button" variant={modoValue === 'CLASICO' ? 'default' : 'ghost'} size="sm"
+                                            className={cn("rounded-lg h-7 text-[9px] font-black uppercase tracking-widest px-3.5", modoValue === 'CLASICO' && "bg-primary shadow-sm")}
+                                            onClick={() => form.setValue("modo", "CLASICO")}>
                                             Libro Clásico
                                         </Button>
-                                        <Button
-                                            type="button"
-                                            variant={modoValue === 'CUI' ? 'default' : 'ghost'}
-                                            size="sm"
-                                            className={cn("rounded-lg h-7 text-[9px] font-black uppercase tracking-widest px-4", modoValue === 'CUI' && "shadow-sm bg-primary")}
-                                            onClick={() => form.setValue("modo", "CUI")}
-                                        >
+                                        <Button type="button" variant={modoValue === 'CUI' ? 'default' : 'ghost'} size="sm"
+                                            className={cn("rounded-lg h-7 text-[9px] font-black uppercase tracking-widest px-3.5", modoValue === 'CUI' && "bg-primary shadow-sm")}
+                                            onClick={() => form.setValue("modo", "CUI")}>
                                             RENIEC (CUI)
                                         </Button>
                                     </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                        <div className="md:col-span-12 lg:col-span-7">
-                                            <FormField
-                                                control={form.control}
-                                                name="tipo_acta"
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel className="std-label mb-1.5 uppercase font-bold text-[10px] text-primary">Tipo de Acta</FormLabel>
-                                                        <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!!actaEncontrada} value={field.value}>
-                                                            <FormControl>
-                                                                <SelectTrigger className="std-input font-bold text-xs h-10 border-primary/10">
-                                                                    <SelectValue />
-                                                                </SelectTrigger>
-                                                            </FormControl>
-                                                            <SelectContent>
-                                                                <SelectItem value="NACIMIENTO" className="font-semibold text-xs">NACIMIENTO</SelectItem>
-                                                                <SelectItem value="MATRIMONIO" className="font-semibold text-xs">MATRIMONIO</SelectItem>
-                                                                <SelectItem value="DEFUNCION" className="font-semibold text-xs">DEFUNCIÓN</SelectItem>
-                                                            </SelectContent>
-                                                        </Select>
-                                                    </FormItem>
-                                                )}
-                                            />
-                                        </div>
-                                        <div className="md:col-span-12 lg:col-span-5">
-                                            <FormField
-                                                control={form.control}
-                                                name="fecha_acta"
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel className="std-label mb-1.5">F. Registro</FormLabel>
-                                                        <FormControl>
-                                                            <Input type="date" {...field} disabled={!!actaEncontrada} className="std-input text-xs font-semibold h-10" />
-                                                        </FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                        </div>
-                                    </div>
+                                    {/* tipo acta + fecha */}
+                                    <div className="grid grid-cols-2 gap-2.5">
+                                        <FormField control={form.control} name="tipo_acta" render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="std-label">Tipo de Acta</FormLabel>
+                                                <Select onValueChange={field.onChange} value={field.value} disabled={!!actaEncontrada}>
+                                                    <FormControl>
+                                                        <SelectTrigger className="std-input h-9 font-bold text-xs">
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                    </FormControl>
+                                                    <SelectContent>
+                                                        <SelectItem value="NACIMIENTO" className="font-semibold text-xs">Nacimiento</SelectItem>
+                                                        <SelectItem value="MATRIMONIO" className="font-semibold text-xs">Matrimonio</SelectItem>
+                                                        <SelectItem value="DEFUNCION" className="font-semibold text-xs">Defunción</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </FormItem>
+                                        )} />
 
-                                    <div className="grid grid-cols-1 md:grid-cols-12 gap-2">
-                                        {modoValue === 'CLASICO' && (
-                                            <div className="md:col-span-4">
-                                                <FormField
-                                                    control={form.control}
-                                                    name="libro"
-                                                    render={({ field }) => (
-                                                        <FormItem>
-                                                            <FormLabel className="std-label mb-1.5 uppercase font-bold text-[10px] text-primary">Libro N°</FormLabel>
-                                                            <FormControl>
-                                                                <Input
-                                                                    {...field}
-                                                                    placeholder="LIBRO"
-                                                                    disabled={!!actaEncontrada}
-                                                                    className="std-input font-bold bg-primary/5 border-primary/20 text-center text-sm h-10"
-                                                                />
-                                                            </FormControl>
-                                                            <FormMessage />
-                                                        </FormItem>
-                                                    )}
-                                                />
-                                            </div>
-                                        )}
-                                        <div className={cn(modoValue === 'CLASICO' ? "md:col-span-5" : "md:col-span-9")}>
-                                            <FormField
-                                                control={form.control}
-                                                name="numero_acta"
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <div className="flex items-center justify-between mb-1.5 ">
-                                                            <FormLabel className="std-label m-0 p-0 leading-none">
-                                                                {modoValue === 'CLASICO' ? 'N° DE ACTA' : 'CUI / IDENTIFICADOR'}
-                                                            </FormLabel>
-                                                            {modoValue === 'CLASICO' && (libroValue || numActaValue) && (
-                                                                <Badge variant="outline" className="h-4 px-1 text-[8px] bg-primary/5 text-primary border-primary/20 font-bold">
-                                                                    PREVIEW: {tipoActaValue.substring(0, 3)}-L{libroValue || '?'}-{numActaValue || '?'}
-                                                                </Badge>
-                                                            )}
-                                                        </div>
-                                                        <FormControl>
-                                                            <Input
-                                                                {...field}
-                                                                placeholder={modoValue === 'CLASICO' ? "ACTA" : "CÓDIGO CUI"}
-                                                                disabled={!!actaEncontrada}
-                                                                className="std-input font-black uppercase text-sm tracking-widest h-10"
-                                                                onChange={(e) => field.onChange(e.target.value.toUpperCase())}
-                                                            />
-                                                        </FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                        </div>
-                                        <div className="md:col-span-3">
-                                            <FormField
-                                                control={form.control}
-                                                name="anio"
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel className="std-label mb-1.5">Año</FormLabel>
-                                                        <FormControl>
-                                                            <Input type="number" {...field} disabled className="std-input bg-muted/50 text-muted-foreground font-bold text-xs h-10" />
-                                                        </FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <FormField
-                                        control={form.control}
-                                        name="acta_observaciones"
-                                        render={({ field }) => (
-                                            <FormItem className="space-y-1">
-                                                <FormLabel className="std-label mb-1.5">Notas del Acta</FormLabel>
+                                        <FormField control={form.control} name="fecha_acta" render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="std-label">F. Registro</FormLabel>
                                                 <FormControl>
-                                                    <Textarea
-                                                        {...field}
-                                                        disabled={!!actaEncontrada}
-                                                        placeholder="Observaciones..."
-                                                        className="std-input min-h-[40px] py-1 resize-none border-border/60 bg-muted/20 text-xs"
-                                                    />
+                                                    <Input type="date" {...field} disabled={!!actaEncontrada} className="std-input h-9 text-xs font-semibold" />
                                                 </FormControl>
                                                 <FormMessage />
                                             </FormItem>
+                                        )} />
+                                    </div>
+
+                                    {/* libro / n° acta / año */}
+                                    <div className="grid grid-cols-12 gap-2">
+                                        {modoValue === 'CLASICO' && (
+                                            <div className="col-span-4">
+                                                <FormField control={form.control} name="libro" render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel className="std-label">Libro N°</FormLabel>
+                                                        <FormControl>
+                                                            <Input {...field} placeholder="N°" disabled={!!actaEncontrada}
+                                                                className="std-input h-9 font-bold text-center text-sm" />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )} />
+                                            </div>
                                         )}
-                                    />
+                                        <div className={cn(modoValue === 'CLASICO' ? "col-span-5" : "col-span-9")}>
+                                            <FormField control={form.control} name="numero_acta" render={({ field }) => (
+                                                <FormItem>
+                                                    <div className="flex items-center justify-between mb-1">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <FormLabel className="std-label m-0 leading-none">
+                                                                {modoValue === 'CLASICO' ? 'N° Acta' : 'CUI / ID'}
+                                                            </FormLabel>
+                                                            {esSugerencia && numActaValue && (
+                                                                <span className="text-[9px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 px-1 py-0.5 rounded">
+                                                                    AUTO
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        {modoValue === 'CLASICO' && (libroValue || numActaValue) && (
+                                                            <Badge variant="outline" className="h-4 px-1 text-[8px] bg-primary/5 text-primary border-primary/20 font-bold shrink-0">
+                                                                {tipoActaValue.substring(0, 3)}-L{libroValue || '?'}-{numActaValue || '?'}
+                                                            </Badge>
+                                                        )}
+                                                    </div>
+                                                    <FormControl>
+                                                        <Input
+                                                            {...field}
+                                                            disabled={!!actaEncontrada}
+                                                            placeholder={modoValue === 'CLASICO' ? "Número" : "Código CUI"}
+                                                            className={cn(
+                                                                "std-input h-9 font-black uppercase text-sm tracking-widest",
+                                                                esSugerencia && numActaValue && "border-emerald-300 dark:border-emerald-700"
+                                                            )}
+                                                            onChange={(e) => {
+                                                                field.onChange(e.target.value.toUpperCase());
+                                                                setEsSugerencia(false);
+                                                            }}
+                                                        />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )} />
+                                        </div>
+                                        <div className="col-span-3">
+                                            <FormField control={form.control} name="anio" render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="std-label">Año</FormLabel>
+                                                    <FormControl>
+                                                        <Input type="number" {...field} disabled
+                                                            className="std-input h-9 bg-muted/50 text-muted-foreground font-bold text-xs text-center" />
+                                                    </FormControl>
+                                                </FormItem>
+                                            )} />
+                                        </div>
+                                    </div>
+
+                                    <FormField control={form.control} name="acta_observaciones" render={({ field }) => (
+                                        <FormItem>
+                                                    <FormLabel className="std-label">Observaciones</FormLabel>
+                                                    <FormControl>
+                                                        <Textarea {...field} disabled={!!actaEncontrada} placeholder="Notas adicionales del acta..."
+                                                            className="std-input min-h-[36px] py-2 resize-none text-xs" rows={1} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )} />
                                 </CardContent>
                             </Card>
+                        </div>
 
-                            {/* SECCIÓN 3: DOCUMENTO DIGITAL */}
-                            <Card className="shadow-sm border-border rounded-2xl overflow-hidden bg-card py-0 gap-0">
-                                <CardHeader className="h-9 flex items-center px-5 border-b bg-muted/40 !py-0 !pb-0">
-                                    <div className="flex items-center gap-2 text-foreground">
-                                        <Upload size={14} className="text-primary" />
-                                        <CardTitle className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/80 leading-none">3. Archivo Digitalizado</CardTitle>
+                        {/* ╔══════════════════╗
+                            ║  3. ARCHIVO FILE   ║  md:full-row en mobile/md, xl:3
+                            ╚══════════════════╝ */}
+                        <div className="md:col-span-12 xl:col-span-3 space-y-3">
+                            <Card className="shadow-sm border-border rounded-2xl overflow-hidden bg-card py-0 gap-0 h-full">
+                                <CardHeader className="h-9 flex items-center px-4 border-b bg-muted/40 py-0! pb-0!">
+                                    <div className="flex items-center gap-2">
+                                        <Upload size={13} className="text-primary shrink-0" />
+                                        <CardTitle className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/80 leading-none">
+                                            3. Archivo Digitalizado
+                                        </CardTitle>
                                     </div>
                                 </CardHeader>
-                                <CardContent className="px-5 py-4">
+                                <CardContent className="px-4 py-4 flex flex-col gap-3">
+
+                                    {/* input siempre en DOM — permite reemplazar archivo */}
+                                    <input
+                                        type="file"
+                                        className="hidden"
+                                        id="file-upload-main"
+                                        onChange={(e) => e.target.files && setFile(e.target.files[0])}
+                                        accept="application/pdf,image/*"
+                                    />
+
+                                    {/* zona drag-and-drop */}
                                     <div
                                         className={cn(
-                                            "border-2 border-dashed rounded-2xl p-3 text-center transition-all cursor-pointer relative group",
+                                            "border-2 border-dashed rounded-2xl transition-all cursor-pointer group",
+                                            "flex xl:flex-col items-center gap-3 xl:justify-center p-4 xl:py-6 xl:min-h-[140px]",
                                             file
-                                                ? "border-primary bg-primary/5 shadow-inner"
-                                                : "border-border hover:border-primary/50 hover:bg-muted/30"
+                                                ? "border-primary/60 bg-primary/5"
+                                                : "border-border/70 hover:border-primary/50 hover:bg-muted/20 dark:border-border"
                                         )}
                                         onDragOver={(e) => e.preventDefault()}
                                         onDrop={(e) => {
@@ -783,110 +942,89 @@ export default function DigitalizacionPage() {
                                         }}
                                         onClick={() => document.getElementById('file-upload-main')?.click()}
                                     >
-                                        <div className="flex flex-col items-center">
-                                            {file ? (
-                                                <div className="bg-primary/20 p-2 rounded-full mb-1 group-hover:scale-110 transition-transform">
-                                                    <CheckCircle2 className="h-6 w-6 text-primary" />
-                                                </div>
-                                            ) : (
-                                                <div className="bg-muted p-2 rounded-full mb-1 group-hover:scale-110 transition-transform">
-                                                    <Upload className="h-6 w-6 text-muted-foreground/30" />
-                                                </div>
-                                            )}
-
-                                            <span className="font-bold text-foreground text-xs tracking-tight uppercase">
-                                                {file ? file.name : "Subir Documento Digital"}
-                                            </span>
-                                            <span className="text-[9px] text-muted-foreground/60 mt-0.5 uppercase font-bold tracking-wider">
-                                                {file ? `${(file.size / 1024 / 1024).toFixed(2)} MB — LISTO` : "PDF, JPG o PNG (MAX 10MB)"}
-                                            </span>
-
-                                            {file && (
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    type="button"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setFile(null);
-                                                    }}
-                                                    className="mt-6 text-rose-500 hover:text-rose-600 hover:bg-rose-50 font-black uppercase text-[10px] tracking-wider h-10 px-4 rounded-2xl border border-rose-100"
-                                                >
-                                                    <Trash2 size={14} className="mr-2" /> Eliminar Archivo
-                                                </Button>
-                                            )}
-                                        </div>
-                                        {!file && (
-                                            <>
-                                                <input
-                                                    type="file"
-                                                    className="hidden"
-                                                    id="file-upload-main"
-                                                    onChange={(e) => e.target.files && setFile(e.target.files[0])}
-                                                    accept="application/pdf,image/*"
-                                                />
-                                                <Button type="button" variant="outline" className="mt-6 border-slate-200 h-12 px-8 rounded-2xl font-bold uppercase text-[10px] tracking-widest bg-card">
-                                                    Examinar Archivos
-                                                </Button>
-                                            </>
+                                        {file ? (
+                                            <div className="bg-primary/20 p-2.5 rounded-full group-hover:scale-110 transition-transform shrink-0">
+                                                <CheckCircle2 className="h-5 w-5 text-primary" />
+                                            </div>
+                                        ) : (
+                                            <div className="bg-muted/80 p-2.5 rounded-full group-hover:scale-110 transition-transform shrink-0">
+                                                <Upload className="h-5 w-5 text-muted-foreground/50" />
+                                            </div>
                                         )}
+
+                                        <div className="flex flex-col xl:items-center xl:text-center gap-0.5 min-w-0">
+                                            <span className="font-bold text-foreground text-xs uppercase tracking-tight leading-tight truncate max-w-full">
+                                                {file ? file.name : "Arrastra o haz clic"}
+                                            </span>
+                                            <span className="text-[10px] text-muted-foreground/60 font-semibold uppercase">
+                                                {file ? `${(file.size / 1024 / 1024).toFixed(2)} MB — listo` : "PDF · JPG · PNG · máx 20 MB"}
+                                            </span>
+                                        </div>
                                     </div>
 
-                                    {!file && (
-                                        <div className="mt-3 flex items-center gap-2 p-2 bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 text-[9px] font-bold uppercase rounded-xl border border-amber-100 dark:border-amber-900/30 tracking-tight leading-none shadow-sm">
-                                            <AlertCircle size={14} />
-                                            <span>Documento estrictamente obligatorio.</span>
-                                        </div>
+                                    {/* acciones de archivo */}
+                                    {file ? (
+                                        <Button variant="ghost" size="sm" type="button"
+                                            onClick={() => setFile(null)}
+                                            className="w-full text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 font-bold uppercase text-[10px] tracking-wider h-8 rounded-xl border border-rose-100 dark:border-rose-900/30">
+                                            <Trash2 size={13} className="mr-1.5" /> Quitar Archivo
+                                        </Button>
+                                    ) : (
+                                        <>
+                                            <Button type="button" variant="outline"
+                                                className="w-full border-border h-9 rounded-xl font-bold uppercase text-[10px] tracking-widest"
+                                                onClick={() => document.getElementById('file-upload-main')?.click()}>
+                                                Examinar Archivos
+                                            </Button>
+                                            <div className="flex items-start gap-2 p-2.5 bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 text-[10px] font-bold uppercase rounded-xl border border-amber-100 dark:border-amber-900/30 tracking-tight leading-snug">
+                                                <AlertCircle size={13} className="shrink-0 mt-px" />
+                                                <span>Documento requerido para procesar.</span>
+                                            </div>
+                                        </>
                                     )}
                                 </CardContent>
                             </Card>
                         </div>
+
                     </div>
                 </form>
             </Form>
 
-            {/* BARRA DE ACCIONES FIJA (STICKY BOTTOM BAR) */}
-            <div className="fixed bottom-0 left-0 right-0 md:left-20 lg:left-64 bg-background/80 backdrop-blur-md border-t border-border p-2 z-40 animate-in slide-in-from-bottom-full duration-500 shadow-[0_-4px_15px_rgb(0,0,0,0.03)] transition-all">
-                <div className="max-w-7xl mx-auto flex items-center justify-between px-4">
-                    <div className="hidden md:flex flex-col">
-                        <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">Estado de Carga</span>
-                        <div className="flex items-center gap-2">
-                            <div className={cn("h-2 w-2 rounded-full", file ? "bg-emerald-500" : "bg-amber-500")} />
-                            <span className="text-xs font-bold text-foreground">
-                                {file ? "Documento Adjunto" : "Falta Documento"}
+            {/* ── BARRA FIJA INFERIOR ─────────────────────────────────────────── */}
+            <div className="fixed bottom-0 left-0 right-0 md:left-20 lg:left-64 z-40
+                            bg-background/85 backdrop-blur-md border-t border-border
+                            px-4 py-2.5 shadow-[0_-4px_20px_rgb(0,0,0,0.06)]
+                            animate-in slide-in-from-bottom-full duration-300">
+                <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+
+                    {/* estado */}
+                    <div className="hidden sm:flex flex-col gap-0.5 min-w-0">
+                        <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest leading-none">Estado</span>
+                        <div className="flex items-center gap-1.5">
+                            <div className={cn("h-2 w-2 rounded-full shrink-0", file ? "bg-emerald-500" : "bg-amber-400")} />
+                            <span className="text-xs font-bold text-foreground truncate">
+                                {file ? `${file.name.slice(0, 28)}${file.name.length > 28 ? '…' : ''}` : "Falta documento"}
                             </span>
                         </div>
                     </div>
 
-                    <div className="flex gap-4 w-full md:w-auto">
-                        <Button
-                            variant="outline"
-                            onClick={resetAll}
-                            disabled={loading}
-                            className="flex-1 md:flex-none h-12 px-8 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-xs rounded-2xl shadow-sm transition-all active:scale-95 flex items-center gap-2"
-                        >
-                            <RefreshCw size={16} /> REINICIAR
+                    {/* acciones */}
+                    <div className="flex gap-2.5 w-full sm:w-auto">
+                        <Button variant="outline" onClick={resetAll} disabled={loading}
+                            className="flex-1 sm:flex-none h-10 px-6 border-border bg-card hover:bg-muted font-bold text-xs rounded-xl shadow-sm active:scale-95 transition-all flex items-center gap-2">
+                            <RefreshCw size={14} /> Reiniciar
                         </Button>
-                        <Button
-                            onClick={form.handleSubmit(onSubmit)}
-                            disabled={loading}
-                            className="flex-1 md:flex-none h-12 px-10 bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 text-white font-bold text-xs rounded-2xl transition-all active:scale-95 flex items-center gap-2"
-                        >
+                        <Button onClick={form.handleSubmit(onSubmit)} disabled={loading}
+                            className="flex-1 sm:flex-none h-10 px-6 bg-primary hover:bg-primary/90 shadow-primary/25 shadow-lg text-white font-bold text-xs rounded-xl active:scale-95 transition-all flex items-center gap-2">
                             {loading ? (
-                                <>
-                                    <Loader2 className="h-5 w-5 animate-spin" />
-                                    PROCESANDO...
-                                </>
+                                <><Loader2 className="h-4 w-4 animate-spin" /> Procesando…</>
                             ) : (
-                                <>
-                                    <Save className="h-5 w-5" />
-                                    PROCESAR REGISTRO COMPLETO
-                                </>
+                                <><Save className="h-4 w-4" /> Procesar Registro</>
                             )}
                         </Button>
                     </div>
                 </div>
             </div>
-        </div >
+        </div>
     );
 }

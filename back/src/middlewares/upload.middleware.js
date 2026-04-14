@@ -35,6 +35,6 @@ export const upload = multer({
     storage,
     fileFilter,
     limits: {
-        fileSize: 100 * 1024 * 1024 // Limite de 100MB
+        fileSize: 20 * 1024 * 1024 // 20MB — suficiente para PDFs escaneados de alta calidad
     }
 });

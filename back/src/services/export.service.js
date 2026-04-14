@@ -10,20 +10,31 @@ export const exportarActasExcel = async (filtros) => {
     const data = result.data;
 
     // Mapeamos a un formato amigable para Excel
-    const rows = data.map(a => ({
-        "ID": a.id,
-        "Tipo de Acta": a.tipo_acta,
-        "Nro. Acta": a.numero_acta,
-        "Año": a.anio,
-        "DNI Titular": a.dni,
-        "Nombres": a.nombres,
-        "Apellidos": `${a.apellido_paterno} ${a.apellido_materno}`,
-        "Fecha Acta": a.fecha_acta ? new Date(a.fecha_acta).toLocaleDateString() : "",
-        "Estado": a.estado,
-        "Observaciones": a.observaciones || "",
-        "Tiene Documento": a.tiene_documento ? "SÍ" : "NO",
-        "Fecha Registro": new Date(a.fecha_registro).toLocaleString()
-    }));
+    const rows = data.map(a => {
+        const base = {
+            "ID":             a.id,
+            "Tipo de Acta":   a.tipo_acta,
+            "Nro. Acta":      a.numero_acta,
+            "Año":            a.anio,
+            "DNI Titular":    a.dni,
+            "Ap. Paterno":    a.apellido_paterno,
+            "Ap. Materno":    a.apellido_materno,
+            "Nombres":        a.nombres,
+            "Fecha Acta":     a.fecha_acta ? new Date(a.fecha_acta).toLocaleDateString() : "",
+            "Estado":         a.estado,
+            "Observaciones":  a.observaciones || "",
+            "Tiene Documento": a.tiene_documento ? "SÍ" : "NO",
+            "Fecha Registro": new Date(a.fecha_registro).toLocaleString(),
+        };
+        // Columnas del cónyuge — solo se rellenan en matrimonios
+        if (a.tipo_acta === "MATRIMONIO") {
+            base["DNI Cónyuge"]    = a.p2_dni || "";
+            base["Ap. Pat. Cónyuge"] = a.p2_apellido_paterno || "";
+            base["Ap. Mat. Cónyuge"] = a.p2_apellido_materno || "";
+            base["Nombres Cónyuge"]  = a.p2_nombres || "";
+        }
+        return base;
+    });
 
     const worksheet = XLSX.utils.json_to_sheet(rows);
     const workbook = XLSX.utils.book_new();

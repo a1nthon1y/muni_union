@@ -1,23 +1,22 @@
-import jwt from "jsonwebtoken";
+import { verificarAccessToken } from "../services/auth.service.js";
 
 export const auth = (req, res, next) => {
-  const authHeader = req.headers.authorization;
+    // 1. Cookie httpOnly (flujo normal del navegador)
+    let token = req.cookies?.auth_token;
 
-  if (!authHeader) {
-    return res.status(401).json({ message: "Token requerido" });
-  }
+    // 2. Fallback: Authorization header (Postman / herramientas de dev)
+    if (!token) {
+        const header = req.headers.authorization;
+        if (header?.startsWith("Bearer ")) token = header.split(" ")[1];
+    }
 
-  const token = authHeader.split(" ")[1];
+    if (!token) return res.status(401).json({ message: "Token requerido" });
 
-  if (!token) {
-    return res.status(401).json({ message: "Token inválido" });
-  }
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded; // info del usuario
-    next();
-  } catch (error) {
-    return res.status(401).json({ message: "Token inválido o expirado" });
-  }
+    try {
+        req.user = verificarAccessToken(token);
+        next();
+    } catch {
+        // 401 con código específico para que el frontend sepa que debe refrescar
+        return res.status(401).json({ message: "Token inválido o expirado", code: "TOKEN_EXPIRED" });
+    }
 };

@@ -4,10 +4,7 @@ import { Persona, PersonaInput } from "@/types/persona";
 export const personasService = {
     async getAll(filtros: { termino?: string; page?: number; limit?: number } = {}) {
         const { data } = await api.get<{ data: Persona[]; total: number }>("/personas", {
-            params: {
-                ...filtros,
-                offset: ((filtros.page || 1) - 1) * (filtros.limit || 10)
-            }
+            params: filtros
         });
         return data;
     },

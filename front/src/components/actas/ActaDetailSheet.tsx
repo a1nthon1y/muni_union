@@ -90,7 +90,9 @@ export function ActaDetailSheet({ isOpen, onClose, acta, onEdit }: ActaDetailShe
                     <div className="space-y-4">
                         <div className="flex items-center gap-2">
                             <User className="h-4 w-4 text-primary" />
-                            <h3 className="font-semibold text-sm text-foreground uppercase tracking-wide">Titular</h3>
+                            <h3 className="font-semibold text-sm text-foreground uppercase tracking-wide">
+                                {acta.tipo_acta === 'MATRIMONIO' ? 'Contrayente 1' : 'Titular'}
+                            </h3>
                         </div>
 
                         <div className="bg-muted rounded-lg p-4 space-y-3 border border-border">
@@ -141,6 +143,42 @@ export function ActaDetailSheet({ isOpen, onClose, acta, onEdit }: ActaDetailShe
                             </div>
                         </div>
                     </div>
+
+                    {/* Cónyuge — solo MATRIMONIO */}
+                    {acta.tipo_acta === 'MATRIMONIO' && acta.p2_nombres && (
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-2">
+                                <Heart className="h-4 w-4 text-purple-500" />
+                                <h3 className="font-semibold text-sm text-purple-600 dark:text-purple-400 uppercase tracking-wide">Contrayente 2</h3>
+                            </div>
+                            <div className="bg-purple-50/60 dark:bg-purple-950/20 rounded-lg p-4 space-y-3 border border-purple-200 dark:border-purple-900/40">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <p className="text-xs text-muted-foreground font-medium mb-0.5">Apellidos y Nombres</p>
+                                        <p className="text-sm font-semibold text-foreground uppercase">
+                                            {acta.p2_apellido_paterno} {acta.p2_apellido_materno}, {acta.p2_nombres}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-muted-foreground font-medium mb-0.5">DNI</p>
+                                        <p className="text-sm font-mono font-bold text-purple-600 dark:text-purple-400 tracking-wider">{acta.p2_dni || '—'}</p>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <p className="text-xs text-muted-foreground font-medium mb-0.5">Sexo</p>
+                                        <Badge variant="outline" className={`text-xs ${acta.p2_sexo === 'M' ? "text-primary border-primary/20" : "text-pink-600 dark:text-pink-400 border-pink-200"}`}>
+                                            {acta.p2_sexo === 'M' ? 'Masculino' : 'Femenino'}
+                                        </Badge>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-muted-foreground font-medium mb-0.5">Fecha de Nacimiento</p>
+                                        <p className="text-sm text-foreground/70">{dateUtils.formatDisplayDate(acta.p2_fecha_nacimiento)}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Datos del Acta */}
                     <div className="space-y-4">

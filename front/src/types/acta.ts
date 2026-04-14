@@ -9,11 +9,12 @@ export interface Acta {
     numero_acta: string;
     anio: number;
     persona_principal_id: number;
+    persona_secundaria_id?: number | null;
     fecha_acta: string;
     estado: EstadoActa;
     observaciones?: string;
     fecha_registro: string;
-    // Joins con Persona
+    // Datos del titular (persona_principal)
     nombres?: string;
     apellido_paterno?: string;
     apellido_materno?: string;
@@ -22,6 +23,15 @@ export interface Acta {
     fecha_nacimiento?: string;
     telefono?: string;
     direccion?: string;
+    // Datos del cónyuge (persona_secundaria — solo MATRIMONIO)
+    p2_nombres?: string;
+    p2_apellido_paterno?: string;
+    p2_apellido_materno?: string;
+    p2_dni?: string;
+    p2_sexo?: "M" | "F";
+    p2_fecha_nacimiento?: string;
+    p2_telefono?: string;
+    // Documento digital
     tiene_documento?: boolean;
     tipo_documento?: string;
     ruta_archivo?: string;
@@ -32,6 +42,7 @@ export interface ActaInput {
     numero_acta: string;
     anio: number;
     persona_principal_id: number;
+    persona_secundaria_id?: number | null;
     fecha_acta: string;
     observaciones?: string;
 }

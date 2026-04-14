@@ -60,12 +60,14 @@ export default function SolicitudesPage() {
     const [isExporting, setIsExporting] = useState(false);
 
     const [q, setQ] = useState("");
+    const [fechaDesde, setFechaDesde] = useState("");
+    const [fechaHasta, setFechaHasta] = useState("");
 
     const handleExport = async () => {
         setIsExporting(true);
         const toastId = toast.loading("Generando reporte de trámites...");
         try {
-            await reportesService.exportSolicitudes({ q });
+            await reportesService.exportSolicitudes({ q, fecha_desde: fechaDesde, fecha_hasta: fechaHasta });
             await new Promise(resolve => setTimeout(resolve, 1500));
             toast.success("Descarga lista", { id: toastId });
         } catch (error) {
@@ -83,7 +85,9 @@ export default function SolicitudesPage() {
             const response = await solicitudesService.getAll({
                 page: targetPage,
                 limit: pagination.limit,
-                q: targetSearch
+                q: targetSearch,
+                fecha_desde: fechaDesde,
+                fecha_hasta: fechaHasta,
             });
             setSolicitudes(response.data);
             setPagination({
@@ -104,7 +108,7 @@ export default function SolicitudesPage() {
             fetchSolicitudes(1, q);
         }, 400);
         return () => clearTimeout(timer);
-    }, [q]);
+    }, [q, fechaDesde, fechaHasta]);
 
     const handlePageChange = (page: number) => {
         fetchSolicitudes(page);
@@ -236,10 +240,29 @@ export default function SolicitudesPage() {
 
                     <Separator orientation="vertical" className="h-8 mx-1 opacity-50" />
 
+                    <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap hidden sm:block">Desde</span>
+                        <Input
+                            type="date"
+                            className="std-input w-36 border-none bg-transparent focus-visible:ring-0 h-9 text-xs"
+                            value={fechaDesde}
+                            onChange={(e) => setFechaDesde(e.target.value)}
+                        />
+                        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap hidden sm:block">Hasta</span>
+                        <Input
+                            type="date"
+                            className="std-input w-36 border-none bg-transparent focus-visible:ring-0 h-9 text-xs"
+                            value={fechaHasta}
+                            onChange={(e) => setFechaHasta(e.target.value)}
+                        />
+                    </div>
+
+                    <Separator orientation="vertical" className="h-8 mx-1 opacity-50" />
+
                     <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => setQ("")}
+                        onClick={() => { setQ(""); setFechaDesde(""); setFechaHasta(""); }}
                         className="h-9 w-9 text-slate-400 hover:text-primary hover:bg-primary/5 shrink-0"
                     >
                         <RefreshCw className="h-4 w-4" />

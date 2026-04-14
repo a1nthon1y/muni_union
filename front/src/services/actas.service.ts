@@ -2,7 +2,7 @@ import api from "@/utils/api";
 import { Acta, ActaInput, EstadoActa } from "@/types/acta";
 
 export const actasService = {
-    async getAll(filtros: { q?: string; tipo?: string; anio?: string; dni?: string; numero?: string; page?: number; limit?: number } = {}) {
+    async getAll(filtros: { q?: string; tipo?: string; anio?: string; dni?: string; numero?: string; fecha_desde?: string; fecha_hasta?: string; page?: number; limit?: number } = {}) {
         const { data } = await api.get<{ data: Acta[]; pagination: any }>("/actas", { params: filtros });
         return data;
     },
@@ -34,6 +34,18 @@ export const actasService = {
 
     async reactivate(id: number) {
         const { data } = await api.patch<Acta>(`/actas/${id}/reactivar`);
+        return data;
+    },
+
+    async getSiguienteNumero(params: {
+        tipo_acta: string;
+        anio: number;
+        modo: "CLASICO" | "CUI";
+        libro?: string;
+    }): Promise<{ siguiente: number | null }> {
+        const { data } = await api.get<{ siguiente: number | null }>("/actas/siguiente-numero", {
+            params
+        });
         return data;
     }
 };

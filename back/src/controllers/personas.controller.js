@@ -5,6 +5,7 @@ export const crearPersona = async (req, res) => {
     try {
         const persona = await personasService.crearPersona(req.body, req.user.id);
 
+        req.auditHandled = true;
         await registrarAccion({
             usuario_id: req.user.id,
             tabla_afectada: "personas",
@@ -41,9 +42,10 @@ export const obtenerPersona = async (req, res) => {
 
 export const actualizarPersona = async (req, res) => {
     try {
-        const persona = await personasService.actualizarPersona(req.params.id, req.body, req.user.id);
+        const persona = await personasService.actualizarPersona(req.params.id, req.body);
         if (!persona) return res.status(404).json({ message: "Persona no encontrada o eliminada" });
 
+        req.auditHandled = true;
         await registrarAccion({
             usuario_id: req.user.id,
             tabla_afectada: "personas",
@@ -64,6 +66,7 @@ export const eliminarPersona = async (req, res) => {
         const resultado = await personasService.eliminarPersona(req.params.id, req.user.id);
         if (!resultado) return res.status(404).json({ message: "Persona no encontrada" });
 
+        req.auditHandled = true;
         await registrarAccion({
             usuario_id: req.user.id,
             tabla_afectada: "personas",
@@ -81,12 +84,10 @@ export const eliminarPersona = async (req, res) => {
 
 export const reactivarPersona = async (req, res) => {
     try {
-        if (req.user.rol_id !== 1) {
-            return res.status(403).json({ message: "No tiene permisos para reactivar" });
-        }
-        const persona = await personasService.reactivarPersona(req.params.id, req.user.id);
+        const persona = await personasService.reactivarPersona(req.params.id);
         if (!persona) return res.status(404).json({ message: "Persona no encontrada" });
 
+        req.auditHandled = true;
         await registrarAccion({
             usuario_id: req.user.id,
             tabla_afectada: "personas",
