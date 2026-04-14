@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
-    FileSpreadsheet, Upload, Loader2, ArrowLeft, Download,
-    CheckCircle2, XCircle, AlertTriangle, FileText, FolderOpen,
-    Info, Package, ChevronDown, ChevronUp, RefreshCw
+    FileSpreadsheet, Upload, ArrowLeft, Download,
+    CheckCircle2, XCircle, AlertTriangle,
+    Info, Package, RefreshCw
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -15,7 +15,6 @@ import * as XLSX from "xlsx";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 
 interface ResultadoFila {
     fila: number;
@@ -43,8 +42,6 @@ export default function CargaMasivaPage() {
     const [zipFile, setZipFile] = useState<File | null>(null);
     const [loading, setLoading] = useState(false);
     const [resumen, setResumen] = useState<ResumenImportacion | null>(null);
-    const [mostrarErrores, setMostrarErrores] = useState(false);
-    const [mostrarExitosos, setMostrarExitosos] = useState(false);
     const [dragOverExcel, setDragOverExcel] = useState(false);
     const [dragOverZip, setDragOverZip] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
@@ -449,33 +446,37 @@ export default function CargaMasivaPage() {
                         </div>
 
                         {/* RESUMEN ESTADÍSTICO */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                             {[
-                                { label: 'TOTAL FILAS', value: resumen.total, icon: FileSpreadsheet, color: 'slate' },
-                                { label: 'ACTAS NUEVAS', value: resumen.exitosos, icon: CheckCircle2, color: 'emerald' },
-                                { label: 'DOCS VINCULADOS', value: resumen.docs_vinculados, icon: AlertTriangle, color: 'amber' },
-                                { label: 'ERRORES', value: resumen.errores, icon: XCircle, color: 'rose' }
+                                { label: 'TOTAL FILAS',       value: resumen.total,           icon: FileSpreadsheet, color: 'slate'   },
+                                { label: 'ACTAS NUEVAS',      value: resumen.exitosos,         icon: CheckCircle2,    color: 'emerald' },
+                                { label: 'YA EXISTÍAN',       value: resumen.omitidos,         icon: AlertTriangle,   color: 'blue'    },
+                                { label: 'DOCS VINCULADOS',   value: resumen.docs_vinculados,  icon: AlertTriangle,   color: 'amber'   },
+                                { label: 'ERRORES',           value: resumen.errores,          icon: XCircle,         color: 'rose'    }
                             ].map((stat, i) => (
                                 <div key={i} className={cn(
                                     "p-6 rounded-[28px] border flex flex-col items-center justify-center gap-2 transition-all hover:translate-y-[-4px]",
-                                    stat.color === 'slate' ? "bg-white dark:bg-slate-800 border-slate-100" :
-                                        stat.color === 'emerald' ? "bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-100/50" :
-                                        stat.color === 'amber' ? "bg-amber-50/50 dark:bg-amber-950/20 border-amber-100/50" :
-                                            "bg-rose-50/50 dark:bg-rose-950/20 border-rose-100/50"
+                                    stat.color === 'slate'   ? "bg-white dark:bg-slate-800 border-slate-100" :
+                                    stat.color === 'emerald' ? "bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-100/50" :
+                                    stat.color === 'blue'    ? "bg-blue-50/50 dark:bg-blue-950/20 border-blue-100/50" :
+                                    stat.color === 'amber'   ? "bg-amber-50/50 dark:bg-amber-950/20 border-amber-100/50" :
+                                                               "bg-rose-50/50 dark:bg-rose-950/20 border-rose-100/50"
                                 )}>
                                     <div className={cn("p-3 rounded-2xl mb-1 shadow-sm",
-                                        stat.color === 'slate' ? "bg-slate-50 text-slate-400" :
-                                            stat.color === 'emerald' ? "bg-white text-emerald-500" :
-                                            stat.color === 'amber' ? "bg-white text-amber-500" :
-                                            "bg-white text-rose-500"
+                                        stat.color === 'slate'   ? "bg-slate-50 text-slate-400" :
+                                        stat.color === 'emerald' ? "bg-white text-emerald-500" :
+                                        stat.color === 'blue'    ? "bg-white text-blue-500" :
+                                        stat.color === 'amber'   ? "bg-white text-amber-500" :
+                                                                   "bg-white text-rose-500"
                                     )}>
                                         <stat.icon className="h-6 w-6" />
                                     </div>
                                     <p className={cn("text-4xl font-black tracking-tight",
-                                        stat.color === 'slate' ? "text-slate-800" :
-                                            stat.color === 'emerald' ? "text-emerald-700" :
-                                            stat.color === 'amber' ? "text-amber-700" :
-                                            "text-rose-700"
+                                        stat.color === 'slate'   ? "text-slate-800" :
+                                        stat.color === 'emerald' ? "text-emerald-700" :
+                                        stat.color === 'blue'    ? "text-blue-700" :
+                                        stat.color === 'amber'   ? "text-amber-700" :
+                                                                   "text-rose-700"
                                     )}>{stat.value}</p>
                                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">{stat.label}</p>
                                 </div>
@@ -494,7 +495,7 @@ export default function CargaMasivaPage() {
                             </div>
                             <div className="h-3 w-full bg-slate-100 dark:bg-slate-900 rounded-full overflow-hidden">
                                 <div
-                                    className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-1000"
+                                    className="h-full rounded-full bg-linear-to-r from-emerald-500 to-teal-400 transition-all duration-1000"
                                     style={{ width: `${porcentajeExito}%` }}
                                 />
                             </div>
@@ -513,7 +514,7 @@ export default function CargaMasivaPage() {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto pr-2">
                                         {resumen.resultados.filter(r => r.estado === "OMITIDO_DOC").map((r) => (
                                             <div key={r.fila} className="flex gap-4 p-4 bg-white dark:bg-slate-800 border border-amber-100 dark:border-amber-900/30 rounded-2xl shadow-sm">
-                                                <div className="bg-amber-50 dark:bg-amber-950/40 w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0">
+                                                <div className="bg-amber-50 dark:bg-amber-950/40 w-12 h-12 rounded-xl flex items-center justify-center shrink-0">
                                                     <span className="font-black text-amber-600 text-xs">#{r.fila}</span>
                                                 </div>
                                                 <div className="flex-1 space-y-1">
@@ -530,14 +531,14 @@ export default function CargaMasivaPage() {
                             {/* LISTA DE ERRORES */}
                             {resumen.errores > 0 && (
                                 <div className="space-y-4">
-                                    <div className="flex items-center gap-3 px-2" onClick={() => setMostrarErrores(!mostrarErrores)}>
+                                    <div className="flex items-center gap-3 px-2">
                                         <AlertTriangle className="h-5 w-5 text-rose-500" />
-                                        <h3 className="font-black text-rose-700 uppercase tracking-widest text-sm cursor-pointer hover:underline">Detalle de Incidencias ({resumen.errores})</h3>
+                                        <h3 className="font-black text-rose-700 uppercase tracking-widest text-sm">Detalle de Incidencias ({resumen.errores})</h3>
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
                                         {resumen.resultados.filter(r => r.estado === "ERROR").map((r) => (
                                             <div key={r.fila} className="flex gap-4 p-4 bg-white dark:bg-slate-800 border border-rose-100 dark:border-rose-900/30 rounded-2xl shadow-sm hover:shadow-md transition-shadow group">
-                                                <div className="bg-rose-50 dark:bg-rose-950/40 w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                                                <div className="bg-rose-50 dark:bg-rose-950/40 w-12 h-12 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
                                                     <span className="font-black text-rose-600 text-xs">#{r.fila}</span>
                                                 </div>
                                                 <div className="flex-1 space-y-1">

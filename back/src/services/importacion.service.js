@@ -52,7 +52,13 @@ const resolverTipoDocId = (tipoDocTexto, tiposMap) => {
     return tiposMap[upper] ?? tiposMap["DNI"] ?? 1;
 };
 
+const MAX_FILAS = 5000;
+
 export const importarActasMasivo = async (filas, archivosMap, soloNombreMap, usuario_id) => {
+    if (filas.length > MAX_FILAS) {
+        throw new Error(`El archivo supera el límite de ${MAX_FILAS} filas por importación. Divídalo en lotes más pequeños.`);
+    }
+
     const resultados = [];
     const client = await pool.connect();
 
@@ -69,7 +75,8 @@ export const importarActasMasivo = async (filas, archivosMap, soloNombreMap, usu
             await client.query("BEGIN");
 
             // ── Validar campos obligatorios ───────────────────────────────────
-            const obligatorios = ["nombres", "apellido_paterno", "apellido_materno", "sexo", "tipo_acta", "fecha_acta"];
+            // sexo NO es obligatorio: si falta se usará "M" como default
+            const obligatorios = ["nombres", "apellido_paterno", "apellido_materno", "tipo_acta", "fecha_acta"];
             const faltantes = obligatorios.filter(c => !fila[c] || fila[c] === "");
 
             const hasCui = fila.cui && String(fila.cui).trim() !== "";
@@ -79,6 +86,11 @@ export const importarActasMasivo = async (filas, archivosMap, soloNombreMap, usu
             }
 
             if (faltantes.length > 0) throw new Error(`Campos obligatorios vacíos: ${faltantes.join(", ")}`);
+
+            // ── Validar sexo (si se proporciona) ─────────────────────────────
+            if (fila.sexo && !["M", "F"].includes(fila.sexo.trim().substring(0, 1).toUpperCase())) {
+                throw new Error(`sexo inválido: "${fila.sexo}". Solo se acepta M o F.`);
+            }
 
             // ── Validar tipo_acta (ENUM) ──────────────────────────────────────
             const tipoActa = fila.tipo_acta.trim().toUpperCase();

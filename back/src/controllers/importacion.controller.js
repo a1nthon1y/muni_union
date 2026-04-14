@@ -6,6 +6,7 @@ import fs from "fs";
 import unzipper from "unzipper";
 import multer from "multer";
 import crypto from "crypto";
+import logger from "../config/logger.js";
 
 const uploadDir = "uploads/documentos";
 const tempDir = "uploads/temp_import";
@@ -69,7 +70,7 @@ const parsearExcel = (rutaArchivo) => {
         return clean;
     });
 
-    console.log("Headers detectados:", headers);
+    logger.debug({ headers }, "Headers detectados en Excel de importación");
 
     const dataRows = rawRows.slice(headerRowIndex + 1);
 
@@ -91,8 +92,7 @@ const parsearExcel = (rutaArchivo) => {
         .map((row, idx) => {
             const obj = {};
             headers.forEach((h, i) => { if (h) obj[h] = toStr(row[i]); });
-            // Si es la primera fila de datos, logearla para ver si coincide
-            if (idx === 0) console.log("Ejemplo de fila parseada:", obj);
+            if (idx === 0) logger.debug({ fila: obj }, "Primera fila parseada del Excel");
             return obj;
         })
         .filter(f => f.nombres || f.apellido_paterno)
@@ -262,7 +262,7 @@ export const importarMasivo = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Error en importación masiva:", error);
+        logger.error({ err: error }, "Error en importación masiva");
         return res.status(500).json({ message: `Error interno: ${error.message}` });
     } finally {
         for (const f of tempFiles) {
