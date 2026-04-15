@@ -43,7 +43,7 @@ const actaSchema = z.object({
     modo: z.enum(['CLASICO', 'CUI']),
     libro: z.string().optional(),
     numero_acta: z.string().min(1, "Número obligatorio"),
-    anio: z.coerce.number().min(1900).max(new Date().getFullYear() + 1),
+    anio: z.coerce.number().min(1900).max(Number(new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Lima', year: 'numeric' }).format(new Date())) + 1),
     fecha_acta: z.string().min(1, "Fecha obligatoria"),
     observaciones: z.string().optional(),
 }).refine((data) => {
@@ -92,7 +92,7 @@ export function ActaEditSheet({ isOpen, onClose, onSuccess, acta }: ActaEditShee
             modo: initialParsed.modo,
             libro: initialParsed.libro,
             numero_acta: initialParsed.acta,
-            anio: acta?.anio || new Date().getFullYear(),
+            anio: acta?.anio || Number(new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Lima', year: 'numeric' }).format(new Date())),
             fecha_acta: dateUtils.formatInputDate(acta?.fecha_acta),
             observaciones: acta?.observaciones || "",
         },
@@ -134,7 +134,7 @@ export function ActaEditSheet({ isOpen, onClose, onSuccess, acta }: ActaEditShee
                 modo: 'CLASICO',
                 libro: "",
                 numero_acta: "",
-                anio: new Date().getFullYear(),
+                anio: Number(new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Lima', year: 'numeric' }).format(new Date())),
                 fecha_acta: "",
                 observaciones: "",
             });

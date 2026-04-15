@@ -21,8 +21,13 @@ const pool = new Pool({
         : false,
 });
 
-pool.query("SELECT 1")
-    .then(() => logger.info("PostgreSQL conectado"))
+// Establecer zona horaria Perú en cada nueva conexión del pool
+pool.on("connect", (client) => {
+    client.query("SET timezone = 'America/Lima'");
+});
+
+pool.query("SELECT NOW() AT TIME ZONE 'America/Lima' AS hora_lima")
+    .then(r => logger.info(`PostgreSQL conectado — hora Lima: ${r.rows[0].hora_lima}`))
     .catch(err => logger.error({ err }, "PostgreSQL ERROR"));
 
 export { pool };

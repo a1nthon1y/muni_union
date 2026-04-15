@@ -140,7 +140,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="text-right hidden md:block">
                     <p className="text-[11px] font-semibold text-muted-foreground/60 uppercase tracking-wider leading-none">Fecha de hoy</p>
-                    <p className="text-lg font-bold text-foreground mt-1">{new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                    <p className="text-lg font-bold text-foreground mt-1">{new Date().toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Lima' })}</p>
                 </div>
             </div>
 

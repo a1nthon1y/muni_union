@@ -1,49 +1,67 @@
-import { format, parseISO } from "date-fns";
+import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
+const TZ = "America/Lima";
+
 /**
- * Función robusta para formatear fechas desde la base de datos (Postgres).
- * Evita el desfase de zona horaria que ocurre con 'new Date()'.
+ * Interpreta un string de fecha/hora de la BD como hora Lima (America/Lima).
+ * Los strings de Postgres vienen sin indicador de timezone (naive).
+ * Los parseamos como hora local sin dejar que el navegador aplique
+ * conversiones de UTC, y luego los formateamos siempre en Lima.
  */
+const parseNaive = (dateStr: string): Date => {
+    // "2026-04-15 12:30:00.123456" → "2026-04-15T12:30:00"
+    const clean = dateStr.replace(" ", "T").split(".")[0];
+    // new Date("YYYY-MM-DDTHH:mm:ss") sin 'Z' → interpreta como LOCAL time
+    return new Date(clean);
+};
+
 export const dateUtils = {
     /**
      * Formatea una fecha simple (YYYY-MM-DD) para mostrar en la UI.
-     * Ejemplo: "1995-05-20" -> "20 de mayo de 1995"
+     * Ejemplo: "1995-05-20" → "20 de mayo de 1995"
      */
     formatDisplayDate: (dateStr: string | null | undefined): string => {
         if (!dateStr) return "—";
-        
-        // Si ya viene formateada (ej: DD/MM/YYYY), devolverla
+
+        // Ya viene formateada (DD/MM/YYYY)
         if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) return dateStr;
 
         try {
-            // Dividir para evitar que JS interprete como UTC al usar parseISO
-            const parts = dateStr.split('T')[0].split(/[-/]/);
+            const parts = dateStr.split("T")[0].split(/[-/]/);
             if (parts.length === 3) {
-                const year = parseInt(parts[0]);
-                const month = parseInt(parts[1]) - 1;
-                const day = parseInt(parts[2]);
-                const localDate = new Date(year, month, day);
-                return format(localDate, "dd 'de' MMMM 'de' yyyy", { locale: es });
+                const [year, month, day] = parts.map(Number);
+                return format(
+                    new Date(year, month - 1, day),
+                    "dd 'de' MMMM 'de' yyyy",
+                    { locale: es }
+                );
             }
             return dateStr;
-        } catch (e) {
+        } catch {
             return dateStr;
         }
     },
 
     /**
-     * Formatea un timestamp (2024-03-11 15:30:00) para mostrar en la UI.
+     * Formatea un timestamp de BD mostrando siempre hora Lima (America/Lima).
+     * Ejemplo: "2026-04-15 12:30:00" → "15/04/2026 12:30"
      */
     formatDisplayTimestamp: (dateStr: string | null | undefined): string => {
         if (!dateStr) return "—";
         try {
-            // Si el backend viene estandarizado como string ISO o simple
-            // Reemplazamos el espacio por 'T' si no lo tiene para que parseISO funcione mejor
-            const isoStr = dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T');
-            const date = parseISO(isoStr);
-            return format(date, "dd/MM/yyyy HH:mm", { locale: es });
-        } catch (e) {
+            const date = parseNaive(dateStr);
+            // Usar Intl para forzar siempre zona Lima
+            return new Intl.DateTimeFormat("es-PE", {
+                timeZone: TZ,
+                day:    "2-digit",
+                month:  "2-digit",
+                year:   "numeric",
+                hour:   "2-digit",
+                minute: "2-digit",
+                hour12: false,
+            }).format(date).replace(",", "");
+        } catch {
             return dateStr;
         }
     },
@@ -54,9 +72,9 @@ export const dateUtils = {
     formatInputDate: (dateStr: string | null | undefined): string => {
         if (!dateStr) return "";
         try {
-            return dateStr.split('T')[0];
-        } catch (e) {
+            return dateStr.split("T")[0];
+        } catch {
             return "";
         }
-    }
+    },
 };
