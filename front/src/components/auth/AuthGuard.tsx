@@ -61,5 +61,11 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         );
     }
 
-    return <>{isAuthenticated ? children : null}</>;
+    // Si no está autenticado redirigir en lugar de quedar en blanco
+    if (!isAuthenticated) {
+        router.push("/login");
+        return null;
+    }
+
+    return <>{children}</>;
 }

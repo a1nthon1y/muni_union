@@ -21,6 +21,8 @@ import { Usuario } from "@/types/auth";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store/useAuthStore";
+import { useRouter } from "next/navigation";
+import api from "@/utils/api";
 
 interface NavItem {
     label: string;
@@ -128,7 +130,14 @@ export function Sidebar() {
     const pathname = usePathname();
     const [isCollapsed, setIsCollapsed] = useState(false);
     const usuario = useAuthStore((state) => state.usuario);
-    const logout = useAuthStore((state) => state.logout);
+    const logoutStore = useAuthStore((state) => state.logout);
+    const router = useRouter();
+
+    const logout = async () => {
+        try { await api.post("/auth/logout"); } catch { /* ignorar errores de red */ }
+        logoutStore();
+        router.push("/login");
+    };
 
     // Auto-colapso inteligente basado en el tamaño de pantalla
     useEffect(() => {
