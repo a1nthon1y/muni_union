@@ -2,12 +2,10 @@
  * Middleware de auditoría automática.
  *
  * Se aplica DESPUÉS del middleware auth (req.user disponible).
- * Registra en la tabla auditoria TODAS las peticiones autenticadas
- * que terminan con status < 400, usando res.on('finish').
- *
- * Las operaciones de escritura (POST/PUT/PATCH/DELETE) que ya tienen
- * registrarAccion() manual en sus controllers setean req.auditHandled = true
- * para evitar duplicados.  Los GETs siempre pasan por aquí.
+ * Solo registra operaciones de ESCRITURA (POST/PUT/PATCH/DELETE) que no
+ * hayan sido auditadas manualmente en el controller (req.auditHandled).
+ * Los GET (READ) se omiten deliberadamente: no modifican datos y
+ * solo generan ruido en la bitácora.
  */
 
 import { registrarAccion } from "../services/auditoria.service.js";
@@ -65,12 +63,13 @@ export const auditMiddleware = (req, res, next) => {
         // No registrar archivos estáticos
         if (req.originalUrl.startsWith("/uploads")) return;
 
-        // Escrituras ya auditadas manualmente en el controller → saltar
+        // GET (READ) no afecta datos — no registrar
+        if (req.method === "GET") return;
+
+        // Escrituras ya auditadas manualmente en el controller → evitar duplicado
         if (req.auditHandled) return;
 
-        // Solo auditar GETs automáticamente.
-        // Los writes sin req.auditHandled (edge case) también se capturan.
-        if (!req.user) return; // sin autenticación no hay quién registrar
+        if (!req.user) return;
 
         try {
             await registrarAccion({
