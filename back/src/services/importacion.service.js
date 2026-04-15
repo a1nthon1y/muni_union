@@ -52,11 +52,13 @@ const resolverTipoDocId = (tipoDocTexto, tiposMap) => {
     return tiposMap[upper] ?? tiposMap["DNI"] ?? 1;
 };
 
-const MAX_FILAS = 5000;
+// Límite por lote: suficiente para carga histórica real.
+// Subir en múltiples lotes si se supera (el sistema omite duplicados automáticamente).
+const MAX_FILAS = 30000;
 
 export const importarActasMasivo = async (filas, archivosMap, soloNombreMap, usuario_id) => {
     if (filas.length > MAX_FILAS) {
-        throw new Error(`El archivo supera el límite de ${MAX_FILAS} filas por importación. Divídalo en lotes más pequeños.`);
+        throw new Error(`El archivo supera el límite de ${MAX_FILAS} filas por lote. Divídalo en archivos más pequeños y súbalos por separado — los duplicados se omiten automáticamente.`);
     }
 
     const resultados = [];
