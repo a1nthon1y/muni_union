@@ -50,6 +50,13 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [pathname]);
 
+    // Redirigir a /login cuando no está autenticado (dentro de useEffect — regla de React)
+    useEffect(() => {
+        if (!isChecking && !isAuthenticated) {
+            router.push("/login");
+        }
+    }, [isChecking, isAuthenticated, router]);
+
     if (isChecking) {
         return (
             <div className="h-screen w-screen flex items-center justify-center bg-background text-foreground">
@@ -61,11 +68,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         );
     }
 
-    // Si no está autenticado redirigir en lugar de quedar en blanco
-    if (!isAuthenticated) {
-        router.push("/login");
-        return null;
-    }
+    if (!isAuthenticated) return null;
 
     return <>{children}</>;
 }
