@@ -27,7 +27,7 @@ export const getActasByMonth = async () => {
             EXTRACT(YEAR  FROM fecha_registro)::int AS anio,
             EXTRACT(MONTH FROM fecha_registro)::int AS mes_num,
             tipo_acta,
-            COUNT(*) AS cantidad
+            COUNT(*)::int AS cantidad
         FROM actas
         WHERE fecha_eliminacion IS NULL
           AND fecha_registro >= NOW() - INTERVAL '6 months'
@@ -46,7 +46,7 @@ export const getActasByMonth = async () => {
  */
 export const getSolicitudesStats = async () => {
     const { rows } = await pool.query(`
-        SELECT estado, COUNT(*) as cantidad
+        SELECT estado, COUNT(*)::int as cantidad
         FROM solicitudes
         WHERE fecha_eliminacion IS NULL
         GROUP BY estado
