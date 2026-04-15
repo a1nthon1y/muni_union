@@ -210,7 +210,9 @@ export const importarActasMasivo = async (filas, archivosMap, soloNombreMap, usu
                         personaSecundariaId = r.rows[0].id;
                     }
                 } else {
-                    logger.warn({ fila: rowNum }, "MATRIMONIO sin datos de cónyuge — se registra sin persona_secundaria_id");
+                    throw new Error(
+                        "MATRIMONIO requiere datos del cónyuge (nombres, apellido_paterno, apellido_materno). Completa las columnas conyuge_*."
+                    );
                 }
             }
 
@@ -326,13 +328,22 @@ export const importarActasMasivo = async (filas, archivosMap, soloNombreMap, usu
         } catch (error) {
             await client.query("ROLLBACK");
             logger.error({ fila: rowNum, err: error }, "Error en importación masiva");
+
+            // Convertir errores técnicos de BD a mensajes legibles
+            let mensajeError = error.message;
+            if (error.constraint === "chk_matrimonio_segunda_persona") {
+                mensajeError = "MATRIMONIO requiere datos del cónyuge. Completa las columnas conyuge_*.";
+            } else if (error.code === "23505") {
+                mensajeError = "Registro duplicado detectado por la base de datos.";
+            }
+
             resultados.push({
                 fila: rowNum, estado: "ERROR",
                 acta: fila.tipo_acta && fila.libro && fila.numero_acta
                     ? `${fila.tipo_acta}-L${fila.libro}-${fila.numero_acta}`
                     : `Fila ${rowNum}`,
                 persona: `${fila.apellido_paterno || "?"} ${fila.apellido_materno || "?"}, ${fila.nombres || "?"}`,
-                error: error.message, con_documento: false,
+                error: mensajeError, con_documento: false,
             });
         }
     }
