@@ -360,8 +360,10 @@ export default function DigitalizacionPage() {
             // 1. Crear o actualizar persona
             let personaId = personaEncontrada?.id;
             if (personaId) {
-                // Si la persona existe, actualizamos sus datos (corrección simultánea)
+                // Actualizar datos del ciudadano, incluyendo DNI si se proporcionó
+                // (cubre el caso: persona registrada sin DNI que ahora sí tiene)
                 await personasService.update(personaId, {
+                    dni: values.dni || undefined,
                     tipo_documento: values.tipo_documento,
                     nombres: values.nombres,
                     apellido_paterno: values.apellido_paterno,

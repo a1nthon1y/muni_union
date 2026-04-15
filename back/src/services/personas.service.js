@@ -9,12 +9,27 @@ const PERSONA_COLS = `
     p.observaciones, p.fecha_registro
 `;
 
+// Resuelve tipo_documento_id: acepta el id numérico directo O el nombre de texto
+const resolverTipoDocIdFromDatos = async (datos) => {
+    if (datos.tipo_documento_id) return parseInt(datos.tipo_documento_id);
+    if (datos.tipo_documento) {
+        const { rows } = await pool.query(
+            "SELECT id FROM tipos_documento WHERE UPPER(nombre) = UPPER($1) LIMIT 1",
+            [datos.tipo_documento]
+        );
+        if (rows.length > 0) return rows[0].id;
+    }
+    return 1; // Default: DNI
+};
+
 export const crearPersona = async (datos, usuario_id) => {
     const {
-        dni, tipo_documento_id,
+        dni,
         nombres, apellido_paterno, apellido_materno,
         sexo, fecha_nacimiento, telefono, direccion, observaciones,
     } = datos;
+
+    const tipo_documento_id = await resolverTipoDocIdFromDatos(datos);
 
     const { rows } = await pool.query(
         `INSERT INTO personas
@@ -24,7 +39,7 @@ export const crearPersona = async (datos, usuario_id) => {
          RETURNING id`,
         [
             dni || null,
-            tipo_documento_id || 1,
+            tipo_documento_id,
             nombres, apellido_paterno, apellido_materno,
             sexo || null,
             fecha_nacimiento || null,
@@ -94,10 +109,15 @@ export const obtenerPersonaPorId = async (id) => {
 
 export const actualizarPersona = async (id, datos) => {
     const {
-        dni, tipo_documento_id,
+        dni,
         nombres, apellido_paterno, apellido_materno,
         sexo, fecha_nacimiento, telefono, direccion, observaciones,
     } = datos;
+
+    // Acepta tipo_documento_id numérico O tipo_documento nombre de texto
+    const tipo_documento_id = datos.tipo_documento_id || datos.tipo_documento
+        ? await resolverTipoDocIdFromDatos(datos)
+        : null;
 
     const { rowCount } = await pool.query(
         `UPDATE personas SET

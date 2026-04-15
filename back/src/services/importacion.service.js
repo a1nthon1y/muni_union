@@ -38,12 +38,23 @@ const cargarTiposDocumento = async (client) => {
     const { rows } = await client.query("SELECT id, UPPER(nombre) AS nombre FROM tipos_documento");
     const map = {};
     for (const r of rows) map[r.nombre] = r.id;
-    // Aliases comunes
+    // Aliases — Partida de Nacimiento
     map["P. NACIMIENTO"]      = map["PART. NACIMIENTO"] ?? map["P. NACIMIENTO"];
     map["PARTIDA NACIMIENTO"] = map["PART. NACIMIENTO"];
     map["PART. NAC"]          = map["PART. NACIMIENTO"];
+    // Aliases — Carnet de Extranjería
     map["CARNET"]             = map["CARNET EXTR."];
     map["CE"]                 = map["CARNET EXTR."];
+    map["CARNET EXTRANJERIA"] = map["CARNET EXTR."];
+    // Aliases — Libreta Electoral (documento peruano anterior al DNI)
+    map["LIBRETA ELECTOR."]   = map["LIBRETA ELECTORAL"];
+    map["LIBRETA ELECT."]     = map["LIBRETA ELECTORAL"];
+    map["L.E."]               = map["LIBRETA ELECTORAL"];
+    map["LE"]                 = map["LIBRETA ELECTORAL"];
+    map["LIBRETA"]            = map["LIBRETA ELECTORAL"];
+    // Sin documento
+    map["SIN DOC"]            = map["SIN DOCUMENTO"];
+    map["S/D"]                = map["SIN DOCUMENTO"];
     return map;
 };
 
@@ -115,30 +126,77 @@ export const importarActasMasivo = async (filas, archivosMap, soloNombreMap, usu
                 : buildNumeroActa(tipoActa, fila.libro, fila.numero_acta);
 
             // ── 1. Buscar o crear persona principal ───────────────────────────
-            if (fila.dni?.trim()) {
+            const dniNuevo     = fila.dni?.trim() || null;
+            const tipoDocId    = resolverTipoDocId(fila.tipo_documento, tiposDocMap);
+
+            // 1a. Buscar por DNI (coincidencia exacta — la más confiable)
+            if (dniNuevo) {
                 const r = await client.query(
-                    "SELECT id FROM personas WHERE dni = $1 AND fecha_eliminacion IS NULL LIMIT 1",
-                    [fila.dni.trim()]
+                    "SELECT id, dni, tipo_documento_id FROM personas WHERE dni = $1 AND fecha_eliminacion IS NULL LIMIT 1",
+                    [dniNuevo]
                 );
                 if (r.rows.length > 0) personaId = r.rows[0].id;
             }
 
+            // 1b. Buscar por nombre completo (solo si no encontró por DNI)
             if (!personaId) {
+                // Incluir fecha_nacimiento en la búsqueda si está disponible
+                // para reducir falsos positivos por homonimia
+                const params = [
+                    fila.nombres.trim().toUpperCase(),
+                    fila.apellido_paterno.trim().toUpperCase(),
+                    fila.apellido_materno.trim().toUpperCase(),
+                ];
+                const fechaCond = fechaNacimiento
+                    ? `AND (fecha_nacimiento = $4 OR fecha_nacimiento IS NULL)`
+                    : "";
+                if (fechaNacimiento) params.push(fechaNacimiento);
+
                 const r = await client.query(
-                    `SELECT id FROM personas
-                     WHERE UPPER(nombres) = UPPER($1)
-                       AND UPPER(apellido_paterno) = UPPER($2)
-                       AND UPPER(apellido_materno) = UPPER($3)
-                       AND fecha_eliminacion IS NULL LIMIT 1`,
-                    [fila.nombres.trim(), fila.apellido_paterno.trim(), fila.apellido_materno.trim()]
+                    `SELECT id, dni, tipo_documento_id FROM personas
+                     WHERE UPPER(nombres)          = $1
+                       AND UPPER(apellido_paterno) = $2
+                       AND UPPER(apellido_materno) = $3
+                       ${fechaCond}
+                       AND fecha_eliminacion IS NULL
+                     LIMIT 1`,
+                    params
                 );
-                if (r.rows.length > 0) personaId = r.rows[0].id;
+
+                if (r.rows.length > 0) {
+                    const encontrada = r.rows[0];
+
+                    // ── Homonimia: mismos nombres pero DNIs distintos (ambos no vacíos)
+                    // → son personas DIFERENTES → no reutilizar, crear nueva
+                    if (dniNuevo && encontrada.dni && encontrada.dni !== dniNuevo) {
+                        logger.warn(
+                            { fila: rowNum, dniExistente: encontrada.dni, dniNuevo },
+                            "Posible homonimia — mismos nombres, DNI diferente → se crea persona nueva"
+                        );
+                        // personaId sigue null → se creará abajo
+                    } else {
+                        personaId = encontrada.id;
+
+                        // ── Actualizar DNI si la persona se encontró sin DNI y la fila trae uno
+                        if (dniNuevo && !encontrada.dni) {
+                            await client.query(
+                                `UPDATE personas SET
+                                    dni               = $1,
+                                    tipo_documento_id = $2
+                                 WHERE id = $3`,
+                                [dniNuevo, tipoDocId, personaId]
+                            );
+                            logger.info(
+                                { fila: rowNum, personaId, dniNuevo },
+                                "DNI actualizado para persona encontrada sin documento previo"
+                            );
+                        }
+                    }
+                }
             }
 
+            // 1c. Crear persona nueva (no encontrada, o homonimia detectada)
             if (!personaId) {
-                // ─── CORRECCIÓN: usar tipo_documento_id (FK) en lugar del texto ───
-                const tipoDocId = resolverTipoDocId(fila.tipo_documento, tiposDocMap);
-
                 const r = await client.query(
                     `INSERT INTO personas
                        (dni, tipo_documento_id, nombres, apellido_paterno, apellido_materno,
@@ -146,7 +204,7 @@ export const importarActasMasivo = async (filas, archivosMap, soloNombreMap, usu
                      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
                      RETURNING id`,
                     [
-                        fila.dni?.trim() || null,
+                        dniNuevo,
                         tipoDocId,
                         fila.nombres.trim().toUpperCase(),
                         fila.apellido_paterno.trim().toUpperCase(),
