@@ -19,6 +19,13 @@ import {
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 import { reportesService } from "@/services/reportes.service";
 import {
@@ -62,12 +69,18 @@ export default function SolicitudesPage() {
     const [q, setQ] = useState("");
     const [fechaDesde, setFechaDesde] = useState("");
     const [fechaHasta, setFechaHasta] = useState("");
+    const [estadoFiltro, setEstadoFiltro] = useState("all");
 
     const handleExport = async () => {
         setIsExporting(true);
         const toastId = toast.loading("Generando reporte de trámites...");
         try {
-            await reportesService.exportSolicitudes({ q, fecha_desde: fechaDesde, fecha_hasta: fechaHasta });
+            await reportesService.exportSolicitudes({
+                q,
+                fecha_desde: fechaDesde,
+                fecha_hasta: fechaHasta,
+                estado: estadoFiltro === "all" ? undefined : estadoFiltro,
+            });
             await new Promise(resolve => setTimeout(resolve, 1500));
             toast.success("Descarga lista", { id: toastId });
         } catch (error) {
@@ -88,6 +101,7 @@ export default function SolicitudesPage() {
                 q: targetSearch,
                 fecha_desde: fechaDesde,
                 fecha_hasta: fechaHasta,
+                estado: estadoFiltro === "all" ? undefined : estadoFiltro,
             });
             setSolicitudes(response.data);
             setPagination({
@@ -108,7 +122,7 @@ export default function SolicitudesPage() {
             fetchSolicitudes(1, q);
         }, 400);
         return () => clearTimeout(timer);
-    }, [q, fechaDesde, fechaHasta]);
+    }, [q, fechaDesde, fechaHasta, estadoFiltro]);
 
     const handlePageChange = (page: number) => {
         fetchSolicitudes(page);
@@ -259,10 +273,24 @@ export default function SolicitudesPage() {
 
                     <Separator orientation="vertical" className="h-8 mx-1 opacity-50" />
 
+                    <Select value={estadoFiltro} onValueChange={(v) => setEstadoFiltro(v)}>
+                        <SelectTrigger className="w-36 border-none bg-transparent focus:ring-0 h-11 text-xs font-bold uppercase truncate shrink-0">
+                            <SelectValue placeholder="Estado" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl border-border shadow-lg">
+                            <SelectItem value="all">TODOS</SelectItem>
+                            <SelectItem value="PENDIENTE">PENDIENTE</SelectItem>
+                            <SelectItem value="ATENDIDO">ATENDIDO</SelectItem>
+                            <SelectItem value="ANULADO">ANULADO</SelectItem>
+                        </SelectContent>
+                    </Select>
+
+                    <Separator orientation="vertical" className="h-8 mx-1 opacity-50" />
+
                     <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => { setQ(""); setFechaDesde(""); setFechaHasta(""); }}
+                        onClick={() => { setQ(""); setFechaDesde(""); setFechaHasta(""); setEstadoFiltro("all"); }}
                         className="h-9 w-9 text-slate-400 hover:text-primary hover:bg-primary/5 shrink-0"
                     >
                         <RefreshCw className="h-4 w-4" />
