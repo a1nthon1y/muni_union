@@ -4,11 +4,11 @@ import {
     User,
     Shield,
     Phone,
-    Calendar,
     Power,
     Edit,
     Trash2,
-    MoreHorizontal
+    MoreHorizontal,
+    ShieldCheck
 } from "lucide-react";
 import { es } from "date-fns/locale";
 
@@ -41,6 +41,7 @@ interface UsuariosTableProps {
     onEdit: (usuario: Usuario) => void;
     onDelete: (id: number) => void;
     onToggleStatus: (id: number, active: boolean) => void;
+    onPermisos: (usuario: Usuario) => void;
     pagination: {
         total: number;
         page: number;
@@ -56,6 +57,7 @@ export function UsuariosTable({
     onEdit,
     onDelete,
     onToggleStatus,
+    onPermisos,
     pagination,
     onPageChange
 }: UsuariosTableProps) {
@@ -150,6 +152,11 @@ export function UsuariosTable({
                                                 <DropdownMenuItem onClick={() => onEdit(u)} className="cursor-pointer font-medium gap-2 py-2 rounded-lg text-xs">
                                                     <Edit className="icon-std" /> Editar Perfil
                                                 </DropdownMenuItem>
+                                                {u.rol_id !== 1 && (
+                                                    <DropdownMenuItem onClick={() => onPermisos(u)} className="cursor-pointer font-bold gap-2 py-2 rounded-lg text-xs text-primary">
+                                                        <ShieldCheck className="h-4 w-4" /> Configurar Permisos
+                                                    </DropdownMenuItem>
+                                                )}
                                                 <DropdownMenuItem onClick={() => onToggleStatus(u.id, !u.activo)} className={`cursor-pointer font-bold gap-2 py-2 rounded-lg text-xs ${u.activo ? 'text-amber-600' : 'text-emerald-600'}`}>
                                                     <Power className="h-4 w-4" /> {u.activo ? 'Desactivar Acceso' : 'Activar Acceso'}
                                                 </DropdownMenuItem>

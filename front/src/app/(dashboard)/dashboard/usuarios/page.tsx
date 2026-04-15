@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { usuariosService } from "@/services/usuarios.service";
 import { UsuariosTable } from "@/components/usuarios/UsuariosTable";
 import { UsuarioSheet } from "@/components/usuarios/UsuarioSheet";
+import { PermisosDialog } from "@/components/usuarios/PermisosDialog";
 import { Usuario } from "@/types/auth";
 import { toast } from "sonner";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -24,6 +25,8 @@ export default function UsuariosPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isSheetOpen, setIsSheetOpen] = useState(false);
     const [editingUsuario, setEditingUsuario] = useState<Usuario | null>(null);
+    const [isPermisosOpen, setIsPermisosOpen] = useState(false);
+    const [permisosUsuario, setPermisosUsuario] = useState<Usuario | null>(null);
     const [pagination, setPagination] = useState({
         total: 0,
         page: 1,
@@ -86,6 +89,11 @@ export default function UsuariosPage() {
     const handleEdit = (usuario: Usuario) => {
         setEditingUsuario(usuario);
         setIsSheetOpen(true);
+    };
+
+    const handlePermisos = (usuario: Usuario) => {
+        setPermisosUsuario(usuario);
+        setIsPermisosOpen(true);
     };
 
     const handleDelete = async (id: number) => {
@@ -199,6 +207,7 @@ export default function UsuariosPage() {
                 onEdit={handleEdit}
                 onDelete={handleDelete}
                 onToggleStatus={handleToggleStatus}
+                onPermisos={handlePermisos}
                 pagination={pagination}
                 onPageChange={handlePageChange}
             />
@@ -211,6 +220,14 @@ export default function UsuariosPage() {
                 usuario={editingUsuario}
                 onSuccess={fetchUsuarios}
                 onSubmit={handleFormSubmit}
+            />
+
+            {/* Permisos Dialog */}
+            <PermisosDialog
+                open={isPermisosOpen}
+                onOpenChange={setIsPermisosOpen}
+                usuario={permisosUsuario}
+                onSuccess={fetchUsuarios}
             />
         </div>
     );
