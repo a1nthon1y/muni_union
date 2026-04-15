@@ -43,11 +43,11 @@ const usuarioSchema = z.object({
     telefono: z.string().optional().nullable().or(z.literal("")),
     dni: z.string().min(8, "DNI debe tener al menos 8 caracteres").max(15).optional().or(z.literal("")),
     password: z.string().optional().or(z.literal("")),
-    permisos_actas_anular: z.boolean().default(false),
-    permisos_actas_eliminar: z.boolean().default(false),
-    permisos_actas_modificar: z.boolean().default(true),
-    permisos_personas_eliminar: z.boolean().default(false),
-    permisos_personas_modificar: z.boolean().default(true),
+    permisos_actas_anular: z.boolean(),
+    permisos_actas_eliminar: z.boolean(),
+    permisos_actas_modificar: z.boolean(),
+    permisos_personas_eliminar: z.boolean(),
+    permisos_personas_modificar: z.boolean(),
 });
 
 type UsuarioFormValues = z.infer<typeof usuarioSchema>;

@@ -20,7 +20,7 @@ export interface PersonaInput {
     nombres: string;
     apellido_paterno: string;
     apellido_materno: string;
-    sexo: 'M' | 'F';
+    sexo?: 'M' | 'F';
     fecha_nacimiento?: string;
     telefono?: string;
     direccion?: string;

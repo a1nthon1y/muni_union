@@ -70,7 +70,7 @@ export default function DashboardPage() {
 
     // Transformar datos de evolución para BarChart agrupado por mes
     const barData = (() => {
-        const map: Record<string, Record<string, number>> = {};
+        const map: Record<string, Record<string, string | number>> = {};
         for (const row of evolucion) {
             if (!map[row.mes]) map[row.mes] = { mes: row.mes };
             map[row.mes][row.tipo_acta] = parseInt(String(row.cantidad));

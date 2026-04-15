@@ -393,7 +393,7 @@ export default function DigitalizacionPage() {
             if (values.tipo_acta === "MATRIMONIO") {
                 if (personaSecundariaId) {
                     await personasService.update(personaSecundariaId, {
-                        tipo_documento_id: tiposDocumento.find(t => t.nombre === values.conyuge_tipo_documento)?.id ?? 1,
+                        tipo_documento: values.conyuge_tipo_documento,
                         nombres: values.conyuge_nombres!,
                         apellido_paterno: values.conyuge_apellido_paterno!,
                         apellido_materno: values.conyuge_apellido_materno!,
@@ -402,7 +402,7 @@ export default function DigitalizacionPage() {
                     });
                 } else {
                     const newConyuge = await personasService.create({
-                        tipo_documento_id: tiposDocumento.find(t => t.nombre === values.conyuge_tipo_documento)?.id ?? 1,
+                        tipo_documento: values.conyuge_tipo_documento,
                         dni: values.conyuge_dni,
                         nombres: values.conyuge_nombres!,
                         apellido_paterno: values.conyuge_apellido_paterno!,
