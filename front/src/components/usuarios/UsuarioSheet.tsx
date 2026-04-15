@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
     Select,
     SelectContent,
@@ -29,7 +30,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, Save, UserPlus, Fingerprint } from "lucide-react";
+import { Loader2, Save, UserPlus, Fingerprint, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { Usuario } from "@/types/auth";
 import { UsuarioInput } from "@/types/usuario";
@@ -42,6 +43,9 @@ const usuarioSchema = z.object({
     telefono: z.string().optional().nullable().or(z.literal("")),
     dni: z.string().min(8, "DNI debe tener al menos 8 caracteres").max(15).optional().or(z.literal("")),
     password: z.string().optional().or(z.literal("")),
+    permisos_actas_anular: z.boolean().default(false),
+    permisos_actas_eliminar: z.boolean().default(false),
+    permisos_personas_eliminar: z.boolean().default(false),
 });
 
 type UsuarioFormValues = z.infer<typeof usuarioSchema>;
@@ -82,6 +86,9 @@ export function UsuarioSheet({
             telefono: "",
             dni: "",
             password: "",
+            permisos_actas_anular: false,
+            permisos_actas_eliminar: false,
+            permisos_personas_eliminar: false,
         },
     });
 
@@ -112,6 +119,9 @@ export function UsuarioSheet({
                     telefono: usuario.telefono || "",
                     dni: usuario.dni || "",
                     password: "",
+                    permisos_actas_anular:      usuario.permisos?.actas_anular ?? false,
+                    permisos_actas_eliminar:    usuario.permisos?.actas_eliminar ?? false,
+                    permisos_personas_eliminar: usuario.permisos?.personas_eliminar ?? false,
                 });
             } else {
                 form.reset({
@@ -121,6 +131,9 @@ export function UsuarioSheet({
                     rol_id: "2",
                     telefono: "",
                     password: "",
+                    permisos_actas_anular: false,
+                    permisos_actas_eliminar: false,
+                    permisos_personas_eliminar: false,
                 });
             }
         } else {
@@ -132,6 +145,9 @@ export function UsuarioSheet({
                 telefono: "",
                 dni: "",
                 password: "",
+                permisos_actas_anular: false,
+                permisos_actas_eliminar: false,
+                permisos_personas_eliminar: false,
             });
             form.clearErrors();
         }
@@ -147,6 +163,8 @@ export function UsuarioSheet({
                 return;
             }
 
+            const isRegistrador = parseInt(values.rol_id) !== 1;
+
             const input: any = {
                 nombres: values.nombres.toUpperCase(),
                 apellidos: values.apellidos.toUpperCase(),
@@ -154,6 +172,12 @@ export function UsuarioSheet({
                 telefono: values.telefono || undefined,
                 dni: values.dni || undefined,
                 password: values.password || undefined,
+                // Solo enviar permisos para usuarios REGISTRADOR
+                permisos: isRegistrador ? {
+                    actas_anular:      values.permisos_actas_anular,
+                    actas_eliminar:    values.permisos_actas_eliminar,
+                    personas_eliminar: values.permisos_personas_eliminar,
+                } : undefined,
             };
 
             if (usuario) {
@@ -323,6 +347,82 @@ export function UsuarioSheet({
                                     </FormItem>
                                 )}
                             />
+
+                            {/* ── Permisos de módulo (solo para REGISTRADOR) ── */}
+                            {form.watch("rol_id") !== "1" && (
+                                <>
+                                    <div className="py-2">
+                                        <Separator className="bg-border/50" />
+                                    </div>
+                                    <div className="space-y-3">
+                                        <div className="flex items-center gap-2">
+                                            <ShieldCheck className="h-4 w-4 text-primary" />
+                                            <span className="std-label">Permisos de Módulo</span>
+                                        </div>
+                                        <p className="text-[10px] text-muted-foreground italic">
+                                            El Administrador tiene todos los permisos por defecto. Configura permisos adicionales para este usuario.
+                                        </p>
+                                        <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-3">
+                                            {/* Actas */}
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Actas</p>
+                                            <FormField
+                                                control={form.control}
+                                                name="permisos_actas_anular"
+                                                render={({ field }) => (
+                                                    <FormItem className="flex items-center gap-3 space-y-0">
+                                                        <FormControl>
+                                                            <Checkbox
+                                                                checked={field.value}
+                                                                onCheckedChange={field.onChange}
+                                                            />
+                                                        </FormControl>
+                                                        <FormLabel className="text-xs font-semibold cursor-pointer">
+                                                            Puede anular actas
+                                                        </FormLabel>
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <FormField
+                                                control={form.control}
+                                                name="permisos_actas_eliminar"
+                                                render={({ field }) => (
+                                                    <FormItem className="flex items-center gap-3 space-y-0">
+                                                        <FormControl>
+                                                            <Checkbox
+                                                                checked={field.value}
+                                                                onCheckedChange={field.onChange}
+                                                            />
+                                                        </FormControl>
+                                                        <FormLabel className="text-xs font-semibold cursor-pointer">
+                                                            Puede eliminar actas
+                                                        </FormLabel>
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <Separator className="bg-border/40" />
+                                            {/* Personas */}
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Personas / Ciudadanos</p>
+                                            <FormField
+                                                control={form.control}
+                                                name="permisos_personas_eliminar"
+                                                render={({ field }) => (
+                                                    <FormItem className="flex items-center gap-3 space-y-0">
+                                                        <FormControl>
+                                                            <Checkbox
+                                                                checked={field.value}
+                                                                onCheckedChange={field.onChange}
+                                                            />
+                                                        </FormControl>
+                                                        <FormLabel className="text-xs font-semibold cursor-pointer">
+                                                            Puede eliminar ciudadanos
+                                                        </FormLabel>
+                                                    </FormItem>
+                                                )}
+                                            />
+                                        </div>
+                                    </div>
+                                </>
+                            )}
 
                             <div className="py-2">
                                 <Separator className="bg-border/50" />

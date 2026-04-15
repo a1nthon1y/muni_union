@@ -196,6 +196,17 @@ export const eliminarActa = async (id, usuario_id) => {
 };
 
 export const cambiarEstadoActa = async (id, estado, usuario_id, motivo = null) => {
+    // Validar estado actual para evitar operaciones redundantes o inconsistentes
+    const { rows: current } = await pool.query(
+        "SELECT estado FROM actas WHERE id = $1 AND fecha_eliminacion IS NULL",
+        [id]
+    );
+    if (current.length === 0) throw new Error("Acta no encontrada o ya eliminada.");
+    if (estado === "ANULADO" && current[0].estado === "ANULADO")
+        throw new Error("El acta ya se encuentra anulada.");
+    if (estado === "ACTIVO" && current[0].estado === "ACTIVO")
+        throw new Error("El acta ya se encuentra activa.");
+
     const setMotivo = motivo
         ? `observaciones = CASE
                WHEN observaciones IS NULL OR observaciones = '' THEN $2

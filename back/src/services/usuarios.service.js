@@ -10,7 +10,8 @@ export const crearUsuario = async ({
   apellidos,
   rol_id,
   telefono,
-  dni
+  dni,
+  permisos = {}
 }) => {
 
   if (!password || !nombres || !apellidos || !rol_id) {
@@ -44,7 +45,22 @@ export const crearUsuario = async ({
     [username, password_hash, nombres, apellidos, rol_id, telefono, dni]
   );
 
-  return rows[0];
+  const usuario = rows[0];
+
+  // Crear fila de permisos (por defecto todo en false salvo lo que venga explícito)
+  await pool.query(
+    `INSERT INTO usuario_permisos (usuario_id, actas_anular, actas_eliminar, personas_eliminar)
+     VALUES ($1, $2, $3, $4)
+     ON CONFLICT (usuario_id) DO NOTHING`,
+    [
+      usuario.id,
+      !!permisos.actas_anular,
+      !!permisos.actas_eliminar,
+      !!permisos.personas_eliminar,
+    ]
+  );
+
+  return usuario;
 };
 
 
@@ -73,6 +89,7 @@ export const listarUsuarios = async (filtros = {}) => {
   const queryBase = `
     FROM usuarios u
     JOIN roles r ON r.id = u.rol_id
+    LEFT JOIN usuario_permisos up ON up.usuario_id = u.id
     ${whereClause}
   `;
 
@@ -91,7 +108,10 @@ export const listarUsuarios = async (filtros = {}) => {
       u.telefono,
       u.dni,
       u.activo,
-      u.fecha_registro
+      u.fecha_registro,
+      COALESCE(up.actas_anular, false)      AS actas_anular,
+      COALESCE(up.actas_eliminar, false)    AS actas_eliminar,
+      COALESCE(up.personas_eliminar, false) AS personas_eliminar
     ${queryBase}
     ORDER BY u.apellidos, u.nombres
     LIMIT $${params.length + 1} OFFSET $${params.length + 2}
@@ -99,8 +119,13 @@ export const listarUsuarios = async (filtros = {}) => {
 
   const dataRes = await pool.query(dataQuery, [...params, parseInt(limit), offset]);
 
+  const data = dataRes.rows.map(({ actas_anular, actas_eliminar, personas_eliminar, ...u }) => ({
+    ...u,
+    permisos: { actas_anular, actas_eliminar, personas_eliminar },
+  }));
+
   return {
-    data: dataRes.rows,
+    data,
     total,
     pagination: {
       total,
@@ -127,9 +152,13 @@ export const obtenerUsuario = async (id) => {
       u.telefono,
       u.dni,
       u.activo,
-      u.fecha_registro
+      u.fecha_registro,
+      COALESCE(up.actas_anular, false)      AS actas_anular,
+      COALESCE(up.actas_eliminar, false)    AS actas_eliminar,
+      COALESCE(up.personas_eliminar, false) AS personas_eliminar
     FROM usuarios u
     JOIN roles r ON r.id = u.rol_id
+    LEFT JOIN usuario_permisos up ON up.usuario_id = u.id
     WHERE u.id = $1
       AND u.fecha_eliminacion IS NULL
     `,
@@ -140,7 +169,8 @@ export const obtenerUsuario = async (id) => {
     throw new Error("Usuario no encontrado");
   }
 
-  return rows[0];
+  const { actas_anular, actas_eliminar, personas_eliminar, ...usuario } = rows[0];
+  return { ...usuario, permisos: { actas_anular, actas_eliminar, personas_eliminar } };
 };
 
 /* ==============================
@@ -150,7 +180,7 @@ export const actualizarUsuario = async (
   id,
   datos
 ) => {
-  const { username, password, nombres, apellidos, rol_id, telefono, dni } = datos;
+  const { username, password, nombres, apellidos, rol_id, telefono, dni, permisos } = datos;
 
   const usuarioExistente = await pool.query(
     "SELECT * FROM usuarios WHERE id = $1 AND fecha_eliminacion IS NULL",
@@ -228,6 +258,25 @@ export const actualizarUsuario = async (
       id
     ]
   );
+
+  // UPSERT de permisos si vienen en la petición
+  if (permisos !== undefined) {
+    await pool.query(
+      `INSERT INTO usuario_permisos (usuario_id, actas_anular, actas_eliminar, personas_eliminar, updated_at)
+       VALUES ($1, $2, $3, $4, NOW())
+       ON CONFLICT (usuario_id) DO UPDATE
+         SET actas_anular      = EXCLUDED.actas_anular,
+             actas_eliminar    = EXCLUDED.actas_eliminar,
+             personas_eliminar = EXCLUDED.personas_eliminar,
+             updated_at        = NOW()`,
+      [
+        id,
+        !!permisos.actas_anular,
+        !!permisos.actas_eliminar,
+        !!permisos.personas_eliminar,
+      ]
+    );
+  }
 
   return rows[0];
 };

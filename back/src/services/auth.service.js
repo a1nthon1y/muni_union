@@ -69,21 +69,28 @@ export const limpiarTokensExpirados = async () => {
 export const obtenerUsuarioPorId = async (id) => {
     const { rows } = await pool.query(
         `SELECT u.id, u.username, u.nombres, u.apellidos, u.telefono,
-                u.activo, u.rol_id, r.nombre AS rol
+                u.activo, u.rol_id, r.nombre AS rol,
+                up.actas_anular, up.actas_eliminar, up.personas_eliminar
          FROM usuarios u
          JOIN roles r ON r.id = u.rol_id
+         LEFT JOIN usuario_permisos up ON up.usuario_id = u.id
          WHERE u.id = $1 AND u.fecha_eliminacion IS NULL AND u.activo = true`,
         [id]
     );
-    return rows[0] ?? null;
+    if (!rows[0]) return null;
+    const { actas_anular, actas_eliminar, personas_eliminar, ...usuario } = rows[0];
+    usuario.permisos = { actas_anular: !!actas_anular, actas_eliminar: !!actas_eliminar, personas_eliminar: !!personas_eliminar };
+    return usuario;
 };
 
 export const autenticarUsuario = async (username, password) => {
     const { rows } = await pool.query(
         `SELECT u.id, u.username, u.password_hash, u.nombres, u.apellidos,
-                u.telefono, u.activo, u.rol_id, r.nombre AS rol
+                u.telefono, u.activo, u.rol_id, r.nombre AS rol,
+                up.actas_anular, up.actas_eliminar, up.personas_eliminar
          FROM usuarios u
          JOIN roles r ON r.id = u.rol_id
+         LEFT JOIN usuario_permisos up ON up.usuario_id = u.id
          WHERE u.username = $1 AND u.fecha_eliminacion IS NULL`,
         [username]
     );
@@ -118,6 +125,11 @@ export const autenticarUsuario = async (username, password) => {
             rol_id:    usuario.rol_id,
             rol:       usuario.rol,
             activo:    usuario.activo,
+            permisos: {
+                actas_anular:      !!usuario.actas_anular,
+                actas_eliminar:    !!usuario.actas_eliminar,
+                personas_eliminar: !!usuario.personas_eliminar,
+            },
         },
     };
 };

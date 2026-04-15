@@ -12,6 +12,7 @@ import {
 } from "../controllers/actas.controller.js";
 import { auth } from "../middlewares/auth.middleware.js";
 import { allowRoles } from "../middlewares/role.middleware.js";
+import { requirePermiso } from "../middlewares/permisos.middleware.js";
 import { validate } from "../middlewares/validate.middleware.js";
 
 const router = Router();
@@ -52,9 +53,12 @@ router.get("/",    listarActas);
 router.get("/:id", obtenerActa);
 router.put("/:id", actualizarActa);
 
-// Rutas críticas (SOLO ADMIN)
-router.patch("/:id/anular",    anularActa);
-router.patch("/:id/reactivar", reactivarActa);
-router.delete("/:id",          allowRoles(1), eliminarActa);
+// Rutas críticas — con permisos granulares
+// anular: admin o usuario con permiso actas_anular
+// reactivar: solo admin
+// eliminar: admin o usuario con permiso actas_eliminar
+router.patch("/:id/anular",    requirePermiso("actas_anular"),   anularActa);
+router.patch("/:id/reactivar", allowRoles(1),                    reactivarActa);
+router.delete("/:id",          requirePermiso("actas_eliminar"), eliminarActa);
 
 export default router;

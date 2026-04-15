@@ -1,3 +1,9 @@
+export interface UsuarioPermisos {
+    actas_anular: boolean;
+    actas_eliminar: boolean;
+    personas_eliminar: boolean;
+}
+
 export interface Usuario {
     id: number;
     username: string;
@@ -8,6 +14,7 @@ export interface Usuario {
     telefono?: string;
     dni?: string;
     activo: boolean;
+    permisos?: UsuarioPermisos;
 }
 
 export interface AuthState {

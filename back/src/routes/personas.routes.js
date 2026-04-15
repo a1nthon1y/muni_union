@@ -127,6 +127,7 @@ import {
 } from "../controllers/personas.controller.js";
 import { auth } from "../middlewares/auth.middleware.js";
 import { allowRoles } from "../middlewares/role.middleware.js";
+import { requirePermiso } from "../middlewares/permisos.middleware.js";
 import { validate } from "../middlewares/validate.middleware.js";
 
 const personaRules = [
@@ -163,7 +164,7 @@ router.get("/buscar-duplicados", buscarDuplicados);
 router.get("/:id",  obtenerPersona);
 router.put("/:id",  personaRules, validate, actualizarPersona);
 
-router.patch("/:id/reactivar", allowRoles(1), reactivarPersona);
-router.delete("/:id",          allowRoles(1), eliminarPersona);
+router.patch("/:id/reactivar", allowRoles(1),                      reactivarPersona);
+router.delete("/:id",          requirePermiso("personas_eliminar"), eliminarPersona);
 
 export default router;

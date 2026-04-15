@@ -95,6 +95,7 @@ export const refresh = async (req, res) => {
         await guardarRefreshToken(usuario.id, newRefresh);
 
         setAuthCookies(res, accessToken, newRefresh);
+        // usuario ya incluye permisos frescos (obtenerUsuarioPorId hace LEFT JOIN con usuario_permisos)
         res.json({ usuario });
     } catch {
         clearAuthCookies(res);

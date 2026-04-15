@@ -98,6 +98,8 @@ export function ActasTable({
 }: ActasTableProps) {
     const usuario = useAuthStore((state) => state.usuario);
     const isAdmin = usuario?.rol_id === 1;
+    const canAnular  = isAdmin || !!usuario?.permisos?.actas_anular;
+    const canEliminar = isAdmin || !!usuario?.permisos?.actas_eliminar;
 
     // Helper para manejar boolean de PostgreSQL - Verificamos el campo correcto en 'Acta'
     const hasDoc = (acta: Acta) => !!acta.tiene_documento;
@@ -381,17 +383,18 @@ export function ActasTable({
                                                     )}
                                                 </DropdownMenuItem>
 
-                                                {isAdmin && (
+                                                {(canAnular || canEliminar) && (
                                                     <>
                                                         <DropdownMenuSeparator className="my-1" />
-                                                        {acta.estado === 'ACTIVO' ? (
+                                                        {canAnular && acta.estado === 'ACTIVO' && (
                                                             <DropdownMenuItem
                                                                 onClick={() => onAnular?.(acta)}
                                                                 className="text-amber-600 cursor-pointer font-medium gap-2 py-2.5 rounded-lg text-xs"
                                                             >
                                                                 <Ban className="h-4 w-4" /> Anular Registro
                                                             </DropdownMenuItem>
-                                                        ) : (
+                                                        )}
+                                                        {isAdmin && acta.estado !== 'ACTIVO' && (
                                                             <DropdownMenuItem
                                                                 onClick={() => onReactivar?.(acta)}
                                                                 className="text-emerald-600 cursor-pointer font-medium gap-2 py-2.5 rounded-lg text-xs"
@@ -399,12 +402,14 @@ export function ActasTable({
                                                                 <RotateCcw className="h-4 w-4" /> Reactivar Registro
                                                             </DropdownMenuItem>
                                                         )}
-                                                        <DropdownMenuItem
-                                                            onClick={() => onDelete(acta.id)}
-                                                            className="text-rose-600 cursor-pointer font-medium gap-2 py-2.5 rounded-lg text-xs"
-                                                        >
-                                                            <Trash2 className="h-4 w-4" /> Eliminar Registro
-                                                        </DropdownMenuItem>
+                                                        {canEliminar && (
+                                                            <DropdownMenuItem
+                                                                onClick={() => onDelete(acta.id)}
+                                                                className="text-rose-600 cursor-pointer font-medium gap-2 py-2.5 rounded-lg text-xs"
+                                                            >
+                                                                <Trash2 className="h-4 w-4" /> Eliminar Registro
+                                                            </DropdownMenuItem>
+                                                        )}
                                                     </>
                                                 )}
                                             </DropdownMenuContent>

@@ -62,6 +62,7 @@ export function PersonasTable({
 }: PersonasTableProps) {
     const usuario = useAuthStore((state) => state.usuario);
     const isAdmin = usuario?.rol_id === 1;
+    const canEliminar = isAdmin || !!usuario?.permisos?.personas_eliminar;
 
     return (
         <div className="space-y-4">
@@ -155,7 +156,7 @@ export function PersonasTable({
                                                 <DropdownMenuItem onClick={() => onEdit(persona)} className="cursor-pointer font-medium gap-2 py-2.5 rounded-lg text-xs">
                                                     <Edit2 className="icon-std" /> Editar Ciudadano
                                                 </DropdownMenuItem>
-                                                {isAdmin && (
+                                                {canEliminar && (
                                                     <>
                                                         <DropdownMenuSeparator className="my-1" />
                                                         <DropdownMenuItem
