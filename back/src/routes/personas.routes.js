@@ -162,7 +162,7 @@ router.get("/",     listarPersonas);
 router.get("/tipos-documento",  listarTiposDocumento);
 router.get("/buscar-duplicados", buscarDuplicados);
 router.get("/:id",  obtenerPersona);
-router.put("/:id",  personaRules, validate, actualizarPersona);
+router.put("/:id",  requirePermiso("personas_modificar"), personaRules, validate, actualizarPersona);
 
 router.patch("/:id/reactivar", allowRoles(1),                      reactivarPersona);
 router.delete("/:id",          requirePermiso("personas_eliminar"), eliminarPersona);

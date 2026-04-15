@@ -61,8 +61,9 @@ export function PersonasTable({
     onPageChange
 }: PersonasTableProps) {
     const usuario = useAuthStore((state) => state.usuario);
-    const isAdmin = usuario?.rol_id === 1;
-    const canEliminar = isAdmin || !!usuario?.permisos?.personas_eliminar;
+    const isAdmin      = usuario?.rol_id === 1;
+    const canModificar = isAdmin || (usuario?.permisos?.personas_modificar !== false);
+    const canEliminar  = isAdmin || !!usuario?.permisos?.personas_eliminar;
 
     return (
         <div className="space-y-4">
@@ -153,9 +154,11 @@ export function PersonasTable({
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end" className="w-52 rounded-xl shadow-xl border-border p-1">
                                                 <DropdownMenuLabel className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 px-2 py-2">Opciones</DropdownMenuLabel>
-                                                <DropdownMenuItem onClick={() => onEdit(persona)} className="cursor-pointer font-medium gap-2 py-2.5 rounded-lg text-xs">
-                                                    <Edit2 className="icon-std" /> Editar Ciudadano
-                                                </DropdownMenuItem>
+                                                {canModificar && (
+                                                    <DropdownMenuItem onClick={() => onEdit(persona)} className="cursor-pointer font-medium gap-2 py-2.5 rounded-lg text-xs">
+                                                        <Edit2 className="icon-std" /> Editar Ciudadano
+                                                    </DropdownMenuItem>
+                                                )}
                                                 {canEliminar && (
                                                     <>
                                                         <DropdownMenuSeparator className="my-1" />

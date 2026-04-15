@@ -97,9 +97,10 @@ export function ActasTable({
     onSearch
 }: ActasTableProps) {
     const usuario = useAuthStore((state) => state.usuario);
-    const isAdmin = usuario?.rol_id === 1;
-    const canAnular  = isAdmin || !!usuario?.permisos?.actas_anular;
-    const canEliminar = isAdmin || !!usuario?.permisos?.actas_eliminar;
+    const isAdmin    = usuario?.rol_id === 1;
+    const canModificar = isAdmin || (usuario?.permisos?.actas_modificar !== false);
+    const canAnular    = isAdmin || !!usuario?.permisos?.actas_anular;
+    const canEliminar  = isAdmin || !!usuario?.permisos?.actas_eliminar;
 
     // Helper para manejar boolean de PostgreSQL - Verificamos el campo correcto en 'Acta'
     const hasDoc = (acta: Acta) => !!acta.tiene_documento;
@@ -352,9 +353,11 @@ export function ActasTable({
                                                 <DropdownMenuItem onClick={() => onView(acta)} className="cursor-pointer font-medium gap-2 py-2.5 rounded-lg text-xs">
                                                     <Eye className="icon-std" /> Ver Detalles
                                                 </DropdownMenuItem>
-                                                <DropdownMenuItem onClick={() => onEdit?.(acta)} className="cursor-pointer font-medium gap-2 py-2.5 rounded-lg text-xs">
-                                                    <Edit className="icon-std" /> Editar Información
-                                                </DropdownMenuItem>
+                                                {canModificar && (
+                                                    <DropdownMenuItem onClick={() => onEdit?.(acta)} className="cursor-pointer font-medium gap-2 py-2.5 rounded-lg text-xs">
+                                                        <Edit className="icon-std" /> Editar Información
+                                                    </DropdownMenuItem>
+                                                )}
                                                 <DropdownMenuSeparator className="my-1" />
                                                 {hasDoc(acta) && (
                                                     <>

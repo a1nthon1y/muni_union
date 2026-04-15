@@ -45,7 +45,9 @@ const usuarioSchema = z.object({
     password: z.string().optional().or(z.literal("")),
     permisos_actas_anular: z.boolean().default(false),
     permisos_actas_eliminar: z.boolean().default(false),
+    permisos_actas_modificar: z.boolean().default(true),
     permisos_personas_eliminar: z.boolean().default(false),
+    permisos_personas_modificar: z.boolean().default(true),
 });
 
 type UsuarioFormValues = z.infer<typeof usuarioSchema>;
@@ -88,7 +90,9 @@ export function UsuarioSheet({
             password: "",
             permisos_actas_anular: false,
             permisos_actas_eliminar: false,
+            permisos_actas_modificar: true,
             permisos_personas_eliminar: false,
+            permisos_personas_modificar: true,
         },
     });
 
@@ -119,9 +123,11 @@ export function UsuarioSheet({
                     telefono: usuario.telefono || "",
                     dni: usuario.dni || "",
                     password: "",
-                    permisos_actas_anular:      usuario.permisos?.actas_anular ?? false,
-                    permisos_actas_eliminar:    usuario.permisos?.actas_eliminar ?? false,
-                    permisos_personas_eliminar: usuario.permisos?.personas_eliminar ?? false,
+                    permisos_actas_anular:       usuario.permisos?.actas_anular      ?? false,
+                    permisos_actas_eliminar:     usuario.permisos?.actas_eliminar    ?? false,
+                    permisos_actas_modificar:    usuario.permisos?.actas_modificar   ?? true,
+                    permisos_personas_eliminar:  usuario.permisos?.personas_eliminar ?? false,
+                    permisos_personas_modificar: usuario.permisos?.personas_modificar ?? true,
                 });
             } else {
                 form.reset({
@@ -133,7 +139,9 @@ export function UsuarioSheet({
                     password: "",
                     permisos_actas_anular: false,
                     permisos_actas_eliminar: false,
+                    permisos_actas_modificar: true,
                     permisos_personas_eliminar: false,
+                    permisos_personas_modificar: true,
                 });
             }
         } else {
@@ -147,7 +155,9 @@ export function UsuarioSheet({
                 password: "",
                 permisos_actas_anular: false,
                 permisos_actas_eliminar: false,
+                permisos_actas_modificar: true,
                 permisos_personas_eliminar: false,
+                permisos_personas_modificar: true,
             });
             form.clearErrors();
         }
@@ -174,9 +184,11 @@ export function UsuarioSheet({
                 password: values.password || undefined,
                 // Solo enviar permisos para usuarios REGISTRADOR
                 permisos: isRegistrador ? {
-                    actas_anular:      values.permisos_actas_anular,
-                    actas_eliminar:    values.permisos_actas_eliminar,
-                    personas_eliminar: values.permisos_personas_eliminar,
+                    actas_anular:       values.permisos_actas_anular,
+                    actas_eliminar:     values.permisos_actas_eliminar,
+                    actas_modificar:    values.permisos_actas_modificar,
+                    personas_eliminar:  values.permisos_personas_eliminar,
+                    personas_modificar: values.permisos_personas_modificar,
                 } : undefined,
             };
 
@@ -367,14 +379,25 @@ export function UsuarioSheet({
                                             <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Actas</p>
                                             <FormField
                                                 control={form.control}
+                                                name="permisos_actas_modificar"
+                                                render={({ field }) => (
+                                                    <FormItem className="flex items-center gap-3 space-y-0">
+                                                        <FormControl>
+                                                            <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                                                        </FormControl>
+                                                        <FormLabel className="text-xs font-semibold cursor-pointer">
+                                                            Puede modificar actas
+                                                        </FormLabel>
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <FormField
+                                                control={form.control}
                                                 name="permisos_actas_anular"
                                                 render={({ field }) => (
                                                     <FormItem className="flex items-center gap-3 space-y-0">
                                                         <FormControl>
-                                                            <Checkbox
-                                                                checked={field.value}
-                                                                onCheckedChange={field.onChange}
-                                                            />
+                                                            <Checkbox checked={field.value} onCheckedChange={field.onChange} />
                                                         </FormControl>
                                                         <FormLabel className="text-xs font-semibold cursor-pointer">
                                                             Puede anular actas
@@ -388,10 +411,7 @@ export function UsuarioSheet({
                                                 render={({ field }) => (
                                                     <FormItem className="flex items-center gap-3 space-y-0">
                                                         <FormControl>
-                                                            <Checkbox
-                                                                checked={field.value}
-                                                                onCheckedChange={field.onChange}
-                                                            />
+                                                            <Checkbox checked={field.value} onCheckedChange={field.onChange} />
                                                         </FormControl>
                                                         <FormLabel className="text-xs font-semibold cursor-pointer">
                                                             Puede eliminar actas
@@ -404,14 +424,25 @@ export function UsuarioSheet({
                                             <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Personas / Ciudadanos</p>
                                             <FormField
                                                 control={form.control}
+                                                name="permisos_personas_modificar"
+                                                render={({ field }) => (
+                                                    <FormItem className="flex items-center gap-3 space-y-0">
+                                                        <FormControl>
+                                                            <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                                                        </FormControl>
+                                                        <FormLabel className="text-xs font-semibold cursor-pointer">
+                                                            Puede modificar ciudadanos
+                                                        </FormLabel>
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <FormField
+                                                control={form.control}
                                                 name="permisos_personas_eliminar"
                                                 render={({ field }) => (
                                                     <FormItem className="flex items-center gap-3 space-y-0">
                                                         <FormControl>
-                                                            <Checkbox
-                                                                checked={field.value}
-                                                                onCheckedChange={field.onChange}
-                                                            />
+                                                            <Checkbox checked={field.value} onCheckedChange={field.onChange} />
                                                         </FormControl>
                                                         <FormLabel className="text-xs font-semibold cursor-pointer">
                                                             Puede eliminar ciudadanos

@@ -45,13 +45,13 @@ const siguienteNumeroValidation = [
         .withMessage("modo debe ser CLASICO o CUI."),
 ];
 
-// ── Rutas generales (ADMIN y USER) ───────────────────────────────────────────
+// ── Rutas generales ───────────────────────────────────────────────────────────
 // IMPORTANTE: /siguiente-numero debe ir ANTES de /:id
 router.get("/siguiente-numero", siguienteNumeroValidation, validate, siguienteNumero);
 router.post("/",   crearActaValidation, validate, crearActa);
 router.get("/",    listarActas);
 router.get("/:id", obtenerActa);
-router.put("/:id", actualizarActa);
+router.put("/:id", requirePermiso("actas_modificar"), actualizarActa);
 
 // Rutas críticas — con permisos granulares
 // anular: admin o usuario con permiso actas_anular

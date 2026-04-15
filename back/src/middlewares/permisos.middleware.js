@@ -20,7 +20,7 @@ export const requirePermiso = (campo) => async (req, res, next) => {
         if (req.user.rol_id === 1) return next();
 
         const { rows } = await pool.query(
-            "SELECT actas_anular, actas_eliminar, personas_eliminar FROM usuario_permisos WHERE usuario_id = $1",
+            "SELECT actas_anular, actas_eliminar, actas_modificar, personas_eliminar, personas_modificar FROM usuario_permisos WHERE usuario_id = $1",
             [req.user.id]
         );
 

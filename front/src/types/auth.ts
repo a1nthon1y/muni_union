@@ -1,7 +1,9 @@
 export interface UsuarioPermisos {
     actas_anular: boolean;
     actas_eliminar: boolean;
+    actas_modificar: boolean;
     personas_eliminar: boolean;
+    personas_modificar: boolean;
 }
 
 export interface Usuario {

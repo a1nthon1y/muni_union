@@ -70,7 +70,8 @@ export const obtenerUsuarioPorId = async (id) => {
     const { rows } = await pool.query(
         `SELECT u.id, u.username, u.nombres, u.apellidos, u.telefono,
                 u.activo, u.rol_id, r.nombre AS rol,
-                up.actas_anular, up.actas_eliminar, up.personas_eliminar
+                up.actas_anular, up.actas_eliminar, up.actas_modificar,
+                up.personas_eliminar, up.personas_modificar
          FROM usuarios u
          JOIN roles r ON r.id = u.rol_id
          LEFT JOIN usuario_permisos up ON up.usuario_id = u.id
@@ -78,8 +79,14 @@ export const obtenerUsuarioPorId = async (id) => {
         [id]
     );
     if (!rows[0]) return null;
-    const { actas_anular, actas_eliminar, personas_eliminar, ...usuario } = rows[0];
-    usuario.permisos = { actas_anular: !!actas_anular, actas_eliminar: !!actas_eliminar, personas_eliminar: !!personas_eliminar };
+    const { actas_anular, actas_eliminar, actas_modificar, personas_eliminar, personas_modificar, ...usuario } = rows[0];
+    usuario.permisos = {
+        actas_anular:       !!actas_anular,
+        actas_eliminar:     !!actas_eliminar,
+        actas_modificar:    actas_modificar !== false, // default true
+        personas_eliminar:  !!personas_eliminar,
+        personas_modificar: personas_modificar !== false, // default true
+    };
     return usuario;
 };
 
@@ -87,7 +94,8 @@ export const autenticarUsuario = async (username, password) => {
     const { rows } = await pool.query(
         `SELECT u.id, u.username, u.password_hash, u.nombres, u.apellidos,
                 u.telefono, u.activo, u.rol_id, r.nombre AS rol,
-                up.actas_anular, up.actas_eliminar, up.personas_eliminar
+                up.actas_anular, up.actas_eliminar, up.actas_modificar,
+                up.personas_eliminar, up.personas_modificar
          FROM usuarios u
          JOIN roles r ON r.id = u.rol_id
          LEFT JOIN usuario_permisos up ON up.usuario_id = u.id
@@ -126,9 +134,11 @@ export const autenticarUsuario = async (username, password) => {
             rol:       usuario.rol,
             activo:    usuario.activo,
             permisos: {
-                actas_anular:      !!usuario.actas_anular,
-                actas_eliminar:    !!usuario.actas_eliminar,
-                personas_eliminar: !!usuario.personas_eliminar,
+                actas_anular:       !!usuario.actas_anular,
+                actas_eliminar:     !!usuario.actas_eliminar,
+                actas_modificar:    usuario.actas_modificar !== false,
+                personas_eliminar:  !!usuario.personas_eliminar,
+                personas_modificar: usuario.personas_modificar !== false,
             },
         },
     };
