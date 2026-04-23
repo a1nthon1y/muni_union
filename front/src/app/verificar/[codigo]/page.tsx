@@ -168,7 +168,7 @@ export default function VerificarPage() {
     <div class="header-text">
       <p>República del Perú</p>
       <h1>Municipalidad Distrital de La Unión</h1>
-      <p>Oficina de Registro Civil &nbsp;·&nbsp; Sistema STDU v2.0</p>
+      <p>Oficina de Registro Civil</p>
     </div>
     <div class="header-right">
       <div class="doc-title">Documento</div>
@@ -195,7 +195,7 @@ export default function VerificarPage() {
       <br/>URL: ${window.location.href}
     </div>
     <div style="text-align:right">
-      <strong>Sistema STDU</strong>
+      <strong>Oficina de Registro Civil</strong>
       Municipalidad Distrital de La Unión<br/>
       Tarma, Perú
     </div>

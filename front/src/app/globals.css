@@ -256,6 +256,13 @@
     margin: 1cm;
   }
 
+  /* Evitar que secciones clave se corten entre páginas */
+  .print-container table,
+  .print-container thead,
+  .print-container tbody tr {
+    page-break-inside: avoid;
+  }
+
   html,
   body {
     overflow: visible !important;

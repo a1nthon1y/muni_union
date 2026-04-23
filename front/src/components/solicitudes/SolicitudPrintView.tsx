@@ -13,7 +13,7 @@ export function SolicitudPrintView({ solicitud }: SolicitudPrintViewProps) {
 
     return (
         <div className="print-container bg-white text-black p-0 font-serif leading-relaxed block overflow-visible">
-            <div className="max-w-[190mm] mx-auto p-10 border-2 border-slate-900 rounded-sm m-4 relative overflow-hidden">
+            <div className="max-w-[190mm] mx-auto p-8 border-2 border-slate-900 rounded-sm m-3 relative overflow-hidden">
 
                 {/* Decorative corner */}
                 <div className="absolute top-0 right-0 w-32 h-32 bg-slate-900 text-white flex items-center justify-center transform rotate-45 translate-x-16 -translate-y-16">
@@ -21,7 +21,7 @@ export function SolicitudPrintView({ solicitud }: SolicitudPrintViewProps) {
                 </div>
 
                 {/* Header Compacto */}
-                <div className="flex flex-col items-center text-center space-y-1 border-b-2 border-slate-900 pb-4 mb-6">
+                <div className="flex flex-col items-center text-center space-y-1 border-b-2 border-slate-900 pb-3 mb-4">
                     <img src="/Logo_MDUnion.svg" alt="Logo" className="w-16 h-16 mb-1" />
                     <h1 className="text-xl font-black uppercase tracking-widest text-slate-900">Municipalidad Distrital de La Unión</h1>
                     <h2 className="text-[11px] font-black uppercase tracking-[0.4em] text-slate-500">Constancia de Trámite Municipal</h2>
@@ -31,18 +31,18 @@ export function SolicitudPrintView({ solicitud }: SolicitudPrintViewProps) {
                 </div>
 
                 {/* Introduction Compacta */}
-                <div className="mb-6 text-justify">
+                <div className="mb-4 text-justify">
                     <p className="text-[11px] font-semibold text-slate-800 leading-normal uppercase">
                         La Oficina de Registro Civil de la Municipalidad Distrital de la Unión, certifica que se ha recibido y procesado satisfactoriamente el trámite bajo la modalidad de <span className="font-black text-slate-900">"{solicitud.tipo_solicitud}"</span>, registrado en nuestro sistema oficial STDU con la siguiente información:
                     </p>
                 </div>
 
                 {/* Info Grid Compacto */}
-                <div className="grid grid-cols-1 gap-6 mb-8">
+                <div className="grid grid-cols-1 gap-4 mb-4">
 
                     {/* Solicitante Compacto */}
                     <section className="border rounded-xl p-4 bg-slate-50 border-slate-200">
-                        <h4 className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-400 mb-4 flex items-center gap-3">
+                        <h4 className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-400 mb-3 flex items-center gap-3">
                             <span className="h-px bg-slate-200 flex-1"></span>
                             Información del Solicitante
                             <span className="h-px bg-slate-200 flex-1"></span>
@@ -68,7 +68,7 @@ export function SolicitudPrintView({ solicitud }: SolicitudPrintViewProps) {
 
                     {/* Detalles del Trámite */}
                     <section className="px-2">
-                        <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-6 flex items-center gap-4">
+                        <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-3 flex items-center gap-4">
                             <span className="h-px bg-slate-200 flex-1"></span>
                             Detalle de Documentos Solicitados
                             <span className="h-px bg-slate-200 flex-1"></span>
@@ -107,7 +107,7 @@ export function SolicitudPrintView({ solicitud }: SolicitudPrintViewProps) {
                 </div>
 
                 {/* Footer info Compacto */}
-                <div className="bg-slate-900 text-white p-4 rounded-xl flex justify-between items-center mb-8">
+                <div className="bg-slate-900 text-white p-4 rounded-xl flex justify-between items-center mb-5">
                     <div className="space-y-0.5">
                         <p className="text-[9px] font-black uppercase tracking-widest opacity-60">Estado Actual:</p>
                         <p className="text-base font-black italic tracking-widest uppercase">{solicitud.estado}</p>
@@ -121,7 +121,7 @@ export function SolicitudPrintView({ solicitud }: SolicitudPrintViewProps) {
                 </div>
 
                 {/* Signatures Compacto */}
-                <div className="mt-16 flex justify-between px-10">
+                <div className="mt-8 flex justify-between px-10">
                     <div className="text-center w-40 border-t-2 border-slate-900 pt-2">
                         <p className="text-[9px] font-black uppercase tracking-widest">Solicitante</p>
                         <p className="text-[7px] text-slate-400 mt-0.5 uppercase italic tracking-tighter">(Firma y Huella)</p>
@@ -132,7 +132,7 @@ export function SolicitudPrintView({ solicitud }: SolicitudPrintViewProps) {
                     </div>
                 </div>
 
-                <div className="mt-8 border-t border-slate-100 pt-5 text-center space-y-2">
+                <div className="mt-5 border-t border-slate-100 pt-4 text-center space-y-1.5">
                     <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">
                         Verifique la autenticidad de este documento en:
                     </p>
