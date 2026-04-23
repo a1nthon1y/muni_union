@@ -269,14 +269,16 @@ export function SolicitudDetailSheet({
 
                 {/* Footer unificado */}
                 <div className="p-5 border-t bg-background space-y-3">
-                    {/* Botón de Impresión - Siempre disponible */}
-                    <Button
-                        variant="outline"
-                        className="w-full h-11 rounded-xl font-bold uppercase text-[11px] tracking-widest text-slate-600 hover:bg-slate-50 border-slate-200"
-                        onClick={() => window.open(`/print/solicitud/${solicitud.id}`, '_blank')}
-                    >
-                        <Printer size={16} className="mr-2" /> Imprimir Documento / Cargo
-                    </Button>
+                    {/* Botón de Impresión — solo para ATENDIDO y PENDIENTE */}
+                    {solicitud.estado !== 'ANULADO' && (
+                        <Button
+                            variant="outline"
+                            className="w-full h-11 rounded-xl font-bold uppercase text-[11px] tracking-widest text-slate-600 hover:bg-slate-50 border-slate-200"
+                            onClick={() => window.open(`/print/solicitud/${solicitud.id}`, '_blank')}
+                        >
+                            <Printer size={16} className="mr-2" /> Imprimir Documento / Cargo
+                        </Button>
+                    )}
 
                     <div className="flex gap-4">
                         {solicitud.estado === 'PENDIENTE' && (
