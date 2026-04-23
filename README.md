@@ -195,14 +195,35 @@ Ver documentación completa en `/api/docs` (modo desarrollo).
 
 ---
 
+## Arquitectura de red — Acceso dual
+
+El sistema opera con **dos puntos de entrada separados por Nginx**:
+
+| Entrada | Quién accede | Qué expone |
+|---|---|---|
+| IP/dominio **interno** (LAN) | Trabajadores de la municipalidad | Sistema completo (login, actas, solicitudes, reportes, etc.) |
+| IP/dominio **público** (internet) | Ciudadanos en cualquier red | Solo `/verificar` — portal de verificación de constancias |
+
+```
+Internet ──► verificar.muniunion.gob.pe ──► Nginx ──► solo /verificar/*
+Red LAN  ──► 192.168.x.x (o hostname)  ──► Nginx ──► sistema completo
+                                                    │
+                                          Next.js + Express + PostgreSQL
+                                          (una sola instancia en el servidor)
+```
+
+> **Beneficio:** Una sola instalación en el servidor on-premise. Nginx hace toda la separación. El portal público no requiere segunda VM ni segundo servidor.
+
+---
+
 ## Despliegue en producción (on-premise / servidor)
 
 ### Requisitos del servidor
 
 - Ubuntu 22.04 LTS (recomendado)
 - Docker Engine + Docker Compose
-- Dominio o IP fija
-- Certificados SSL (`.pem`)
+- **Dos IPs o un dominio público + IP interna fija**
+- Certificados SSL para cada entrada (ver paso 2)
 
 ### 1. Variables de entorno de producción
 
@@ -218,18 +239,37 @@ DB_NAME=muni_union
 JWT_SECRET=...64_caracteres_aleatorios...
 REFRESH_TOKEN_SECRET=...64_caracteres_aleatorios_diferentes...
 
-# URLs
-FRONTEND_URL=https://tu-dominio.com
-NEXT_PUBLIC_API_URL=https://tu-dominio.com/api
+# Red interna — trabajadores (IP o hostname LAN)
+INTERNAL_DOMAIN=192.168.1.100
+FRONTEND_URL=https://192.168.1.100
+
+# Portal público — ciudadanos (dominio con acceso a internet)
+PUBLIC_DOMAIN=verificar.muniunion.gob.pe
+NEXT_PUBLIC_API_URL=https://192.168.1.100/api
 ```
 
 ### 2. Certificados SSL
 
 ```bash
-mkdir -p nginx/ssl
-# Copiar certificados:
-cp tu_cert.pem nginx/ssl/cert.pem
-cp tu_key.pem  nginx/ssl/key.pem
+# Certificado INTERNO (autofirmado para la LAN)
+mkdir -p nginx/ssl/internal
+openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
+  -keyout nginx/ssl/internal/key.pem \
+  -out    nginx/ssl/internal/cert.pem \
+  -subj "/CN=192.168.1.100/O=Municipalidad La Union"
+
+# Certificado PÚBLICO (Let's Encrypt si hay dominio público)
+mkdir -p nginx/ssl/public
+# Opción A — Let's Encrypt (requiere dominio y puerto 80 abierto):
+#   certbot certonly --standalone -d verificar.muniunion.gob.pe
+#   cp /etc/letsencrypt/live/verificar.muniunion.gob.pe/fullchain.pem nginx/ssl/public/cert.pem
+#   cp /etc/letsencrypt/live/verificar.muniunion.gob.pe/privkey.pem   nginx/ssl/public/key.pem
+#
+# Opción B — autofirmado (si no hay dominio público):
+openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
+  -keyout nginx/ssl/public/key.pem \
+  -out    nginx/ssl/public/cert.pem \
+  -subj "/CN=verificar.muniunion.gob.pe/O=Municipalidad La Union"
 ```
 
 ### 3. Levantar todos los servicios

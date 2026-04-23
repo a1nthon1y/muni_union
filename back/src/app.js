@@ -16,6 +16,7 @@ import documentosRoutes from "./routes/documentos.routes.js";
 import auditoriaRoutes from "./routes/auditoria.routes.js";
 import reportesRoutes from "./routes/reportes.routes.js";
 import importacionRoutes from "./routes/importacion.routes.js";
+import verificarRoutes from "./routes/verificar.routes.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
 import { auditMiddleware } from "./middlewares/auditMiddleware.js";
 const __filename = fileURLToPath(import.meta.url);
@@ -52,6 +53,9 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // Servir carpetas estáticas (Documentos subidos)
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+
+// Verificación pública de constancias — sin auth, antes de la auditoría
+app.use("/api/verificar", verificarRoutes);
 
 // Auditoría automática — registra toda acción autenticada (GET + writes no marcados)
 app.use("/api", auditMiddleware);

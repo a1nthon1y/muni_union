@@ -65,9 +65,15 @@ services:
     ports:
       - "80:80"
       - "443:443"
+    environment:
+      # Dominio/IP público (portal de verificación — acceso desde internet)
+      PUBLIC_DOMAIN:   ${PUBLIC_DOMAIN:-verificar.muniunion.gob.pe}
+      # Dominio/IP interno (sistema completo — solo red LAN)
+      INTERNAL_DOMAIN: ${INTERNAL_DOMAIN:-192.168.1.100}
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/ssl:/etc/nginx/ssl:ro         # colocar cert.pem y key.pem aquí
+      - ./nginx/ssl/public:/etc/nginx/ssl/public:ro    # cert público (Let's Encrypt o autofirmado)
+      - ./nginx/ssl/internal:/etc/nginx/ssl/internal:ro # cert interno (autofirmado CA interna)
       - ./nginx/logs:/var/log/nginx
     depends_on:
       - backend

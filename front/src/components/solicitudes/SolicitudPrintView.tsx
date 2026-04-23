@@ -132,8 +132,15 @@ export function SolicitudPrintView({ solicitud }: SolicitudPrintViewProps) {
                     </div>
                 </div>
 
-                <div className="mt-8 text-center">
-                    <p className="text-[8px] font-black uppercase tracking-[0.4em] text-slate-300 lines-clamp-1">
+                <div className="mt-8 border-t border-slate-100 pt-5 text-center space-y-2">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">
+                        Verifique la autenticidad de este documento en:
+                    </p>
+                    <p className="text-[10px] font-black text-slate-800 font-mono tracking-wider break-all">
+                        {typeof window !== "undefined" ? window.location.origin : "https://sistema.muniunion.gob.pe"}
+                        /verificar/{solicitud.id.toString().padStart(6, "0")}
+                    </p>
+                    <p className="text-[8px] font-black uppercase tracking-[0.4em] text-slate-300 mt-2">
                         Sistema Unificado · Unión V2.0 · {format(new Date(), "yyyy")}
                     </p>
                 </div>
