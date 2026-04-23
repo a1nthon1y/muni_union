@@ -117,82 +117,109 @@ export default function VerificarPage() {
         day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit",
     });
 
+    const handlePrint = () => {
+        if (!constancia || !est) return;
+        const estadoEmoji = constancia.estado === "ATENDIDO" ? "✅" : constancia.estado === "PENDIENTE" ? "⏳" : "❌";
+        const estadoColor = constancia.estado === "ATENDIDO" ? "#059669" : constancia.estado === "PENDIENTE" ? "#d97706" : "#dc2626";
+        const estadoBg    = constancia.estado === "ATENDIDO" ? "#d1fae5" : constancia.estado === "PENDIENTE" ? "#fef3c7" : "#fee2e2";
+        const rows = [
+            ["N° de Constancia",    constancia.numero],
+            ["Tipo de Trámite",     constancia.tipo_solicitud],
+            ["Solicitante",         constancia.solicitante.toUpperCase()],
+            ["Fecha de Solicitud",  formatFecha(constancia.fecha_solicitud)],
+            ["Fecha de Atención",   formatFecha(constancia.fecha_atencion)],
+            ["Cant. de Copias",     `${constancia.cantidad_documentos} copia${constancia.cantidad_documentos !== 1 ? "s" : ""}`],
+            ["Total Liquidado",     `S/ ${Number(constancia.total).toFixed(2)}`],
+            ...(constancia.atendido_por ? [["Atendido por", constancia.atendido_por.toUpperCase()]] : []),
+        ];
+
+        const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Comprobante de Verificación N° ${constancia.numero}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; color: #1e293b; padding: 40px; font-size: 13px; line-height: 1.5; }
+    .header { display: flex; align-items: center; gap: 18px; border-bottom: 2px solid #1e293b; padding-bottom: 16px; margin-bottom: 24px; }
+    .header img { width: 60px; height: 60px; }
+    .header-text h1 { font-size: 15px; font-weight: 900; text-transform: uppercase; letter-spacing: .04em; }
+    .header-text p  { font-size: 10px; text-transform: uppercase; letter-spacing: .12em; color: #64748b; margin-top: 2px; }
+    .header-right   { margin-left: auto; text-align: right; }
+    .header-right .doc-title { font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: .1em; color: #64748b; }
+    .header-right .doc-sub   { font-size: 14px; font-weight: 900; text-transform: uppercase; }
+    .estado-box { border: 2px solid ${estadoColor}; background: ${estadoBg}; border-radius: 8px; padding: 14px 20px; margin-bottom: 24px; display: flex; align-items: center; gap: 14px; }
+    .estado-box .emoji { font-size: 28px; }
+    .estado-box .estado-label { font-size: 14px; font-weight: 900; text-transform: uppercase; color: ${estadoColor}; }
+    .estado-box .estado-desc  { font-size: 11px; color: #475569; margin-top: 2px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 28px; }
+    td { padding: 9px 12px; border-bottom: 1px solid #e2e8f0; }
+    td:first-child { font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: .1em; color: #94a3b8; width: 170px; padding-top: 11px; vertical-align: top; }
+    td:last-child  { font-weight: 700; }
+    .footer { border-top: 1px solid #e2e8f0; padding-top: 14px; display: flex; justify-content: space-between; font-size: 10px; color: #94a3b8; }
+    .footer strong { display: block; font-weight: 900; text-transform: uppercase; letter-spacing: .08em; color: #64748b; margin-bottom: 2px; }
+    .watermark { text-align: center; font-size: 9px; color: #cbd5e1; text-transform: uppercase; letter-spacing: .15em; margin-top: 18px; }
+    @media print { body { padding: 28px; } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <img src="${window.location.origin}/Logo_MDUnion.svg" alt="Logo" />
+    <div class="header-text">
+      <p>República del Perú</p>
+      <h1>Municipalidad Distrital de La Unión</h1>
+      <p>Oficina de Registro Civil &nbsp;·&nbsp; Sistema STDU v2.0</p>
+    </div>
+    <div class="header-right">
+      <div class="doc-title">Documento</div>
+      <div class="doc-sub">Comprobante de Verificación</div>
+    </div>
+  </div>
+
+  <div class="estado-box">
+    <div class="emoji">${estadoEmoji}</div>
+    <div>
+      <div class="estado-label">Constancia ${constancia.numero} — ${est.label}</div>
+      <div class="estado-desc">${est.description}</div>
+    </div>
+  </div>
+
+  <table>
+    ${rows.map(([label, val]) => `<tr><td>${label}</td><td>${val}</td></tr>`).join("")}
+  </table>
+
+  <div class="footer">
+    <div>
+      <strong>Verificado digitalmente el</strong>
+      ${verifiedAt}
+      <br/>URL: ${window.location.href}
+    </div>
+    <div style="text-align:right">
+      <strong>Sistema STDU</strong>
+      Municipalidad Distrital de La Unión<br/>
+      Piura, Perú
+    </div>
+  </div>
+
+  <div class="watermark">
+    Este comprobante confirma la verificación del documento en la fecha indicada.<br/>
+    No reemplaza a la constancia oficial emitida por la Oficina de Registro Civil.
+  </div>
+
+  <script>window.onload = () => { window.print(); }<\/script>
+</body>
+</html>`;
+
+        const win = window.open("", "_blank");
+        if (!win) return;
+        win.document.write(html);
+        win.document.close();
+    };
+
     return (
         <>
-            {/* ── Vista de impresión — solo se ve al imprimir ─────── */}
-            {constancia && (
-                <div className="hidden print:block p-12 font-sans text-slate-900">
-                    {/* Encabezado institucional */}
-                    <div className="flex items-center gap-5 border-b-2 border-slate-800 pb-6 mb-8">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src="/Logo_MDUnion.svg" alt="Logo" className="w-16 h-16" />
-                        <div>
-                            <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">República del Perú</p>
-                            <h1 className="text-lg font-black uppercase tracking-wide">Municipalidad Distrital de La Unión</h1>
-                            <p className="text-xs font-bold uppercase tracking-widest text-slate-500">Oficina de Registro Civil · Sistema STDU v2.0</p>
-                        </div>
-                        <div className="ml-auto text-right">
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Comprobante de</p>
-                            <p className="text-base font-black uppercase">Verificación Digital</p>
-                        </div>
-                    </div>
-
-                    {/* Resultado */}
-                    <div className={`border-2 rounded-lg px-6 py-4 mb-8 flex items-center gap-4 ${
-                        constancia.estado === "ATENDIDO" ? "border-emerald-600 bg-emerald-50" :
-                        constancia.estado === "PENDIENTE" ? "border-amber-500 bg-amber-50" :
-                        "border-rose-600 bg-rose-50"
-                    }`}>
-                        <div className="text-3xl">
-                            {constancia.estado === "ATENDIDO" ? "✅" : constancia.estado === "PENDIENTE" ? "⏳" : "❌"}
-                        </div>
-                        <div>
-                            <p className="text-base font-black uppercase tracking-wide">
-                                Constancia {numFmt} — {est?.label ?? constancia.estado}
-                            </p>
-                            <p className="text-xs text-slate-600 mt-0.5">{est?.description}</p>
-                        </div>
-                    </div>
-
-                    {/* Datos */}
-                    <table className="w-full text-sm border-collapse mb-8">
-                        <tbody>
-                            {[
-                                ["N° de Constancia", constancia.numero],
-                                ["Tipo de Trámite", constancia.tipo_solicitud],
-                                ["Solicitante", constancia.solicitante.toUpperCase()],
-                                ["Fecha de Solicitud", formatFecha(constancia.fecha_solicitud)],
-                                ["Fecha de Atención", formatFecha(constancia.fecha_atencion)],
-                                ["Cantidad de Copias", `${constancia.cantidad_documentos} copia${constancia.cantidad_documentos !== 1 ? "s" : ""}`],
-                                ["Total Liquidado", `S/ ${Number(constancia.total).toFixed(2)}`],
-                                ...(constancia.atendido_por ? [["Atendido por", constancia.atendido_por.toUpperCase()]] : []),
-                            ].map(([label, val]) => (
-                                <tr key={label} className="border-b border-slate-200">
-                                    <td className="py-2.5 pr-4 font-black text-slate-400 uppercase tracking-widest text-[10px] w-48 align-top pt-3">{label}</td>
-                                    <td className="py-2.5 font-bold text-slate-900">{val}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-
-                    {/* Pie */}
-                    <div className="border-t border-slate-300 pt-5 flex justify-between items-end text-[10px] text-slate-400">
-                        <div>
-                            <p className="font-black uppercase tracking-widest">Verificado digitalmente el:</p>
-                            <p className="font-bold text-slate-600">{verifiedAt}</p>
-                            <p className="mt-1">URL de verificación: {typeof window !== "undefined" ? window.location.href : ""}</p>
-                        </div>
-                        <div className="text-right">
-                            <p className="font-black uppercase tracking-widest">Sistema STDU</p>
-                            <p>Municipalidad Distrital de La Unión</p>
-                            <p>Piura, Perú</p>
-                        </div>
-                    </div>
-                </div>
-            )}
-
             {/* ── Vista normal (pantalla) ──────────────────────────── */}
-            <div className="min-h-screen flex flex-col lg:flex-row font-sans print:hidden">
+            <div className="min-h-screen flex flex-col lg:flex-row font-sans">
 
                 {/* Panel izquierdo */}
                 <div className="lg:w-2/5 bg-[#0f2744] flex flex-col items-center justify-center px-10 py-14 text-white text-center">
@@ -308,7 +335,7 @@ export default function VerificarPage() {
                                 {/* Botón imprimir — solo si ATENDIDO */}
                                 {est.canPrint && (
                                     <button
-                                        onClick={() => window.print()}
+                                        onClick={handlePrint}
                                         className="w-full bg-[#0f2744] hover:bg-[#1a3a5c] active:scale-[0.98] text-white font-black uppercase tracking-widest text-xs py-3.5 rounded-2xl flex items-center justify-center gap-2.5 transition-all shadow-md shadow-slate-900/20"
                                     >
                                         <Printer className="w-4 h-4" />
@@ -359,6 +386,6 @@ export default function VerificarPage() {
                     </div>
                 </div>
             </div>
-        </>
+        </div>
     );
 }
