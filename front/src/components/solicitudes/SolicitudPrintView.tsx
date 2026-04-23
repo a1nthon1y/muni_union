@@ -17,7 +17,7 @@ export function SolicitudPrintView({ solicitud }: SolicitudPrintViewProps) {
 
                 {/* Decorative corner */}
                 <div className="absolute top-0 right-0 w-32 h-32 bg-slate-900 text-white flex items-center justify-center transform rotate-45 translate-x-16 -translate-y-16">
-                    <span className="transform -rotate-45 font-black text-xs tracking-widest mt-12 mr-1">OFFICIAL</span>
+                    <span className="transform -rotate-45 font-black text-xs tracking-widest mt-12 mr-1">OFICIAL</span>
                 </div>
 
                 {/* Header Compacto */}

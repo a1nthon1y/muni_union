@@ -78,8 +78,8 @@ export default function LoginForm() {
                 </div>
                 <div className="space-y-1">
                     <CardTitle className="text-2xl font-black tracking-tighter uppercase text-foreground">Acceso al Sistema</CardTitle>
-                    <CardDescription className="text-[9px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60 leading-tight">
-                        Registro Civil Municipal • Municipalidad Distrital de La Unión
+                    <CardDescription className="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground/70 leading-snug">
+                        Registro Civil Municipal · Municipalidad Distrital de La Unión
                     </CardDescription>
                 </div>
             </CardHeader>
