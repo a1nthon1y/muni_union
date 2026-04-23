@@ -72,7 +72,7 @@ export default function VerificarIndexPage() {
                 </div>
 
                 <p className="mt-14 text-[10px] font-bold uppercase tracking-widest text-white/25">
-                    Sistema STDU v2.0 · Tarma, Perú
+                    Sistema STDU v1.0 · Tarma, Perú
                 </p>
             </div>
 
