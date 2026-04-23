@@ -197,7 +197,7 @@ export default function VerificarPage() {
     <div style="text-align:right">
       <strong>Sistema STDU</strong>
       Municipalidad Distrital de La Unión<br/>
-      Piura, Perú
+      Tarma, Perú
     </div>
   </div>
 
@@ -249,7 +249,7 @@ export default function VerificarPage() {
                     </button>
 
                     <p className="mt-14 text-[10px] font-bold uppercase tracking-widest text-white/25">
-                        Sistema STDU v2.0 · Piura, Perú
+                        Sistema STDU v2.0 · Tarma, Perú
                     </p>
                 </div>
 
