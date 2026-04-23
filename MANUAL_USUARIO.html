@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manual de Usuario — Sistema de Registro Civil</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --primary:   #164e63;
+    --accent:    #0891b2;
+    --accent-lt: #cffafe;
+    --gray-50:   #f8fafc;
+    --gray-100:  #f1f5f9;
+    --gray-200:  #e2e8f0;
+    --gray-400:  #94a3b8;
+    --gray-600:  #475569;
+    --gray-800:  #1e293b;
+    --green:     #059669;
+    --orange:    #d97706;
+    --font:      'Inter', system-ui, sans-serif;
+    --mono:      'JetBrains Mono', monospace;
+  }
+
+  html { font-size: 15px; }
+  body { font-family: var(--font); color: var(--gray-800); background: #fff; line-height: 1.7; }
+
+  /* ── Portada ─────────────────────────────────────────────── */
+  .cover {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(160deg, var(--primary) 0%, #0c3544 100%);
+    color: #fff;
+    text-align: center;
+    padding: 4rem 2rem;
+    page-break-after: always;
+  }
+  .cover .badge {
+    background: rgba(255,255,255,.12);
+    border: 1px solid rgba(255,255,255,.25);
+    border-radius: 999px;
+    font-size: .7rem;
+    font-weight: 600;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    padding: .35rem 1.2rem;
+    margin-bottom: 2.5rem;
+  }
+  .cover h1 { font-size: 2.6rem; font-weight: 700; letter-spacing: -.02em; line-height: 1.15; max-width: 680px; margin-bottom: 1rem; }
+  .cover h1 span { color: #67e8f9; }
+  .cover .subtitle { font-size: 1.05rem; color: rgba(255,255,255,.65); font-weight: 400; margin-bottom: 3.5rem; }
+  .cover .meta { border-top: 1px solid rgba(255,255,255,.18); padding-top: 2rem; display: flex; gap: 3rem; justify-content: center; flex-wrap: wrap; }
+  .cover .meta-item label { display: block; font-size: .65rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: rgba(255,255,255,.45); margin-bottom: .2rem; }
+  .cover .meta-item span { font-size: .9rem; font-weight: 500; color: rgba(255,255,255,.85); }
+  .cover .seal { width: 80px; height: 80px; border: 2px solid rgba(255,255,255,.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 2rem; font-size: 2rem; }
+
+  /* ── Índice ──────────────────────────────────────────────── */
+  .toc-page { padding: 4rem 5rem; page-break-after: always; max-width: 800px; margin: 0 auto; }
+  .toc-title { font-size: 1.1rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--primary); border-bottom: 3px solid var(--primary); padding-bottom: .6rem; margin-bottom: 2rem; }
+  .toc-list { list-style: none; }
+  .toc-list li { margin-bottom: .1rem; }
+  .toc-list a { display: flex; justify-content: space-between; align-items: baseline; text-decoration: none; color: var(--gray-800); padding: .45rem .5rem; border-radius: 6px; font-size: .92rem; }
+  .toc-list a:hover { background: var(--gray-100); }
+  .toc-list a::after { content: ''; flex: 1; border-bottom: 1px dotted var(--gray-200); margin: 0 .5rem .25rem; }
+  .toc-list .toc-num { font-weight: 600; color: var(--accent); min-width: 2rem; }
+  .toc-list .sub a { padding-left: 2.5rem; font-size: .87rem; color: var(--gray-600); }
+
+  /* ── Contenido ───────────────────────────────────────────── */
+  .content { max-width: 820px; margin: 0 auto; padding: 3rem 4rem; }
+  .chapter { page-break-before: always; padding-top: 1rem; }
+  .chapter:first-child { page-break-before: avoid; }
+
+  h2 { font-size: 1.55rem; font-weight: 700; color: var(--primary); margin: 2.5rem 0 1.2rem; padding-bottom: .5rem; border-bottom: 2px solid var(--gray-200); display: flex; align-items: center; gap: .6rem; }
+  h2 .ch-num { background: var(--primary); color: #fff; font-size: .75rem; font-weight: 700; padding: .2rem .55rem; border-radius: 5px; letter-spacing: .05em; }
+  h3 { font-size: 1.05rem; font-weight: 600; color: var(--gray-800); margin: 1.8rem 0 .8rem; padding-left: .8rem; border-left: 3px solid var(--accent); }
+  h4 { font-size: .92rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--gray-600); margin: 1.4rem 0 .6rem; }
+
+  p { margin-bottom: .9rem; font-size: .95rem; }
+  ul, ol { margin: .6rem 0 1rem 1.4rem; }
+  li { margin-bottom: .4rem; font-size: .95rem; }
+  li strong { color: var(--gray-800); }
+
+  code { font-family: var(--mono); font-size: .83rem; background: var(--gray-100); color: #be185d; padding: .15em .4em; border-radius: 4px; }
+  pre { background: #0f172a; color: #e2e8f0; border-radius: 10px; padding: 1.2rem 1.4rem; margin: 1rem 0 1.4rem; font-family: var(--mono); font-size: .82rem; line-height: 1.65; border-left: 4px solid var(--accent); overflow-x: auto; }
+  pre code { background: none; color: inherit; padding: 0; }
+
+  .table-wrap { overflow-x: auto; margin: 1rem 0 1.4rem; border-radius: 10px; border: 1px solid var(--gray-200); }
+  table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+  thead { background: var(--primary); color: #fff; }
+  thead th { padding: .7rem 1rem; text-align: left; font-weight: 600; font-size: .78rem; letter-spacing: .05em; text-transform: uppercase; }
+  tbody tr { border-bottom: 1px solid var(--gray-100); }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--gray-50); }
+  td { padding: .65rem 1rem; vertical-align: top; }
+
+  .callout { border-radius: 8px; padding: .9rem 1.1rem; margin: 1rem 0; display: flex; gap: .7rem; font-size: .9rem; }
+  .callout-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: .1rem; }
+  .callout.info { background: var(--accent-lt); border-left: 4px solid var(--accent); }
+  .callout.warn { background: #fef3c7; border-left: 4px solid var(--orange); }
+  .callout.ok   { background: #d1fae5; border-left: 4px solid var(--green); }
+  .callout.tip  { background: #f5f3ff; border-left: 4px solid #7c3aed; }
+
+  /* ── Pasos numerados ─────────────────────────────────────── */
+  .steps { list-style: none; margin: .8rem 0 1.2rem; padding: 0; counter-reset: step; }
+  .steps li { display: flex; gap: .9rem; align-items: flex-start; margin-bottom: .7rem; font-size: .95rem; }
+  .steps li::before { counter-increment: step; content: counter(step); background: var(--accent); color: #fff; font-weight: 700; font-size: .75rem; min-width: 1.6rem; height: 1.6rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: .15rem; }
+
+  /* ── Módulo card ─────────────────────────────────────────── */
+  .module-card { background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: 10px; padding: 1.2rem 1.4rem; margin: 1rem 0 1.4rem; }
+  .module-card .module-title { display: flex; align-items: center; gap: .6rem; font-weight: 700; font-size: 1rem; color: var(--primary); margin-bottom: .6rem; }
+  .module-card .module-title .icon { font-size: 1.3rem; }
+
+  /* ── Roles badge ─────────────────────────────────────────── */
+  .role-admin { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; font-size: .75rem; font-weight: 700; padding: .15em .5em; border-radius: 4px; text-transform: uppercase; letter-spacing: .04em; }
+  .role-user  { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; font-size: .75rem; font-weight: 700; padding: .15em .5em; border-radius: 4px; text-transform: uppercase; letter-spacing: .04em; }
+
+  /* ── URL box ─────────────────────────────────────────────── */
+  .url-box { background: #0f172a; color: #67e8f9; font-family: var(--mono); font-size: .88rem; padding: .7rem 1.1rem; border-radius: 8px; margin: .6rem 0 1rem; display: inline-block; word-break: break-all; }
+
+  hr { border: none; border-top: 1px solid var(--gray-200); margin: 2rem 0; }
+
+  @media print {
+    @page {
+      size: A4;
+      margin: 2.2cm 2.5cm 2.5cm 2.5cm;
+      @bottom-center { content: "Manual de Usuario — Sistema de Registro Civil — Muni. Distrital de La Unión"; font-size: 8pt; color: #94a3b8; }
+      @bottom-right  { content: "Pág. " counter(page); font-size: 8pt; color: #94a3b8; }
+    }
+    .cover { min-height: auto; padding: 6cm 2cm; }
+    .no-print { display: none !important; }
+    a { color: inherit; text-decoration: none; }
+    pre { white-space: pre-wrap; word-break: break-all; }
+    .chapter { page-break-before: always; }
+    h2, h3 { page-break-after: avoid; }
+    table { page-break-inside: avoid; }
+    .callout { page-break-inside: avoid; }
+    .steps li { page-break-inside: avoid; }
+  }
+
+  .print-btn { position: fixed; bottom: 2rem; right: 2rem; background: var(--primary); color: #fff; border: none; padding: .8rem 1.6rem; border-radius: 999px; font-family: var(--font); font-size: .85rem; font-weight: 600; cursor: pointer; box-shadow: 0 4px 20px rgba(0,0,0,.25); letter-spacing: .04em; z-index: 100; }
+  .print-btn:hover { background: #0c3544; }
+</style>
+</head>
+<body>
+
+<!-- PORTADA -->
+<div class="cover">
+  <div class="seal">📋</div>
+  <div class="badge">Manual de Usuario — Versión 1.0.0</div>
+  <h1>Guía de Usuario<br><span>Sistema de Registro Civil</span></h1>
+  <p class="subtitle">Municipalidad Distrital de La Unión — Piura, Perú</p>
+  <div class="meta">
+    <div class="meta-item"><label>Versión</label><span>1.0.0</span></div>
+    <div class="meta-item"><label>Fecha</label><span>Abril 2026</span></div>
+    <div class="meta-item"><label>Dirigido a</label><span>Personal Administrativo</span></div>
+    <div class="meta-item"><label>Sistema</label><span>STDU v2.0</span></div>
+  </div>
+</div>
+
+<!-- ÍNDICE -->
+<div class="toc-page">
+  <div class="toc-title">Tabla de Contenidos</div>
+  <ul class="toc-list">
+    <li><a href="#cap1"><span class="toc-num">01</span> Introducción</a></li>
+    <li><a href="#cap2"><span class="toc-num">02</span> Roles de Usuario</a></li>
+    <li><a href="#cap3"><span class="toc-num">03</span> Inicio de Sesión</a></li>
+    <li><a href="#cap4"><span class="toc-num">04</span> Dashboard Principal</a></li>
+    <li><a href="#cap5"><span class="toc-num">05</span> Módulo de Actas</a></li>
+    <ul class="sub">
+      <li><a href="#cap5-1">5.1 Ver listado de actas</a></li>
+      <li><a href="#cap5-2">5.2 Registrar nueva acta</a></li>
+      <li><a href="#cap5-3">5.3 Ver detalle e imprimir</a></li>
+      <li><a href="#cap5-4">5.4 Editar un acta</a></li>
+      <li><a href="#cap5-5">5.5 Anular un acta</a></li>
+      <li><a href="#cap5-6">5.6 Reactivar un acta</a></li>
+    </ul>
+    <li><a href="#cap6"><span class="toc-num">06</span> Módulo de Digitalización</a></li>
+    <li><a href="#cap7"><span class="toc-num">07</span> Módulo de Personas</a></li>
+    <li><a href="#cap8"><span class="toc-num">08</span> Módulo de Solicitudes (Trámites)</a></li>
+    <ul class="sub">
+      <li><a href="#cap8-1">8.1 Nueva solicitud</a></li>
+      <li><a href="#cap8-2">8.2 Atender una solicitud</a></li>
+      <li><a href="#cap8-3">8.3 Imprimir constancia de trámite</a></li>
+      <li><a href="#cap8-4">8.4 Anular una solicitud</a></li>
+    </ul>
+    <li><a href="#cap9"><span class="toc-num">09</span> Verificación de Constancias (Ciudadano)</a></li>
+    <li><a href="#cap10"><span class="toc-num">10</span> Importación Masiva</a></li>
+    <li><a href="#cap11"><span class="toc-num">11</span> Módulo de Reportes</a></li>
+    <li><a href="#cap12"><span class="toc-num">12</span> Módulo de Auditoría</a></li>
+    <li><a href="#cap13"><span class="toc-num">13</span> Módulo de Usuarios</a></li>
+    <li><a href="#cap14"><span class="toc-num">14</span> Cambio de Contraseña</a></li>
+    <li><a href="#cap15"><span class="toc-num">15</span> Preguntas Frecuentes</a></li>
+  </ul>
+</div>
+
+<!-- CONTENIDO -->
+<div class="content">
+
+<!-- CAP 1 -->
+<div class="chapter" id="cap1">
+  <h2><span class="ch-num">01</span> Introducción</h2>
+  <p>El <strong>Sistema de Registro Civil (STDU)</strong> permite gestionar de forma digital los registros de nacimiento, matrimonio y defunción del distrito, así como las solicitudes de copias certificadas realizadas por los ciudadanos.</p>
+  <div class="callout info">
+    <div class="callout-icon">🖥️</div>
+    <div><strong>Acceso al sistema:</strong> Ingresar desde cualquier navegador web conectado a la red interna de la municipalidad:<br>
+    <div class="url-box">https://[IP del servidor]</div></div>
+  </div>
+  <p>El sistema funciona en los navegadores modernos: Google Chrome, Microsoft Edge y Mozilla Firefox. Se recomienda mantener el navegador actualizado.</p>
+</div>
+
+<!-- CAP 2 -->
+<div class="chapter" id="cap2">
+  <h2><span class="ch-num">02</span> Roles de Usuario</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Rol</th><th>Descripción</th><th>Accesos</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="role-admin">Administrador</span></td>
+          <td>Responsable del sistema</td>
+          <td>Acceso total: usuarios, auditoría, todas las operaciones, importación masiva</td>
+        </tr>
+        <tr>
+          <td><span class="role-user">Operador</span></td>
+          <td>Personal de ventanilla / registro</td>
+          <td>Digitalización, personas, actas y solicitudes — según permisos asignados por el administrador</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="callout warn">
+    <div class="callout-icon">⚠️</div>
+    <div>Los permisos del rol Operador son configurables individualmente: el administrador puede habilitar o restringir la capacidad de <strong>anular</strong>, <strong>eliminar</strong> o <strong>modificar</strong> actas y personas para cada usuario.</div>
+  </div>
+</div>
+
+<!-- CAP 3 -->
+<div class="chapter" id="cap3">
+  <h2><span class="ch-num">03</span> Inicio de Sesión</h2>
+  <ol class="steps">
+    <li>Abrir el navegador e ingresar la dirección del sistema (proporcionada por el área de sistemas).</li>
+    <li>En la pantalla de inicio, ingresar el <strong>nombre de usuario</strong> y la <strong>contraseña</strong>.</li>
+    <li>Hacer clic en el botón <strong>"Ingresar"</strong>.</li>
+    <li>Al ingresar exitosamente, el sistema muestra el <strong>Dashboard principal</strong>.</li>
+  </ol>
+  <div class="callout tip">
+    <div class="callout-icon">💡</div>
+    <div>La sesión se mantiene activa por <strong>1 hora</strong> y se renueva automáticamente mientras el sistema esté en uso. Si se cierra el navegador, será necesario ingresar las credenciales nuevamente.</div>
+  </div>
+  <h3>Cerrar sesión</h3>
+  <p>Hacer clic en el ícono de usuario (esquina superior derecha del menú) → seleccionar <strong>"Cerrar sesión"</strong>.</p>
+  <div class="callout warn">
+    <div class="callout-icon">🔐</div>
+    <div>Siempre cerrar sesión al terminar de usar el sistema, especialmente en equipos compartidos.</div>
+  </div>
+</div>
+
+<!-- CAP 4 -->
+<div class="chapter" id="cap4">
+  <h2><span class="ch-num">04</span> Dashboard Principal</h2>
+  <p>Al ingresar al sistema, se muestra el panel principal con un resumen de la actividad:</p>
+  <div class="module-card">
+    <div class="module-title"><span class="icon">📊</span> Tarjetas de resumen</div>
+    <ul>
+      <li><strong>Total de actas registradas</strong> en el sistema</li>
+      <li><strong>Total de ciudadanos</strong> registrados</li>
+      <li><strong>Solicitudes pendientes</strong> de atención</li>
+      <li><strong>Solicitudes atendidas</strong> en el mes actual</li>
+    </ul>
+  </div>
+  <div class="module-card">
+    <div class="module-title"><span class="icon">📈</span> Gráficos</div>
+    <ul>
+      <li><strong>Evolución mensual de actas</strong> por tipo (nacimiento, matrimonio, defunción) — últimos 6 meses</li>
+      <li><strong>Distribución de solicitudes</strong> por estado (Pendiente / Atendido / Anulado)</li>
+    </ul>
+  </div>
+</div>
+
+<!-- CAP 5 -->
+<div class="chapter" id="cap5">
+  <h2><span class="ch-num">05</span> Módulo de Actas</h2>
+  <p>Acceso: menú lateral → <strong>Actas</strong></p>
+  <p>Este módulo gestiona los registros civiles de nacimiento, matrimonio y defunción del distrito.</p>
+
+  <h3 id="cap5-1">5.1 Ver listado de actas</h3>
+  <p>Al ingresar al módulo se muestra la tabla con todas las actas activas. Opciones disponibles:</p>
+  <ul>
+    <li><strong>Buscar</strong> por nombre, apellidos, DNI o número de acta (campo de búsqueda superior)</li>
+    <li><strong>Filtrar</strong> por tipo de acta, año y estado</li>
+    <li><strong>Paginar</strong> con los controles inferiores</li>
+    <li><strong>Exportar a Excel</strong> con el botón correspondiente</li>
+  </ul>
+
+  <h3 id="cap5-2">5.2 Registrar nueva acta</h3>
+  <ol class="steps">
+    <li>Hacer clic en el botón <strong>"Nueva Acta"</strong>.</li>
+    <li>Seleccionar el <strong>tipo de acta</strong>: Nacimiento, Matrimonio o Defunción.</li>
+    <li>Seleccionar el <strong>modo de numeración</strong>:<br>
+      <ul>
+        <li><strong>Libro Clásico:</strong> ingresar número de libro. El sistema sugiere automáticamente el siguiente folio disponible.</li>
+        <li><strong>CUI (RENIEC):</strong> ingresar el código CUI directamente.</li>
+      </ul>
+    </li>
+    <li>Seleccionar el <strong>ciudadano titular</strong> (buscar por nombre o DNI). Si no existe, crearlo desde el formulario.</li>
+    <li>Para actas de <strong>Matrimonio</strong>: completar también los datos del cónyuge (obligatorio).</li>
+    <li>Ingresar la <strong>fecha del acta</strong> y observaciones si corresponde.</li>
+    <li>Hacer clic en <strong>"Guardar"</strong>.</li>
+  </ol>
+  <div class="callout ok">
+    <div class="callout-icon">✅</div>
+    <div>El sistema valida todos los campos antes de guardar. Si hay errores, los muestra junto a cada campo para facilitar la corrección.</div>
+  </div>
+
+  <h3 id="cap5-3">5.3 Ver detalle e imprimir</h3>
+  <p>Hacer clic en cualquier fila de la tabla para abrir el panel lateral de detalle. Desde ahí:</p>
+  <ul>
+    <li><strong>Imprimir / PDF:</strong> botón <strong>"Imprimir"</strong> → se abre una ventana con el documento oficial listo para imprimir o guardar como PDF con Ctrl+P.</li>
+    <li><strong>Ver documento digitalizado:</strong> si el acta tiene PDF adjunto, botón <strong>"Ver Acta"</strong> abre el archivo.</li>
+    <li><strong>Editar:</strong> botón <strong>"Editar Acta"</strong> (requiere permiso de modificación).</li>
+  </ul>
+
+  <h3 id="cap5-4">5.4 Editar un acta</h3>
+  <p>Solo usuarios con el permiso <strong>"Puede modificar actas"</strong> habilitado pueden editar. Se pueden modificar todos los campos excepto el tipo de acta.</p>
+
+  <h3 id="cap5-5">5.5 Anular un acta</h3>
+  <ol class="steps">
+    <li>En el listado, localizar el acta → clic en el menú de acciones (⋮) → <strong>"Anular"</strong>.</li>
+    <li>Ingresar el <strong>motivo de anulación</strong> (obligatorio).</li>
+    <li>Confirmar la operación.</li>
+  </ol>
+  <div class="callout info">
+    <div class="callout-icon">ℹ️</div>
+    <div>El acta queda en estado <strong>ANULADO</strong> y el motivo se registra en el campo de observaciones. El acta <strong>no se elimina</strong> del sistema — queda en el historial.</div>
+  </div>
+
+  <h3 id="cap5-6">5.6 Reactivar un acta anulada <span class="role-admin">Solo Administrador</span></h3>
+  <p>Menú de acciones (⋮) → <strong>"Reactivar"</strong>. El acta vuelve a estado <strong>ACTIVO</strong>.</p>
+</div>
+
+<!-- CAP 6 -->
+<div class="chapter" id="cap6">
+  <h2><span class="ch-num">06</span> Módulo de Digitalización</h2>
+  <p>Acceso: menú lateral → <strong>Digitalización</strong></p>
+  <p>Permite adjuntar el archivo digital (PDF o imagen) al acta física correspondiente.</p>
+  <ol class="steps">
+    <li>Buscar el acta por número o por nombre del titular.</li>
+    <li>Seleccionar el archivo desde el equipo (PDF o imagen, tamaño máximo: <strong>25 MB</strong>).</li>
+    <li>Hacer clic en <strong>"Subir documento"</strong>.</li>
+  </ol>
+  <div class="callout warn">
+    <div class="callout-icon">📁</div>
+    <div>Solo se puede adjuntar un documento por acta. Si ya tiene uno y se sube otro, el anterior se reemplaza. Formatos aceptados: <strong>PDF, JPG, PNG</strong>.</div>
+  </div>
+</div>
+
+<!-- CAP 7 -->
+<div class="chapter" id="cap7">
+  <h2><span class="ch-num">07</span> Módulo de Personas (Ciudadanos)</h2>
+  <p>Acceso: menú lateral → <strong>Personas</strong></p>
+  <p>Registro de los ciudadanos del distrito. Cada acta civil está vinculada a uno o más ciudadanos registrados en este módulo.</p>
+
+  <h3>Registrar nueva persona</h3>
+  <ol class="steps">
+    <li>Clic en <strong>"Nueva Persona"</strong>.</li>
+    <li>Completar: tipo de documento, número de documento (DNI u otro), nombres, apellidos, sexo, fecha de nacimiento, teléfono y dirección.</li>
+    <li>Hacer clic en <strong>"Guardar"</strong>.</li>
+  </ol>
+
+  <h3>Buscar persona</h3>
+  <p>El campo de búsqueda acepta nombre completo, apellidos o número de DNI. La búsqueda tolera <strong>errores tipográficos menores</strong> (búsqueda inteligente con pg_trgm).</p>
+
+  <div class="callout tip">
+    <div class="callout-icon">💡</div>
+    <div>Si al guardar una persona el sistema advierte un posible duplicado, revisar si ya existe el ciudadano antes de crear un registro nuevo. Los duplicados complican la trazabilidad de actas.</div>
+  </div>
+</div>
+
+<!-- CAP 8 -->
+<div class="chapter" id="cap8">
+  <h2><span class="ch-num">08</span> Módulo de Solicitudes (Trámites)</h2>
+  <p>Acceso: menú lateral → <strong>Trámites</strong></p>
+  <p>Gestiona las solicitudes de copias certificadas presentadas por los ciudadanos en ventanilla.</p>
+
+  <h3 id="cap8-1">8.1 Nueva solicitud</h3>
+  <ol class="steps">
+    <li>Clic en <strong>"Nueva Solicitud"</strong>.</li>
+    <li><strong>Buscar al solicitante</strong> por DNI. Si ya existe en el sistema, sus datos se cargan automáticamente. Si no, completar los campos.</li>
+    <li>Seleccionar el <strong>tipo de solicitud</strong> (ej. Copia Certificada).</li>
+    <li>Agregar las <strong>actas solicitadas</strong>: buscar por número de acta o nombre del titular, indicar cantidad y precio unitario por copia.</li>
+    <li>Hacer clic en <strong>"Guardar"</strong>.</li>
+  </ol>
+  <p>La solicitud queda en estado <strong>PENDIENTE</strong> y puede atenderse cuando el ciudadano realice el pago.</p>
+
+  <h3 id="cap8-2">8.2 Atender una solicitud</h3>
+  <p>Cuando el ciudadano recoge su documento y realiza el pago:</p>
+  <ol class="steps">
+    <li>Buscar la solicitud en el listado (por nombre del solicitante o número de trámite).</li>
+    <li>Clic en el botón <strong>"Atender"</strong> → confirmar.</li>
+  </ol>
+  <p>La solicitud pasa a estado <strong>ATENDIDO</strong> y queda registrado el nombre del operador y la fecha de atención.</p>
+
+  <h3 id="cap8-3">8.3 Imprimir constancia de trámite</h3>
+  <p>Desde el detalle de la solicitud → botón <strong>"Imprimir Constancia"</strong>.</p>
+  <p>La constancia generada incluye:</p>
+  <ul>
+    <li>Número de constancia único (ej. <code>N° 000001</code>)</li>
+    <li>Datos del solicitante</li>
+    <li>Detalle de actas solicitadas con cantidades y precios</li>
+    <li>Total pagado</li>
+    <li>Estado del trámite y operador que atendió</li>
+    <li>Espacio para firma del solicitante y sello del secretario</li>
+    <li><strong>URL de verificación</strong> para que el ciudadano pueda comprobar la autenticidad</li>
+  </ul>
+
+  <h3 id="cap8-4">8.4 Anular una solicitud</h3>
+  <p>Menú de acciones (⋮) → <strong>"Anular"</strong> → ingresar motivo → confirmar.</p>
+</div>
+
+<!-- CAP 9 -->
+<div class="chapter" id="cap9">
+  <h2><span class="ch-num">09</span> Verificación de Constancias (Ciudadano)</h2>
+  <p>El ciudadano que recibe una Constancia de Trámite puede verificar su autenticidad desde cualquier lugar y sin necesidad de ingresar al sistema.</p>
+
+  <div class="callout info">
+    <div class="callout-icon">🌐</div>
+    <div>Este portal es <strong>público</strong> — no requiere usuario ni contraseña. Cualquier persona puede verificar su constancia desde su celular o computadora.</div>
+  </div>
+
+  <h3>Cómo verificar</h3>
+  <p><strong>Opción A — URL directa:</strong> ingresar la dirección impresa al pie de la constancia:</p>
+  <div class="url-box">https://verificar.muniunion.gob.pe/verificar/000001</div>
+
+  <p><strong>Opción B — Formulario:</strong> ingresar a la dirección base y escribir el número manualmente:</p>
+  <div class="url-box">https://verificar.muniunion.gob.pe/verificar</div>
+
+  <p>El sistema muestra:</p>
+  <ul>
+    <li>✅ <strong>Banner verde</strong> si la constancia existe y es auténtica, con sus datos de verificación.</li>
+    <li>❌ <strong>Banner rojo</strong> si el número no corresponde a ninguna constancia registrada.</li>
+  </ul>
+  <div class="callout warn">
+    <div class="callout-icon">🔒</div>
+    <div>Por privacidad, el sistema <strong>no muestra el contenido de las actas</strong> en la verificación pública — solo confirma que la constancia fue emitida, la fecha, el estado y el total pagado.</div>
+  </div>
+</div>
+
+<!-- CAP 10 -->
+<div class="chapter" id="cap10">
+  <h2><span class="ch-num">10</span> Importación Masiva <span class="role-admin">Solo Administrador</span></h2>
+  <p>Acceso: menú lateral → <strong>Importación</strong></p>
+  <p>Permite cargar grandes volúmenes de actas históricas desde archivos Excel o CSV.</p>
+
+  <h3>Pasos</h3>
+  <ol class="steps">
+    <li>Descargar la <strong>plantilla Excel</strong> de ejemplo desde la pantalla de importación.</li>
+    <li>Completar los datos en la plantilla respetando el formato de columnas.</li>
+    <li>(Opcional) Preparar un archivo <strong>ZIP</strong> con los PDFs de las actas, usando los nombres indicados en la columna <code>nombre_archivo_pdf</code>.</li>
+    <li>Seleccionar el archivo Excel/CSV y el ZIP opcional.</li>
+    <li>Hacer clic en <strong>"Importar"</strong>.</li>
+    <li>El sistema procesa fila por fila y muestra un reporte con el resultado de cada una.</li>
+  </ol>
+
+  <h3>Resultados posibles por fila</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Estado</th><th>Descripción</th></tr></thead>
+      <tbody>
+        <tr><td>✅ <strong>OK</strong></td><td>Acta registrada correctamente</td></tr>
+        <tr><td>⏭️ <strong>OMITIDO</strong></td><td>El acta ya existía — se omite sin error (idempotente)</td></tr>
+        <tr><td>❌ <strong>ERROR</strong></td><td>Datos inválidos o incompletos — se muestra el motivo del error</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="callout tip">
+    <div class="callout-icon">💡</div>
+    <div>El límite es <strong>30.000 filas por lote</strong>. Si el archivo es mayor, dividirlo en partes — las filas ya importadas se omiten automáticamente sin duplicarse.</div>
+  </div>
+</div>
+
+<!-- CAP 11 -->
+<div class="chapter" id="cap11">
+  <h2><span class="ch-num">11</span> Módulo de Reportes <span class="role-admin">Solo Administrador</span></h2>
+  <p>Acceso: <strong>Dashboard</strong> principal</p>
+  <p>Los reportes y estadísticas se muestran directamente en el dashboard:</p>
+  <ul>
+    <li><strong>Evolución mensual de actas</strong> por tipo (nacimiento, matrimonio, defunción) — últimos 6 meses.</li>
+    <li><strong>Solicitudes por estado:</strong> distribución entre Pendiente, Atendido y Anulado.</li>
+    <li><strong>Ingresos por solicitudes</strong> atendidas en los últimos 6 meses.</li>
+  </ul>
+  <p>Todas las tablas del sistema (actas, personas, solicitudes, auditoría) permiten <strong>exportación a Excel</strong> con el botón correspondiente.</p>
+</div>
+
+<!-- CAP 12 -->
+<div class="chapter" id="cap12">
+  <h2><span class="ch-num">12</span> Módulo de Auditoría <span class="role-admin">Solo Administrador</span></h2>
+  <p>Acceso: menú lateral → <strong>Auditoría</strong></p>
+  <p>Registro completo de todas las operaciones realizadas en el sistema. Permite verificar <em>quién hizo qué y cuándo</em>.</p>
+  <p>Cada registro muestra:</p>
+  <ul>
+    <li><strong>Usuario</strong> que realizó la acción</li>
+    <li><strong>Tipo de operación</strong> (Crear, Editar, Eliminar, Anular, Login, etc.)</li>
+    <li><strong>Módulo afectado</strong> (actas, personas, solicitudes, usuarios)</li>
+    <li><strong>Descripción</strong> de la acción realizada</li>
+    <li><strong>IP del equipo</strong> desde donde se realizó</li>
+    <li><strong>Fecha y hora</strong> exacta</li>
+  </ul>
+  <p>Se puede filtrar por usuario, tipo de operación, módulo y rango de fechas. Exportable a Excel.</p>
+</div>
+
+<!-- CAP 13 -->
+<div class="chapter" id="cap13">
+  <h2><span class="ch-num">13</span> Módulo de Usuarios <span class="role-admin">Solo Administrador</span></h2>
+  <p>Acceso: menú lateral → <strong>Usuarios</strong></p>
+
+  <h3>Crear nuevo usuario</h3>
+  <ol class="steps">
+    <li>Clic en <strong>"Nuevo Usuario"</strong>.</li>
+    <li>Completar: nombres, apellidos, nombre de usuario, contraseña y rol.</li>
+    <li>Para usuarios con rol <strong>Operador</strong>, configurar los permisos específicos.</li>
+    <li>Hacer clic en <strong>"Guardar"</strong>.</li>
+  </ol>
+
+  <h3>Permisos configurables para Operador</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Permiso</th><th>Descripción</th></tr></thead>
+      <tbody>
+        <tr><td>Puede anular actas</td><td>Permite marcar actas como ANULADO</td></tr>
+        <tr><td>Puede eliminar actas</td><td>Permite eliminar permanentemente actas</td></tr>
+        <tr><td>Puede modificar actas</td><td>Permite editar datos de actas existentes (activo por defecto)</td></tr>
+        <tr><td>Puede eliminar personas</td><td>Permite eliminar registros de ciudadanos</td></tr>
+        <tr><td>Puede modificar personas</td><td>Permite editar datos de ciudadanos (activo por defecto)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Desactivar un usuario</h3>
+  <p>Clic en el ícono de edición → desmarcar la casilla <strong>"Usuario activo"</strong>. El usuario no podrá iniciar sesión pero su historial se conserva.</p>
+</div>
+
+<!-- CAP 14 -->
+<div class="chapter" id="cap14">
+  <h2><span class="ch-num">14</span> Cambio de Contraseña</h2>
+  <p>Menú de usuario (esquina superior derecha) → <strong>"Configuración"</strong> → sección Cambio de Contraseña.</p>
+  <div class="callout warn">
+    <div class="callout-icon">🔑</div>
+    <div>Cambiar la contraseña por defecto <code>123456</code> del usuario administrador <strong>inmediatamente</strong> al primer inicio de sesión en producción.</div>
+  </div>
+</div>
+
+<!-- CAP 15 -->
+<div class="chapter" id="cap15">
+  <h2><span class="ch-num">15</span> Preguntas Frecuentes</h2>
+
+  <h3>¿Puedo recuperar un acta que fue anulada?</h3>
+  <p>Sí. Las actas nunca se eliminan permanentemente del sistema. Un <strong>Administrador</strong> puede reactivarla desde el menú de acciones del acta.</p>
+
+  <h3>¿Qué pasa si el sistema no carga?</h3>
+  <p>Verificar la conexión a la red interna de la municipalidad. El sistema solo funciona dentro de la LAN del edificio (o via VPN si está configurada). Si el problema persiste, contactar al área de sistemas.</p>
+
+  <h3>¿Cómo guardo el documento de un acta como PDF?</h3>
+  <p>Abrir el detalle del acta → botón <strong>"Imprimir"</strong>. En la ventana que se abre, presionar <strong>Ctrl+P</strong> y seleccionar <em>"Guardar como PDF"</em> como destino de impresión.</p>
+
+  <h3>¿Se pueden usar varios equipos al mismo tiempo?</h3>
+  <p>Sí. El sistema soporta múltiples usuarios concurrentes sin afectar el rendimiento.</p>
+
+  <h3>¿Dónde están los archivos digitalizados?</h3>
+  <p>En el servidor de la municipalidad, dentro de la carpeta <code>uploads/</code> del sistema. Los backups automáticos incluyen esta carpeta.</p>
+
+  <h3>¿Con qué frecuencia se hace backup?</h3>
+  <p>El administrador del servidor debe configurar el backup automático diario a las 2:00 AM mediante el script incluido. Los backups se guardan con fecha y hora en la carpeta <code>backups/</code>.</p>
+
+  <h3>El ciudadano dice que su URL de verificación no funciona</h3>
+  <p>Verificar que el portal público esté activo. La URL de verificación es independiente del sistema interno — funciona desde cualquier red. Si el portal está caído, contactar al área de sistemas.</p>
+</div>
+
+</div><!-- /content -->
+
+<button class="print-btn no-print" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
+
+</body>
+</html>

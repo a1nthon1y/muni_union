@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manual Técnico — Sistema de Registro Civil</title>
+<style>
+  /* ── Tipografía y reset ──────────────────────────────────── */
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --primary:   #1a3a5c;
+    --accent:    #2563eb;
+    --accent-lt: #dbeafe;
+    --gray-50:   #f8fafc;
+    --gray-100:  #f1f5f9;
+    --gray-200:  #e2e8f0;
+    --gray-400:  #94a3b8;
+    --gray-600:  #475569;
+    --gray-800:  #1e293b;
+    --green:     #059669;
+    --orange:    #d97706;
+    --red:       #dc2626;
+    --font:      'Inter', system-ui, sans-serif;
+    --mono:      'JetBrains Mono', 'Courier New', monospace;
+  }
+
+  html { font-size: 15px; }
+  body {
+    font-family: var(--font);
+    color: var(--gray-800);
+    background: #fff;
+    line-height: 1.7;
+  }
+
+  /* ── Portada ─────────────────────────────────────────────── */
+  .cover {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(160deg, var(--primary) 0%, #0f2744 100%);
+    color: #fff;
+    text-align: center;
+    padding: 4rem 2rem;
+    page-break-after: always;
+  }
+  .cover .badge {
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 999px;
+    font-size: .7rem;
+    font-weight: 600;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    padding: .35rem 1.2rem;
+    margin-bottom: 2.5rem;
+  }
+  .cover h1 {
+    font-size: 2.6rem;
+    font-weight: 700;
+    letter-spacing: -.02em;
+    line-height: 1.15;
+    max-width: 680px;
+    margin-bottom: 1rem;
+  }
+  .cover h1 span { color: #93c5fd; }
+  .cover .subtitle {
+    font-size: 1.05rem;
+    color: rgba(255,255,255,.65);
+    font-weight: 400;
+    margin-bottom: 3.5rem;
+  }
+  .cover .meta {
+    border-top: 1px solid rgba(255,255,255,.18);
+    padding-top: 2rem;
+    display: flex;
+    gap: 3rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .cover .meta-item label {
+    display: block;
+    font-size: .65rem;
+    font-weight: 600;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,.45);
+    margin-bottom: .2rem;
+  }
+  .cover .meta-item span {
+    font-size: .9rem;
+    font-weight: 500;
+    color: rgba(255,255,255,.85);
+  }
+  .cover .seal {
+    width: 80px;
+    height: 80px;
+    border: 2px solid rgba(255,255,255,.3);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 2rem;
+    font-size: 2rem;
+  }
+
+  /* ── Índice ──────────────────────────────────────────────── */
+  .toc-page {
+    padding: 4rem 5rem;
+    page-break-after: always;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  .toc-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--primary);
+    border-bottom: 3px solid var(--primary);
+    padding-bottom: .6rem;
+    margin-bottom: 2rem;
+  }
+  .toc-list { list-style: none; }
+  .toc-list li { margin-bottom: .1rem; }
+  .toc-list a {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    text-decoration: none;
+    color: var(--gray-800);
+    padding: .45rem .5rem;
+    border-radius: 6px;
+    transition: background .15s;
+    font-size: .92rem;
+  }
+  .toc-list a:hover { background: var(--gray-100); }
+  .toc-list a::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px dotted var(--gray-200);
+    margin: 0 .5rem .25rem;
+  }
+  .toc-list .toc-num { font-weight: 600; color: var(--accent); min-width: 2rem; }
+  .toc-list .sub a { padding-left: 2.5rem; font-size: .87rem; color: var(--gray-600); }
+
+  /* ── Contenido principal ─────────────────────────────────── */
+  .content { max-width: 820px; margin: 0 auto; padding: 3rem 4rem; }
+
+  /* ── Secciones ───────────────────────────────────────────── */
+  .chapter {
+    page-break-before: always;
+    padding-top: 1rem;
+  }
+  .chapter:first-child { page-break-before: avoid; }
+
+  /* ── Encabezados ─────────────────────────────────────────── */
+  h2 {
+    font-size: 1.55rem;
+    font-weight: 700;
+    color: var(--primary);
+    margin: 2.5rem 0 1.2rem;
+    padding-bottom: .5rem;
+    border-bottom: 2px solid var(--gray-200);
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+  }
+  h2 .ch-num {
+    background: var(--primary);
+    color: #fff;
+    font-size: .75rem;
+    font-weight: 700;
+    padding: .2rem .55rem;
+    border-radius: 5px;
+    letter-spacing: .05em;
+  }
+  h3 {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--gray-800);
+    margin: 1.8rem 0 .8rem;
+    padding-left: .8rem;
+    border-left: 3px solid var(--accent);
+  }
+  h4 {
+    font-size: .92rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--gray-600);
+    margin: 1.4rem 0 .6rem;
+  }
+
+  /* ── Párrafos y listas ───────────────────────────────────── */
+  p { margin-bottom: .9rem; font-size: .95rem; }
+  ul, ol { margin: .6rem 0 1rem 1.4rem; }
+  li { margin-bottom: .3rem; font-size: .95rem; }
+  li strong { color: var(--gray-800); }
+
+  /* ── Código ──────────────────────────────────────────────── */
+  code {
+    font-family: var(--mono);
+    font-size: .83rem;
+    background: var(--gray-100);
+    color: #be185d;
+    padding: .15em .4em;
+    border-radius: 4px;
+  }
+  pre {
+    background: #0f172a;
+    color: #e2e8f0;
+    border-radius: 10px;
+    padding: 1.4rem 1.6rem;
+    margin: 1rem 0 1.4rem;
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: .82rem;
+    line-height: 1.65;
+    border-left: 4px solid var(--accent);
+  }
+  pre code { background: none; color: inherit; padding: 0; font-size: inherit; }
+
+  /* ── Tablas ──────────────────────────────────────────────── */
+  .table-wrap { overflow-x: auto; margin: 1rem 0 1.4rem; border-radius: 10px; border: 1px solid var(--gray-200); }
+  table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+  thead { background: var(--primary); color: #fff; }
+  thead th {
+    padding: .7rem 1rem;
+    text-align: left;
+    font-weight: 600;
+    font-size: .78rem;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+  }
+  tbody tr { border-bottom: 1px solid var(--gray-100); }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--gray-50); }
+  td { padding: .65rem 1rem; vertical-align: top; }
+  td code { font-size: .8rem; }
+
+  /* ── Callouts ────────────────────────────────────────────── */
+  .callout {
+    border-radius: 8px;
+    padding: .9rem 1.1rem;
+    margin: 1rem 0;
+    display: flex;
+    gap: .7rem;
+    font-size: .9rem;
+  }
+  .callout-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: .1rem; }
+  .callout.info { background: var(--accent-lt); border-left: 4px solid var(--accent); }
+  .callout.warn { background: #fef3c7; border-left: 4px solid var(--orange); }
+  .callout.ok   { background: #d1fae5; border-left: 4px solid var(--green); }
+
+  /* ── Separador ───────────────────────────────────────────── */
+  hr { border: none; border-top: 1px solid var(--gray-200); margin: 2rem 0; }
+
+  /* ── Cabecera de sección con ícono ───────────────────────── */
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: .8rem;
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: 10px;
+    padding: .9rem 1.2rem;
+    margin-bottom: 1.2rem;
+  }
+  .section-header .icon {
+    font-size: 1.4rem;
+    flex-shrink: 0;
+  }
+  .section-header p { margin: 0; font-size: .88rem; color: var(--gray-600); }
+
+  /* ── Grid de componentes ─────────────────────────────────── */
+  .arch-diagram {
+    background: #0f172a;
+    border-radius: 10px;
+    padding: 2rem;
+    margin: 1rem 0 1.4rem;
+    font-family: var(--mono);
+    font-size: .8rem;
+    color: #94a3b8;
+    line-height: 1.8;
+    border-left: 4px solid #2563eb;
+  }
+  .arch-diagram .layer {
+    background: rgba(255,255,255,.05);
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 6px;
+    padding: .5rem 1rem;
+    margin: .4rem 0;
+    color: #e2e8f0;
+  }
+  .arch-diagram .layer span { color: #93c5fd; font-weight: 500; }
+  .arch-diagram .arrow { text-align: center; color: #475569; font-size: .75rem; }
+
+  /* ── Método badge ────────────────────────────────────────── */
+  .badge-method {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: .72rem;
+    font-weight: 700;
+    padding: .15em .55em;
+    border-radius: 4px;
+    letter-spacing: .03em;
+  }
+  .get    { background: #d1fae5; color: #065f46; }
+  .post   { background: #dbeafe; color: #1e40af; }
+  .put    { background: #fef3c7; color: #92400e; }
+  .patch  { background: #ede9fe; color: #5b21b6; }
+  .delete { background: #fee2e2; color: #991b1b; }
+
+  /* ── Footer de página ────────────────────────────────────── */
+  @media print {
+    @page {
+      size: A4;
+      margin: 2.2cm 2.5cm 2.5cm 2.5cm;
+      @bottom-center {
+        content: "Sistema de Registro Civil — Municipalidad Distrital de La Unión";
+        font-size: 8pt;
+        color: #94a3b8;
+      }
+      @bottom-right {
+        content: "Pág. " counter(page);
+        font-size: 8pt;
+        color: #94a3b8;
+      }
+    }
+    .cover { min-height: auto; padding: 6cm 2cm; }
+    .no-print { display: none !important; }
+    a { color: inherit; text-decoration: none; }
+    pre { white-space: pre-wrap; word-break: break-all; }
+    .chapter { page-break-before: always; }
+    h2, h3 { page-break-after: avoid; }
+    table { page-break-inside: avoid; }
+    .callout { page-break-inside: avoid; }
+  }
+
+  /* ── Botón imprimir ──────────────────────────────────────── */
+  .print-btn {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    padding: .8rem 1.6rem;
+    border-radius: 999px;
+    font-family: var(--font);
+    font-size: .85rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(0,0,0,.25);
+    letter-spacing: .04em;
+    z-index: 100;
+  }
+  .print-btn:hover { background: #0f2744; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════ PORTADA ══════════════════ -->
+<div class="cover">
+  <div class="seal">⚖️</div>
+  <div class="badge">Documentación Técnica — Versión 1.0.0</div>
+  <h1>Manual Técnico<br><span>Sistema de Registro Civil</span></h1>
+  <p class="subtitle">Municipalidad Distrital de La Unión — Piura, Perú</p>
+  <div class="meta">
+    <div class="meta-item"><label>Versión</label><span>1.0.0</span></div>
+    <div class="meta-item"><label>Fecha</label><span>Abril 2026</span></div>
+    <div class="meta-item"><label>Clasificación</label><span>Uso Institucional</span></div>
+    <div class="meta-item"><label>Sistema</label><span>STDU v2.0</span></div>
+  </div>
+</div>
+
+<!-- ══════════════════ ÍNDICE ══════════════════ -->
+<div class="toc-page">
+  <div class="toc-title">Tabla de Contenidos</div>
+  <ul class="toc-list">
+    <li><a href="#cap1"><span class="toc-num">01</span> Descripción General</a></li>
+    <li><a href="#cap2"><span class="toc-num">02</span> Arquitectura del Sistema</a></li>
+    <ul class="sub">
+      <li><a href="#cap2-1">2.1 Componentes</a></li>
+      <li><a href="#cap2-2">2.2 Patrón arquitectónico</a></li>
+    </ul>
+    <li><a href="#cap3"><span class="toc-num">03</span> Estructura de Directorios</a></li>
+    <li><a href="#cap4"><span class="toc-num">04</span> Base de Datos</a></li>
+    <ul class="sub">
+      <li><a href="#cap4-1">4.1 Diagrama de tablas</a></li>
+      <li><a href="#cap4-2">4.2 Tablas principales</a></li>
+      <li><a href="#cap4-3">4.3 Convenciones</a></li>
+      <li><a href="#cap4-4">4.4 Orden de migraciones</a></li>
+    </ul>
+    <li><a href="#cap5"><span class="toc-num">05</span> API REST</a></li>
+    <ul class="sub">
+      <li><a href="#cap5-1">5.1 Autenticación</a></li>
+      <li><a href="#cap5-2">5.2 Endpoints principales</a></li>
+      <li><a href="#cap5-3">5.3 Formato de errores</a></li>
+    </ul>
+    <li><a href="#cap6"><span class="toc-num">06</span> Seguridad</a></li>
+    <li><a href="#cap7"><span class="toc-num">07</span> Acceso Dual de Red</a></li>
+    <li><a href="#cap8"><span class="toc-num">08</span> Mantenimiento Automático</a></li>
+    <li><a href="#cap9"><span class="toc-num">09</span> Importación Masiva</a></li>
+    <li><a href="#cap10"><span class="toc-num">10</span> Variables de Entorno</a></li>
+    <li><a href="#cap11"><span class="toc-num">11</span> Logs</a></li>
+    <li><a href="#cap12"><span class="toc-num">12</span> Dependencias Principales</a></li>
+  </ul>
+</div>
+
+<!-- ══════════════════ CONTENIDO ══════════════════ -->
+<div class="content">
+
+<!-- CAP 1 -->
+<div class="chapter" id="cap1">
+  <h2><span class="ch-num">01</span> Descripción General</h2>
+  <div class="section-header">
+    <div class="icon">🏛️</div>
+    <div>
+      <strong>Sistema de Registro Civil — STDU v2.0</strong>
+      <p>Plataforma web para la gestión digital de registros civiles, solicitudes de copias certificadas, digitalización documental y auditoría de operaciones de la Municipalidad Distrital de La Unión.</p>
+    </div>
+  </div>
+  <p>El sistema permite registrar, editar, buscar y emitir documentos relacionados con los tres tipos de actas civiles: <strong>nacimiento</strong>, <strong>matrimonio</strong> y <strong>defunción</strong>. Adicionalmente gestiona las solicitudes de los ciudadanos que requieren copias certificadas, con control de estados, cobros y emisión de constancias verificables.</p>
+  <div class="callout info">
+    <div class="callout-icon">ℹ️</div>
+    <div>El sistema opera en dos modalidades de red: acceso <strong>interno</strong> (trabajadores de la municipalidad, LAN) y portal <strong>público</strong> de verificación de constancias (cualquier red, sin login).</div>
+  </div>
+</div>
+
+<!-- CAP 2 -->
+<div class="chapter" id="cap2">
+  <h2><span class="ch-num">02</span> Arquitectura del Sistema</h2>
+  <p>El sistema implementa una arquitectura de tres capas separadas en contenedores Docker, con Nginx como único punto de entrada a la red externa.</p>
+
+  <div class="arch-diagram">
+    <div style="color:#64748b;font-size:.75rem;margin-bottom:1rem;letter-spacing:.1em;text-transform:uppercase;">Diagrama de Componentes</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:1rem;">
+      <div style="text-align:center;color:#94a3b8;font-size:.75rem;">Internet (ciudadanos)</div>
+      <div style="text-align:center;color:#94a3b8;font-size:.75rem;">Red LAN (trabajadores)</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.3rem;">
+      <div style="text-align:center;color:#93c5fd;font-size:.8rem;">verificar.muniunion.gob.pe</div>
+      <div style="text-align:center;color:#86efac;font-size:.8rem;">192.168.x.x</div>
+    </div>
+    <div class="arrow">▼ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ▼</div>
+    <div class="layer" style="text-align:center;background:rgba(37,99,235,.2);border-color:rgba(37,99,235,.4);">
+      <span>NGINX</span> — Proxy inverso + SSL + separación de accesos
+    </div>
+    <div class="arrow">▼</div>
+    <div class="layer">
+      <span>NEXT.JS</span> :3000 — Frontend (App Router, TypeScript, Tailwind)
+    </div>
+    <div class="arrow">▼</div>
+    <div class="layer">
+      <span>EXPRESS 5</span> :4000 — API REST (Node.js 20+, ES Modules)
+    </div>
+    <div class="arrow">▼</div>
+    <div class="layer" style="background:rgba(5,150,105,.1);border-color:rgba(5,150,105,.3);">
+      <span>POSTGRESQL 15</span> :5432 — Solo accesible desde red interna Docker
+    </div>
+  </div>
+
+  <h3 id="cap2-1">2.1 Componentes</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Componente</th><th>Tecnología</th><th>Puerto</th><th>Acceso externo</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Frontend</strong></td><td>Next.js 16, React 19, TypeScript</td><td>3000 (interno)</td><td>Vía Nginx</td></tr>
+        <tr><td><strong>Backend API</strong></td><td>Node.js 20+, Express 5</td><td>4000 (interno)</td><td>Vía Nginx</td></tr>
+        <tr><td><strong>Base de datos</strong></td><td>PostgreSQL 15</td><td>5432 (Docker LAN)</td><td>❌ No expuesto</td></tr>
+        <tr><td><strong>Proxy inverso</strong></td><td>Nginx Alpine</td><td>80, 443</td><td>✅ Público/interno</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 id="cap2-2">2.2 Patrón arquitectónico</h3>
+  <ul>
+    <li><strong>Separación de capas:</strong> Rutas → Controladores → Servicios → Base de datos</li>
+    <li><strong>Stateless:</strong> Autenticación vía JWT en cookies <code>httpOnly</code> (sin estado en el servidor)</li>
+    <li><strong>Modular:</strong> Cada entidad tiene su propio controller, service y route independientes</li>
+    <li><strong>Soft delete:</strong> Ningún registro se elimina físicamente; se marca con <code>fecha_eliminacion</code></li>
+  </ul>
+</div>
+
+<!-- CAP 3 -->
+<div class="chapter" id="cap3">
+  <h2><span class="ch-num">03</span> Estructura de Directorios</h2>
+  <pre><code>muni_union/
+├── back/                        # API REST
+│   ├── src/
+│   │   ├── config/
+│   │   │   ├── db.js            # Pool PostgreSQL + timezone Lima
+│   │   │   ├── logger.js        # Logger Pino
+│   │   │   └── swagger.js       # Documentación OpenAPI
+│   │   ├── controllers/         # Lógica de cada endpoint
+│   │   ├── middlewares/
+│   │   │   ├── auth.middleware.js       # Verificación JWT
+│   │   │   ├── auditMiddleware.js       # Auditoría automática
+│   │   │   ├── errorHandler.js          # Manejo global de errores
+│   │   │   ├── permisos.middleware.js   # Permisos granulares
+│   │   │   ├── role.middleware.js       # Control por rol
+│   │   │   ├── upload.middleware.js     # Multer (archivos)
+│   │   │   └── validate.middleware.js   # express-validator
+│   │   ├── migrations/          # Scripts SQL versionados (000–005)
+│   │   ├── routes/              # Definición de rutas
+│   │   ├── services/            # Lógica de negocio + queries SQL
+│   │   ├── app.js               # Configuración Express
+│   │   └── server.js            # Punto de entrada + tareas periódicas
+│   ├── uploads/                 # Archivos digitalizados (volumen Docker)
+│   └── .env.example             # Plantilla de variables de entorno
+├── front/                       # Aplicación Next.js
+│   └── src/
+│       ├── app/
+│       │   ├── (dashboard)/     # Rutas protegidas (requieren login)
+│       │   ├── login/           # Página de autenticación
+│       │   ├── print/           # Vistas de impresión (PDF)
+│       │   └── verificar/       # Portal público de verificación
+│       ├── components/          # Componentes UI reutilizables
+│       ├── services/            # Clientes HTTP (Axios)
+│       ├── store/               # Estado global (Zustand)
+│       ├── types/               # Interfaces TypeScript
+│       └── utils/
+│           ├── api.ts           # Instancia Axios + interceptor refresh
+│           └── dateUtils.ts     # Utilidades de fechas
+├── nginx/
+│   ├── nginx.conf               # Config dual (público + interno)
+│   └── ssl/
+│       ├── public/              # Certificado portal de verificación
+│       └── internal/            # Certificado sistema interno
+├── scripts/
+│   └── backup_db.sh             # Script de backup automático
+├── MANUAL_TECNICO.html          # Este documento
+├── MANUAL_USUARIO.html          # Manual de usuario
+├── docker-compose.yml
+└── README.md</code></pre>
+</div>
+
+<!-- CAP 4 -->
+<div class="chapter" id="cap4">
+  <h2><span class="ch-num">04</span> Base de Datos</h2>
+
+  <h3 id="cap4-1">4.1 Diagrama de tablas</h3>
+  <pre><code>roles ─────────────────── usuarios ────────── usuario_permisos
+                              │
+                              ├──── refresh_tokens
+                              │
+tipos_documento ─── personas ◄─────────────── actas ───── documentos_digitales
+                                               │
+                                         detalle_solicitud ◄── solicitudes ── solicitantes
+                                                                    │
+                                                               auditoria</code></pre>
+
+  <h3 id="cap4-2">4.2 Tablas principales</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Tabla</th><th>Descripción</th><th>Volumen esperado</th></tr></thead>
+      <tbody>
+        <tr><td><code>actas</code></td><td>Registros de nacimiento, matrimonio y defunción</td><td>Miles / decenas de miles</td></tr>
+        <tr><td><code>personas</code></td><td>Ciudadanos registrados en el sistema</td><td>Similar a actas</td></tr>
+        <tr><td><code>solicitudes</code></td><td>Solicitudes de copias certificadas</td><td>Cientos por año</td></tr>
+        <tr><td><code>detalle_solicitud</code></td><td>Líneas de detalle por solicitud (actas + precios)</td><td>N:1 con solicitudes</td></tr>
+        <tr><td><code>documentos_digitales</code></td><td>Archivos PDF/imagen adjuntos a actas</td><td>Similar a actas</td></tr>
+        <tr><td><code>auditoria</code></td><td>Log de todas las operaciones del sistema</td><td>Alto volumen</td></tr>
+        <tr><td><code>refresh_tokens</code></td><td>Sesiones activas (limpieza cada 6h)</td><td>Bajo</td></tr>
+        <tr><td><code>roles</code></td><td>Catálogo de roles (ADMIN, USER)</td><td>Fijo</td></tr>
+        <tr><td><code>tipos_documento</code></td><td>Catálogo de tipos de documento de identidad</td><td>Fijo</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 id="cap4-3">4.3 Convenciones</h3>
+  <ul>
+    <li><strong>Soft delete:</strong> columna <code>fecha_eliminacion TIMESTAMP</code> en todas las tablas operacionales. Todas las consultas deben filtrar con <code>WHERE fecha_eliminacion IS NULL</code>.</li>
+    <li><strong>Zona horaria:</strong> todas las operaciones en <code>America/Lima</code>. Forzado en el pool de conexiones y en <code>process.env.TZ</code> del servidor.</li>
+    <li><strong>Numeración modo CLÁSICO:</strong> formato <code>{TIPO}-L{libro}-{numero}</code> — Ejemplo: <code>NAC-L1-45</code></li>
+    <li><strong>Numeración modo CUI (RENIEC):</strong> código alfanumérico libre asignado por RENIEC.</li>
+    <li><strong>Constraint MATRIMONIO:</strong> CHECK que obliga a que <code>persona_secundaria_id</code> no sea NULL cuando <code>tipo_acta = 'MATRIMONIO'</code>.</li>
+  </ul>
+
+  <h3 id="cap4-4">4.4 Orden de ejecución de migraciones</h3>
+  <p>Ejecutar en orden estricto sobre la base de datos vacía:</p>
+  <pre><code class="language-bash">psql -U postgres -d muni_union -f back/src/migrations/000_schema.sql
+psql -U postgres -d muni_union -f back/src/migrations/001_refresh_tokens.sql
+psql -U postgres -d muni_union -f back/src/migrations/002_indexes.sql
+psql -U postgres -d muni_union -f back/src/migrations/003_usuario_permisos.sql
+psql -U postgres -d muni_union -f back/src/migrations/004_usuario_permisos_modificar.sql
+psql -U postgres -d muni_union -f back/src/migrations/005_seed_data.sql</code></pre>
+  <div class="callout warn">
+    <div class="callout-icon">⚠️</div>
+    <div>Todos los scripts usan <code>IF NOT EXISTS</code> — son idempotentes. Pueden ejecutarse más de una vez sin efectos secundarios.</div>
+  </div>
+</div>
+
+<!-- CAP 5 -->
+<div class="chapter" id="cap5">
+  <h2><span class="ch-num">05</span> API REST</h2>
+
+  <h3 id="cap5-1">5.1 Autenticación</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Parámetro</th><th>Valor</th></tr></thead>
+      <tbody>
+        <tr><td>Mecanismo</td><td>JWT en cookies <code>httpOnly</code> (no accesibles desde JavaScript)</td></tr>
+        <tr><td>Access token</td><td>1 hora de vigencia</td></tr>
+        <tr><td>Refresh token</td><td>7 días — almacenado como hash SHA-256 en BD</td></tr>
+        <tr><td>Rotación</td><td>Cada refresh genera nuevo par y revoca el anterior</td></tr>
+        <tr><td>Rate limiting — Login</td><td>10 intentos / 15 minutos por IP</td></tr>
+        <tr><td>Rate limiting — Refresh</td><td>30 intentos / 15 minutos por IP</td></tr>
+        <tr><td>Rate limiting — Verificación pública</td><td>20 intentos / minuto por IP</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 id="cap5-2">5.2 Endpoints principales</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Método</th><th>Ruta</th><th>Auth</th><th>Descripción</th></tr></thead>
+      <tbody>
+        <tr><td><span class="badge-method post">POST</span></td><td><code>/api/auth/login</code></td><td>No</td><td>Iniciar sesión</td></tr>
+        <tr><td><span class="badge-method post">POST</span></td><td><code>/api/auth/logout</code></td><td>Sí</td><td>Cerrar sesión</td></tr>
+        <tr><td><span class="badge-method post">POST</span></td><td><code>/api/auth/refresh</code></td><td>No</td><td>Renovar access token</td></tr>
+        <tr><td><span class="badge-method get">GET</span></td><td><code>/api/auth/me</code></td><td>Sí</td><td>Usuario autenticado actual</td></tr>
+        <tr><td><span class="badge-method get">GET</span></td><td><code>/api/actas</code></td><td>Sí</td><td>Listar actas (filtros + paginación)</td></tr>
+        <tr><td><span class="badge-method post">POST</span></td><td><code>/api/actas</code></td><td>Sí</td><td>Registrar nueva acta</td></tr>
+        <tr><td><span class="badge-method put">PUT</span></td><td><code>/api/actas/:id</code></td><td>Sí + permiso</td><td>Editar acta</td></tr>
+        <tr><td><span class="badge-method patch">PATCH</span></td><td><code>/api/actas/:id/anular</code></td><td>Sí + permiso</td><td>Anular acta</td></tr>
+        <tr><td><span class="badge-method patch">PATCH</span></td><td><code>/api/actas/:id/reactivar</code></td><td>Sí (admin)</td><td>Reactivar acta anulada</td></tr>
+        <tr><td><span class="badge-method get">GET</span></td><td><code>/api/actas/siguiente-numero</code></td><td>Sí</td><td>Sugerir N° correlativo</td></tr>
+        <tr><td><span class="badge-method get">GET</span></td><td><code>/api/personas</code></td><td>Sí</td><td>Listar ciudadanos</td></tr>
+        <tr><td><span class="badge-method post">POST</span></td><td><code>/api/solicitudes</code></td><td>Sí</td><td>Nueva solicitud</td></tr>
+        <tr><td><span class="badge-method patch">PATCH</span></td><td><code>/api/solicitudes/:id/atender</code></td><td>Sí</td><td>Marcar como atendida</td></tr>
+        <tr><td><span class="badge-method get">GET</span></td><td><code>/api/reportes/dashboard</code></td><td>Sí</td><td>Estadísticas del dashboard</td></tr>
+        <tr><td><span class="badge-method post">POST</span></td><td><code>/api/importacion/actas</code></td><td>Sí</td><td>Carga masiva Excel/CSV + ZIP</td></tr>
+        <tr><td><span class="badge-method get">GET</span></td><td><code>/api/auditoria</code></td><td>Sí (admin)</td><td>Log de auditoría</td></tr>
+        <tr><td><span class="badge-method get">GET</span></td><td><code>/api/verificar/solicitud/:id</code></td><td><strong>No</strong></td><td>Verificación pública de constancias</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="callout info">
+    <div class="callout-icon">📖</div>
+    <div>Documentación interactiva completa disponible en <strong>modo desarrollo</strong> en: <code>http://localhost:4000/api/docs</code> (deshabilitado en producción).</div>
+  </div>
+
+  <h3 id="cap5-3">5.3 Formato de respuesta de error</h3>
+  <pre><code class="language-json">{
+  "message": "Descripción legible del error"
+}</code></pre>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Código HTTP</th><th>Significado</th></tr></thead>
+      <tbody>
+        <tr><td>400</td><td>Datos inválidos o faltantes en la solicitud</td></tr>
+        <tr><td>401</td><td>No autenticado o token expirado (<code>"code": "TOKEN_EXPIRED"</code>)</td></tr>
+        <tr><td>403</td><td>Sin permisos para esta operación</td></tr>
+        <tr><td>404</td><td>Recurso no encontrado</td></tr>
+        <tr><td>429</td><td>Demasiadas solicitudes (rate limiting)</td></tr>
+        <tr><td>500</td><td>Error interno (en producción no expone detalles)</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- CAP 6 -->
+<div class="chapter" id="cap6">
+  <h2><span class="ch-num">06</span> Seguridad</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Medida</th><th>Implementación</th></tr></thead>
+      <tbody>
+        <tr><td>Contraseñas</td><td>bcrypt con 10 rondas de hashing</td></tr>
+        <tr><td>Tokens de sesión</td><td>JWT firmados + cookies <code>httpOnly</code> + <code>SameSite</code></td></tr>
+        <tr><td>Headers HTTP</td><td>Helmet (CSP, HSTS, X-Frame-Options, X-Content-Type-Options)</td></tr>
+        <tr><td>CORS</td><td>Lista blanca de orígenes via variable <code>FRONTEND_URL</code></td></tr>
+        <tr><td>Rate limiting</td><td>express-rate-limit en login, refresh y verificación pública</td></tr>
+        <tr><td>SQL Injection</td><td>Queries parametrizadas en todas las sentencias (nunca interpolación de strings)</td></tr>
+        <tr><td>Uploads</td><td>Multer con validación de tipo MIME y límite de 25 MB</td></tr>
+        <tr><td>Logs</td><td>Pino — sin datos sensibles en producción</td></tr>
+        <tr><td>Swagger</td><td>Deshabilitado cuando <code>NODE_ENV=production</code></td></tr>
+        <tr><td>PostgreSQL</td><td>Puerto 5432 no expuesto a internet (solo red interna Docker)</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- CAP 7 -->
+<div class="chapter" id="cap7">
+  <h2><span class="ch-num">07</span> Acceso Dual de Red</h2>
+  <p>El sistema opera con dos puntos de entrada controlados por Nginx sobre una única instalación:</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Entrada</th><th>server_name (Nginx)</th><th>Rutas expuestas</th><th>Usuarios</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Portal público</strong></td><td><code>$PUBLIC_DOMAIN</code><br>(ej. verificar.muniunion.gob.pe)</td><td><code>/verificar/*</code><br><code>/api/verificar/*</code><br><code>/_next/*</code></td><td>Ciudadanos — cualquier red</td></tr>
+        <tr><td><strong>Sistema interno</strong></td><td><code>$INTERNAL_DOMAIN</code><br>(ej. 192.168.1.100)</td><td>Todo el sistema completo</td><td>Trabajadores — solo LAN</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="callout warn">
+    <div class="callout-icon">🔒</div>
+    <div>El firewall del servidor debe bloquear el puerto 443 del dominio/IP interno hacia internet. Solo el portal público debe ser accesible desde fuera de la red municipal.</div>
+  </div>
+</div>
+
+<!-- CAP 8 -->
+<div class="chapter" id="cap8">
+  <h2><span class="ch-num">08</span> Mantenimiento Automático</h2>
+  <p>El servidor ejecuta tareas de limpieza periódicas cada <strong>6 horas</strong> (definidas en <code>server.js</code>):</p>
+  <ul>
+    <li><strong>Limpieza de refresh tokens expirados:</strong> <code>DELETE FROM refresh_tokens WHERE expires_at &lt; NOW()</code></li>
+    <li><strong>Purga de registros de auditoría:</strong> eliminación de registros con más de 2 años de antigüedad.</li>
+  </ul>
+  <p>Adicionalmente, se recomienda configurar el backup automático diario de la base de datos:</p>
+  <pre><code class="language-bash"># Agregar al crontab del servidor (cron diario a las 2:00 AM)
+0 2 * * * /ruta/al/proyecto/scripts/backup_db.sh >> /var/log/backup_muni.log 2>&1</code></pre>
+</div>
+
+<!-- CAP 9 -->
+<div class="chapter" id="cap9">
+  <h2><span class="ch-num">09</span> Importación Masiva</h2>
+  <p>El endpoint <code>POST /api/importacion/actas</code> acepta carga masiva de registros históricos:</p>
+  <ul>
+    <li>Archivo <strong>Excel (.xlsx)</strong> o <strong>CSV</strong> con columnas definidas</li>
+    <li>Archivo <strong>ZIP</strong> con PDFs opcionales (se vinculan automáticamente por nombre de archivo)</li>
+    <li>Límite: <strong>30.000 filas por lote</strong></li>
+    <li>Deduplicación automática por <code>numero_acta + anio</code></li>
+    <li>Detección de homonimia por nombre completo + DNI</li>
+  </ul>
+  <h4>Columnas requeridas</h4>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Columna</th><th>Obligatoria</th><th>Descripción</th></tr></thead>
+      <tbody>
+        <tr><td><code>nombres</code></td><td>✅</td><td>Nombres del titular</td></tr>
+        <tr><td><code>apellido_paterno</code></td><td>✅</td><td>Apellido paterno</td></tr>
+        <tr><td><code>apellido_materno</code></td><td>✅</td><td>Apellido materno</td></tr>
+        <tr><td><code>tipo_acta</code></td><td>✅</td><td>NACIMIENTO / MATRIMONIO / DEFUNCION</td></tr>
+        <tr><td><code>fecha_acta</code></td><td>✅</td><td>Fecha en formato AAAA-MM-DD o DD/MM/AAAA</td></tr>
+        <tr><td><code>libro</code></td><td>Si no hay CUI</td><td>Número de libro (modo CLÁSICO)</td></tr>
+        <tr><td><code>numero_acta</code></td><td>Si no hay CUI</td><td>Número de folio (modo CLÁSICO)</td></tr>
+        <tr><td><code>cui</code></td><td>Si no hay libro</td><td>Código CUI RENIEC (modo CUI)</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- CAP 10 -->
+<div class="chapter" id="cap10">
+  <h2><span class="ch-num">10</span> Variables de Entorno</h2>
+  <p>Ver <code>back/.env.example</code> para la plantilla completa. Variables críticas:</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Variable</th><th>Obligatoria</th><th>Descripción</th></tr></thead>
+      <tbody>
+        <tr><td><code>DB_HOST</code></td><td>✅</td><td>IP o hostname del servidor PostgreSQL</td></tr>
+        <tr><td><code>DB_PASSWORD</code></td><td>✅</td><td>Contraseña de la base de datos</td></tr>
+        <tr><td><code>DB_SSL</code></td><td>No</td><td><code>true</code> si la BD usa SSL (Neon.tech), <code>false</code> en local</td></tr>
+        <tr><td><code>JWT_SECRET</code></td><td>✅</td><td>Clave de firma JWT — mínimo 64 caracteres aleatorios</td></tr>
+        <tr><td><code>REFRESH_TOKEN_SECRET</code></td><td>✅</td><td>Clave refresh — diferente a JWT_SECRET, mínimo 64 chars</td></tr>
+        <tr><td><code>NODE_ENV</code></td><td>✅</td><td><code>development</code> o <code>production</code></td></tr>
+        <tr><td><code>FRONTEND_URL</code></td><td>✅</td><td>Origen(es) permitidos por CORS (separados por coma)</td></tr>
+        <tr><td><code>PORT</code></td><td>No</td><td>Puerto del servidor Express (default: 4000)</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <pre><code class="language-bash"># Generar claves seguras (ejecutar en el servidor):
+openssl rand -base64 64</code></pre>
+</div>
+
+<!-- CAP 11 -->
+<div class="chapter" id="cap11">
+  <h2><span class="ch-num">11</span> Logs</h2>
+  <p>El sistema utiliza <strong>Pino</strong> como motor de logging estructurado.</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Entorno</th><th>Formato</th><th>Detalle</th></tr></thead>
+      <tbody>
+        <tr><td>Desarrollo</td><td>Texto coloreado (pino-pretty)</td><td>Nivel debug, errores completos</td></tr>
+        <tr><td>Producción</td><td>JSON estructurado</td><td>Sin datos sensibles, nivel info+</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>Niveles: <code>info</code> (operaciones normales) · <code>warn</code> (errores recuperables) · <code>error</code> (errores no controlados)</p>
+</div>
+
+<!-- CAP 12 -->
+<div class="chapter" id="cap12">
+  <h2><span class="ch-num">12</span> Dependencias Principales</h2>
+  <h3>Backend</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Paquete</th><th>Versión</th><th>Propósito</th></tr></thead>
+      <tbody>
+        <tr><td><code>express</code></td><td>^5.2.1</td><td>Framework HTTP</td></tr>
+        <tr><td><code>pg</code></td><td>^8.17</td><td>Cliente PostgreSQL (pool de conexiones)</td></tr>
+        <tr><td><code>jsonwebtoken</code></td><td>^9.0</td><td>Generación y verificación de JWT</td></tr>
+        <tr><td><code>bcrypt</code></td><td>^6.0</td><td>Hash seguro de contraseñas</td></tr>
+        <tr><td><code>multer</code></td><td>^2.0</td><td>Manejo de uploads multipart</td></tr>
+        <tr><td><code>xlsx</code></td><td>^0.18</td><td>Lectura de Excel para importación masiva</td></tr>
+        <tr><td><code>helmet</code></td><td>^8.1</td><td>Headers de seguridad HTTP</td></tr>
+        <tr><td><code>express-rate-limit</code></td><td>^8.3</td><td>Rate limiting por IP</td></tr>
+        <tr><td><code>pino</code></td><td>^10.3</td><td>Logging estructurado</td></tr>
+        <tr><td><code>swagger-jsdoc</code></td><td>^6.2</td><td>Generación de spec OpenAPI desde JSDoc</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <h3>Frontend</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Paquete</th><th>Versión</th><th>Propósito</th></tr></thead>
+      <tbody>
+        <tr><td><code>next</code></td><td>16.1.6</td><td>Framework React con App Router</td></tr>
+        <tr><td><code>react</code></td><td>19.2</td><td>Librería UI</td></tr>
+        <tr><td><code>axios</code></td><td>^1.13</td><td>Cliente HTTP con interceptor de refresh automático</td></tr>
+        <tr><td><code>zustand</code></td><td>^5.0</td><td>Estado global (auth store)</td></tr>
+        <tr><td><code>recharts</code></td><td>^3.8</td><td>Gráficos del dashboard</td></tr>
+        <tr><td><code>zod</code></td><td>^4.3</td><td>Validación de esquemas en formularios</td></tr>
+        <tr><td><code>react-hook-form</code></td><td>^7.71</td><td>Manejo de formularios con validación</td></tr>
+        <tr><td><code>xlsx</code></td><td>^0.18</td><td>Exportación a Excel</td></tr>
+        <tr><td><code>tailwindcss</code></td><td>^4</td><td>Framework CSS utilitario</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+</div><!-- /content -->
+
+<button class="print-btn no-print" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
+
+</body>
+</html>
