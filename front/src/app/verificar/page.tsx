@@ -24,8 +24,26 @@ export default function VerificarIndexPage() {
         <div className="min-h-screen flex flex-col lg:flex-row font-sans">
 
             {/* Panel izquierdo — institucional */}
-            <div className="lg:w-2/5 bg-[#0f2744] flex flex-col items-center justify-center px-10 py-14 text-white text-center">
-                <div className="mb-6">
+            <div className="lg:w-2/5 flex flex-col items-center justify-center px-10 py-14 text-white text-center relative overflow-hidden"
+                style={{ background: "linear-gradient(160deg, #0c1f3a 0%, #0f2744 55%, #1a3a5c 100%)" }}>
+
+                {/* Blobs decorativos */}
+                <div className="absolute -bottom-28 -right-28 w-[420px] h-[420px] rounded-full"
+                    style={{ background: "radial-gradient(circle, rgba(30,80,140,0.55) 0%, transparent 70%)" }} />
+                <div className="absolute -top-20 -left-20 w-[320px] h-[320px] rounded-full"
+                    style={{ background: "radial-gradient(circle, rgba(20,60,110,0.5) 0%, transparent 70%)" }} />
+                <div className="absolute top-16 right-8 w-[160px] h-[160px] rounded-full"
+                    style={{ background: "radial-gradient(circle, rgba(40,100,180,0.2) 0%, transparent 70%)" }} />
+
+                {/* Puntos flotantes */}
+                <div className="absolute bottom-[38%] left-10 w-2.5 h-2.5 rounded-full bg-blue-400/70" />
+                <div className="absolute bottom-[34%] left-20 w-1.5 h-1.5 rounded-full bg-emerald-400/60" />
+                <div className="absolute top-[30%] right-16 w-2 h-2 rounded-full bg-white/30" />
+                <div className="absolute top-[38%] right-24 w-1 h-1 rounded-full bg-blue-300/50" />
+                <div className="absolute bottom-[20%] right-12 w-1.5 h-1.5 rounded-full bg-slate-400/40" />
+                <div className="absolute top-[55%] left-8 w-1 h-1 rounded-full bg-white/20" />
+
+                <div className="relative mb-6">
                     <img src="/Logo_MDUnion.svg" alt="Logo" className="w-20 h-20 mx-auto drop-shadow-lg" />
                 </div>
                 <h1 className="text-xl font-black uppercase tracking-widest leading-snug mb-2">

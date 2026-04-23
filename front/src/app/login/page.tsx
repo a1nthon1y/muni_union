@@ -11,18 +11,23 @@ export default function LoginPage() {
                     background: "linear-gradient(160deg, #0c1f3a 0%, #0f2744 55%, #1a3a5c 100%)",
                 }}
             >
-                {/* Patrón de puntos decorativo */}
-                <div
-                    className="absolute inset-0 opacity-[0.04]"
-                    style={{
-                        backgroundImage: "radial-gradient(circle, #fff 1px, transparent 1px)",
-                        backgroundSize: "28px 28px",
-                    }}
-                />
-                {/* Círculo decorativo grande de fondo */}
-                <div className="absolute -bottom-32 -right-32 w-96 h-96 rounded-full border border-white/5" />
-                <div className="absolute -bottom-20 -right-20 w-72 h-72 rounded-full border border-white/5" />
-                <div className="absolute -top-24 -left-24 w-80 h-80 rounded-full border border-white/5" />
+                {/* Blob grande — esquina inferior derecha */}
+                <div className="absolute -bottom-28 -right-28 w-[420px] h-[420px] rounded-full"
+                    style={{ background: "radial-gradient(circle, rgba(30,80,140,0.55) 0%, transparent 70%)" }} />
+                {/* Blob mediano — esquina superior izquierda */}
+                <div className="absolute -top-20 -left-20 w-[320px] h-[320px] rounded-full"
+                    style={{ background: "radial-gradient(circle, rgba(20,60,110,0.5) 0%, transparent 70%)" }} />
+                {/* Blob pequeño — zona central-alta derecha */}
+                <div className="absolute top-16 right-8 w-[160px] h-[160px] rounded-full"
+                    style={{ background: "radial-gradient(circle, rgba(40,100,180,0.2) 0%, transparent 70%)" }} />
+
+                {/* Puntos flotantes decorativos */}
+                <div className="absolute bottom-[38%] left-10 w-2.5 h-2.5 rounded-full bg-blue-400/70" />
+                <div className="absolute bottom-[34%] left-20 w-1.5 h-1.5 rounded-full bg-emerald-400/60" />
+                <div className="absolute top-[30%] right-16 w-2 h-2 rounded-full bg-white/30" />
+                <div className="absolute top-[38%] right-24 w-1 h-1 rounded-full bg-blue-300/50" />
+                <div className="absolute bottom-[20%] right-12 w-1.5 h-1.5 rounded-full bg-slate-400/40" />
+                <div className="absolute top-[55%] left-8 w-1 h-1 rounded-full bg-white/20" />
 
                 {/* Logo principal — grande y prominente */}
                 <div className="relative mb-8">
