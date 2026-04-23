@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ShieldCheck, Search, ArrowRight } from "lucide-react";
+import { ShieldCheck, ArrowRight, Lock } from "lucide-react";
 
 export default function VerificarIndexPage() {
     const router = useRouter();
@@ -11,7 +11,7 @@ export default function VerificarIndexPage() {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        const limpio = codigo.trim().replace(/\D/g, ""); // solo dígitos
+        const limpio = codigo.trim().replace(/\D/g, "");
         if (!limpio) {
             setError("Ingrese el número de constancia.");
             return;
@@ -21,49 +21,68 @@ export default function VerificarIndexPage() {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 font-sans">
+        <div className="min-h-screen flex flex-col lg:flex-row font-sans">
 
-            {/* Header institucional */}
-            <div className="w-full max-w-md mb-8 text-center">
-                <div className="flex justify-center mb-3">
-                    <img src="/Logo_MDUnion.svg" alt="Logo" className="w-16 h-16" />
+            {/* Panel izquierdo — institucional */}
+            <div className="lg:w-2/5 bg-[#0f2744] flex flex-col items-center justify-center px-10 py-14 text-white text-center">
+                <div className="mb-6">
+                    <img src="/Logo_MDUnion.svg" alt="Logo" className="w-20 h-20 mx-auto drop-shadow-lg" />
                 </div>
-                <h1 className="text-xl font-black uppercase tracking-widest text-slate-900">
-                    Municipalidad Distrital de La Unión
+                <h1 className="text-xl font-black uppercase tracking-widest leading-snug mb-2">
+                    Municipalidad Distrital<br />de La Unión
                 </h1>
-                <p className="text-xs font-bold text-slate-500 uppercase tracking-[0.2em] mt-1">
+                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-blue-300 mb-10">
                     Oficina de Registro Civil
+                </p>
+
+                <div className="w-px h-12 bg-white/20 mx-auto mb-10" />
+
+                <div className="space-y-6 text-left max-w-xs">
+                    {[
+                        { icon: "🔍", title: "Verificación en tiempo real", desc: "Consulte el estado de cualquier constancia de trámite emitida." },
+                        { icon: "🔒", title: "Sin registro requerido", desc: "Servicio público y gratuito, sin necesidad de cuenta." },
+                        { icon: "✅", title: "Resultado instantáneo", desc: "Confirme la autenticidad del documento en segundos." },
+                    ].map((f) => (
+                        <div key={f.title} className="flex gap-4 items-start">
+                            <div className="text-2xl mt-0.5">{f.icon}</div>
+                            <div>
+                                <p className="font-bold text-sm text-white">{f.title}</p>
+                                <p className="text-xs text-blue-200/80 mt-0.5 leading-relaxed">{f.desc}</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                <p className="mt-14 text-[10px] font-bold uppercase tracking-widest text-white/25">
+                    Sistema STDU v2.0 · Piura, Perú
                 </p>
             </div>
 
-            {/* Card */}
-            <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
+            {/* Panel derecho — formulario */}
+            <div className="flex-1 bg-slate-50 flex flex-col items-center justify-center px-6 py-14">
+                <div className="w-full max-w-sm">
 
-                {/* Cabecera */}
-                <div className="bg-slate-900 px-6 py-5 flex items-center gap-4">
-                    <ShieldCheck className="w-9 h-9 text-white shrink-0" />
-                    <div>
-                        <p className="text-white font-black text-base uppercase tracking-wide">
-                            Verificación de Constancia
-                        </p>
-                        <p className="text-slate-400 text-xs font-semibold mt-0.5 uppercase tracking-widest">
-                            Compruebe la autenticidad de su documento
-                        </p>
+                    {/* Encabezado formulario */}
+                    <div className="flex items-center gap-3 mb-8">
+                        <div className="w-10 h-10 rounded-xl bg-[#0f2744] flex items-center justify-center shrink-0">
+                            <ShieldCheck className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                            <h2 className="text-base font-black text-slate-900 uppercase tracking-wide">
+                                Verificar constancia
+                            </h2>
+                            <p className="text-xs text-slate-400 mt-0.5">
+                                Ingrese el código impreso en su documento
+                            </p>
+                        </div>
                     </div>
-                </div>
 
-                {/* Formulario */}
-                <div className="p-6 space-y-5">
-                    <p className="text-sm text-slate-600 leading-relaxed">
-                        Ingrese el <span className="font-black text-slate-900">número de constancia</span> impreso
-                        en su documento (ej.&nbsp;<span className="font-mono font-bold">000001</span>).
-                    </p>
-
-                    <form onSubmit={handleSubmit} className="space-y-4">
+                    <form onSubmit={handleSubmit} className="space-y-5">
+                        {/* Input código */}
                         <div>
                             <label
                                 htmlFor="codigo"
-                                className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1.5"
+                                className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2"
                             >
                                 N° de Constancia
                             </label>
@@ -73,42 +92,45 @@ export default function VerificarIndexPage() {
                                 inputMode="numeric"
                                 maxLength={10}
                                 value={codigo}
-                                onChange={(e) => {
-                                    setCodigo(e.target.value);
-                                    setError("");
-                                }}
+                                onChange={(e) => { setCodigo(e.target.value); setError(""); }}
                                 placeholder="000001"
-                                className="w-full border border-slate-200 rounded-xl px-4 py-3 text-2xl font-black font-mono tracking-[0.3em] text-slate-900 placeholder:text-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent text-center"
                                 autoFocus
+                                className={`w-full bg-white border-2 rounded-2xl px-5 py-4 text-3xl font-black font-mono tracking-[0.35em] text-slate-900 placeholder:text-slate-200 focus:outline-none transition-all text-center shadow-sm ${
+                                    error
+                                        ? "border-rose-400 focus:border-rose-500"
+                                        : "border-slate-200 focus:border-[#0f2744]"
+                                }`}
                             />
-                            {error && (
-                                <p className="mt-1.5 text-xs font-bold text-rose-600">{error}</p>
+                            {error ? (
+                                <p className="mt-2 text-xs font-bold text-rose-500 flex items-center gap-1">
+                                    <span>⚠</span> {error}
+                                </p>
+                            ) : (
+                                <p className="mt-2 text-[11px] text-slate-400">
+                                    Ejemplo: <span className="font-mono font-bold text-slate-600">000042</span> — solo el número, sin letras.
+                                </p>
                             )}
                         </div>
 
+                        {/* Botón */}
                         <button
                             type="submit"
-                            className="w-full bg-slate-900 hover:bg-slate-700 text-white font-black uppercase tracking-widest text-sm py-3.5 rounded-xl flex items-center justify-center gap-2 transition-colors"
+                            className="w-full bg-[#0f2744] hover:bg-[#1a3a5c] active:scale-[0.98] text-white font-black uppercase tracking-widest text-sm py-4 rounded-2xl flex items-center justify-center gap-2.5 transition-all shadow-md shadow-slate-900/20"
                         >
-                            <Search className="w-4 h-4" />
-                            Verificar Constancia
+                            Verificar constancia
                             <ArrowRight className="w-4 h-4" />
                         </button>
                     </form>
-                </div>
 
-                {/* Pie */}
-                <div className="border-t border-slate-100 px-6 py-4 bg-slate-50">
-                    <p className="text-[10px] text-slate-400 font-medium text-center leading-relaxed">
-                        Este servicio permite verificar la autenticidad de constancias de trámite
-                        emitidas por la Oficina de Registro Civil.
-                    </p>
+                    {/* Info pie */}
+                    <div className="mt-8 flex items-start gap-3 bg-white border border-slate-100 rounded-2xl px-4 py-3.5 shadow-sm">
+                        <Lock className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+                        <p className="text-[11px] text-slate-400 leading-relaxed">
+                            Este portal solo muestra información de confirmación de autenticidad. No expone datos personales del solicitante.
+                        </p>
+                    </div>
                 </div>
             </div>
-
-            <p className="mt-6 text-[10px] font-bold uppercase tracking-widest text-slate-300">
-                Sistema STDU · Municipalidad Distrital de La Unión
-            </p>
         </div>
     );
 }
