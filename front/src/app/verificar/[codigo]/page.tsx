@@ -386,6 +386,6 @@ export default function VerificarPage() {
                     </div>
                 </div>
             </div>
-        </div>
+        </>
     );
 }
