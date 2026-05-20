@@ -1,6 +1,7 @@
-# Backups de base de datos
-*.sql
-backup*/
+# Backups de base de datos (archivos descargados, no rutas de código)
+/back/backups/
+/back/backup*/
+backup_muni_union_*.sql
 
 # Dependencias
 node_modules/
@@ -20,4 +21,3 @@ error*.log
 diff*.txt
 null
 tmp/
-backups/
