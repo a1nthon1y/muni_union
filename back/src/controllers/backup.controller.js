@@ -1,6 +1,6 @@
 import { exec, spawn } from "child_process";
 import { promisify } from "util";
-import pool from "../config/db.js";
+import { pool } from "../config/db.js";
 
 const execAsync = promisify(exec);
 
