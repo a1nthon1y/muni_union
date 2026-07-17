@@ -1,7 +1,8 @@
 FROM node:20-slim
 
-# Instalar dependencias necesarias para compilación de algunos módulos si es necesario
-# RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
+# curl para healthcheck de Docker Compose
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 

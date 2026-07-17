@@ -85,6 +85,24 @@ app.get("/", (req, res) => {
     res.json({ message: "API Registro Civil - La Unión", docs: "/api/docs" });
 });
 
+// ── Health Check — usado por Docker y monitoreo de infraestructura ──
+app.get("/api/health", async (req, res) => {
+    const status = { status: "ok", timestamp: new Date().toISOString(), services: {} };
+
+    // Verificar PostgreSQL
+    try {
+        const { pool } = await import("./config/db.js");
+        await pool.query("SELECT 1");
+        status.services.db = "ok";
+    } catch {
+        status.services.db = "error";
+        status.status = "degraded";
+    }
+
+    const httpStatus = status.status === "ok" ? 200 : 503;
+    res.status(httpStatus).json(status);
+});
+
 // Manejador global de errores no controlados (debe ir al final de todo)
 app.use(errorHandler);
 
