@@ -8,7 +8,7 @@ version: '3.8'
 services:
   backend:
     build:
-      context: ./back
+      context: ../back
       dockerfile: Dockerfile
     container_name: union_api
     restart: always

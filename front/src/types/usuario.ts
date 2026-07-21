@@ -1,4 +1,4 @@
-import { Usuario } from "./auth";
+import { Usuario, UsuarioPermisos } from "./auth";
 
 export interface UsuarioInput {
     nombres: string;
@@ -7,6 +7,7 @@ export interface UsuarioInput {
     telefono?: string;
     dni?: string;
     password?: string;
+    permisos?: Partial<UsuarioPermisos>;
 }
 
 export interface ChangePasswordInput {

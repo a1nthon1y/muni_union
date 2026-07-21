@@ -8,7 +8,7 @@ version: '3.8'
 services:
   frontend:
     build:
-      context: ./front
+      context: ../front
       dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}

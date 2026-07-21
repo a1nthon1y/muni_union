@@ -20,9 +20,7 @@ log "══ [2/7] Instalando paquetes esenciales ══"
 apt install -y \
   sudo ufw fail2ban curl wget gnupg lsb-release ca-certificates \
   unattended-upgrades logrotate htop net-tools rsync \
-  qemu-guest-agent openssh-server
-
-systemctl enable --now qemu-guest-agent
+  openssh-server
 
 log "══ [3/7] Creando usuario 'deploy' ══"
 if ! id deploy &>/dev/null; then

@@ -168,7 +168,7 @@ BKUP
 chmod +x /opt/backup_postgres.sh
 
 # Cron: cada día a las 2:00 AM
-(crontab -l 2>/dev/null; echo "0 2 * * * /opt/backup_postgres.sh >> /var/log/backup_postgres.log 2>&1") | crontab -
+(crontab -l 2>/dev/null || true; echo "0 2 * * * /opt/backup_postgres.sh >> /var/log/backup_postgres.log 2>&1") | crontab -
 
 # Firewall: solo Backend puede conectar al puerto 5432
 ufw allow from "${BACKEND_IP}" to any port 5432 proto tcp comment "PostgreSQL desde Backend"
