@@ -56,11 +56,20 @@ ssh deploy@172.16.3.24 "showmount -e 172.16.3.24"
 scp deploy/db/02_setup_postgresql.sh root@172.16.3.23:/tmp/
 ssh root@172.16.3.23 "bash /tmp/02_setup_postgresql.sh"
 
-# Aplicar migraciones de la base de datos:
+# Inicializar la base (elegir UNO):
+
+# Opción A — instalación limpia (recomendado en servidor nuevo):
+scp -r deploy/db deploy@172.16.3.23:/opt/muni_union/deploy/
+ssh deploy@172.16.3.23 "bash /opt/muni_union/deploy/db/init_db.sh limpia"
+
+# Opción B — migraciones SQL del repo (en orden numérico):
 scp back/src/migrations/*.sql deploy@172.16.3.23:/tmp/
 ssh deploy@172.16.3.23 "
-  psql -h 172.16.3.23 -U app_user -d registro_muni_union -f /tmp/001_schema.sql
-  psql -h 172.16.3.23 -U app_user -d registro_muni_union -f /tmp/002_indexes.sql
+  for f in /tmp/000_schema.sql /tmp/001_refresh_tokens.sql /tmp/002_indexes.sql \
+           /tmp/003_usuario_permisos.sql /tmp/004_usuario_permisos_modificar.sql \
+           /tmp/005_seed_data.sql; do
+    [ -f \"\$f\" ] && psql -h 172.16.3.23 -U app_user -d registro_muni_union -f \"\$f\"
+  done
 "
 ```
 
@@ -74,10 +83,9 @@ ssh deploy@172.16.3.23 "
 scp deploy/backend/03_setup_backend.sh root@172.16.3.22:/tmp/
 ssh root@172.16.3.22 "bash /tmp/03_setup_backend.sh"
 
-# Clonar el repositorio
-ssh deploy@172.16.3.22 "
-  git clone https://github.com/a1nthon1y/muni_union.git /opt/muni_union
-"
+# Clonar el repositorio (directorio debe estar vacío)
+ssh deploy@172.16.3.22 "git clone https://github.com/a1nthon1y/muni_union.git /opt/muni_union"
+ssh root@172.16.3.22 "cp /root/muni_union.env.backend /opt/muni_union/.env.backend && chown deploy:deploy /opt/muni_union/.env.backend"
 
 # Editar el .env del backend con las credenciales reales
 ssh deploy@172.16.3.22 "nano /opt/muni_union/.env.backend"
@@ -101,9 +109,8 @@ scp deploy/frontend/04_setup_frontend.sh root@172.16.3.21:/tmp/
 ssh root@172.16.3.21 "bash /tmp/04_setup_frontend.sh"
 
 # Clonar el repositorio
-ssh deploy@172.16.3.21 "
-  git clone https://github.com/a1nthon1y/muni_union.git /opt/muni_union
-"
+ssh deploy@172.16.3.21 "git clone https://github.com/a1nthon1y/muni_union.git /opt/muni_union"
+ssh root@172.16.3.21 "cp /root/muni_union.env.frontend /opt/muni_union/.env.frontend && chown deploy:deploy /opt/muni_union/.env.frontend"
 
 # Levantar el contenedor de Next.js
 ssh deploy@172.16.3.21 "
@@ -114,6 +121,37 @@ ssh deploy@172.16.3.21 "
 # Verificar Nginx
 ssh deploy@172.16.3.21 "nginx -t && systemctl status nginx"
 ```
+
+---
+
+## 🛠️ Problemas frecuentes
+
+### Health `/api/health` → 503 y logs: `pg_hba.conf rejects ... no encryption`
+
+PostgreSQL en `.23` solo acepta conexiones **SSL** (`hostssl` en `pg_hba.conf`). El backend debe tener **`DB_SSL=true`** en `/opt/muni_union/.env.backend`.
+
+En la VM **172.16.3.22** (usuario `deploy`):
+
+```bash
+grep DB_SSL /opt/muni_union/.env.backend
+# Debe mostrar: DB_SSL=true
+
+cd /opt/muni_union
+docker compose -f deploy/docker-compose.backend.yml up -d --force-recreate
+curl -f http://172.16.3.22:4000/api/health
+```
+
+Si `DB_SSL` está bien pero sigue fallando, confirma que el contenedor recibe las variables:
+
+```bash
+docker exec union_api printenv | grep -E '^DB_'
+```
+
+Si no aparecen `DB_HOST`, `DB_PASSWORD`, etc., el `env_file` del compose no está cargando (usa la versión corregida del repo con `../.env.backend`).
+
+### No puedo entrar por SSH como `root`
+
+Es normal después de `00_base_hardening.sh` (`PermitRootLogin no`, solo usuario `deploy`).
 
 ---
 

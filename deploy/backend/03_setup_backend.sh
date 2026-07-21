@@ -44,8 +44,9 @@ echo "${STORAGE_IP}:/srv/muni/logs     /mnt/logs     nfs  defaults,_netdev,nofai
 mount -a || warn "Asegúrate que la VM Storage (.24) esté encendida"
 
 log "══ [3/5] Creando estructura del proyecto ══"
-mkdir -p /opt/muni_union/back
-chown -R deploy:deploy /opt/muni_union
+# Solo el directorio raíz: git clone requiere destino vacío (no crear subcarpetas aquí)
+mkdir -p /opt/muni_union
+chown deploy:deploy /opt/muni_union
 
 log "══ [4/5] Firewall ══"
 # Solo acepta peticiones del Frontend (.21) al puerto 4000
@@ -53,8 +54,8 @@ ufw allow from "${FRONTEND_IP}" to any port 4000 proto tcp \
   comment "API Backend desde Frontend"
 # NO abrir al exterior: Nginx en el Frontend hace de proxy
 
-log "══ [5/5] Creando archivo de entorno de producción ══"
-cat > /opt/muni_union/.env.backend << EOF
+log "══ [5/5] Plantilla de entorno de producción ══"
+cat > /root/muni_union.env.backend << EOF
 # ─────────────────────────────────────────────
 # BACKEND ENV — Registro Civil Municipalidad La Unión
 # COMPLETAR antes de levantar el contenedor
@@ -82,8 +83,7 @@ FRONTEND_URL=https://${FRONTEND_IP}
 AUDIT_RETENTION_DAYS=730
 EOF
 
-chmod 600 /opt/muni_union/.env.backend
-chown deploy:deploy /opt/muni_union/.env.backend
+chmod 600 /root/muni_union.env.backend
 
 echo ""
 log "════════════════════════════════════════════"
@@ -93,9 +93,9 @@ log "  Docker instalado y listo"
 log "  NFS montado: /mnt/uploads → ${STORAGE_IP}:/srv/muni/uploads"
 log "  NFS montado: /mnt/logs    → ${STORAGE_IP}:/srv/muni/logs"
 log ""
-warn "  PENDIENTE:"
-warn "  1. Como usuario 'deploy', clonar el repositorio en /opt/muni_union"
-warn "     git clone https://github.com/a1nthon1y/muni_union.git /opt/muni_union"
-warn "  2. Editar /opt/muni_union/.env.backend con las credenciales reales"
-warn "  3. Ejecutar: cd /opt/muni_union && docker compose -f deploy/docker-compose.backend.yml up -d --build"
+warn "  PENDIENTE (en este orden):"
+warn "  1. Como 'deploy': git clone https://github.com/a1nthon1y/muni_union.git /opt/muni_union"
+warn "  2. sudo cp /root/muni_union.env.backend /opt/muni_union/.env.backend && sudo chown deploy:deploy /opt/muni_union/.env.backend"
+warn "  3. Editar /opt/muni_union/.env.backend (DB_PASSWORD y JWT deben coincidir con PostgreSQL)"
+warn "  4. cd /opt/muni_union && docker compose -f deploy/docker-compose.backend.yml up -d --build"
 log "════════════════════════════════════════════"

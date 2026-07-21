@@ -15,7 +15,7 @@ services:
     ports:
       - "172.16.3.22:4000:4000"   # Solo escucha en la IP de esta VM
     env_file:
-      - .env.backend
+      - ../.env.backend
     volumes:
       - /mnt/uploads:/app/uploads  # Carpeta NFS desde VM Storage (.24)
       - /mnt/logs:/app/logs        # Logs centralizados en VM Storage (.24)

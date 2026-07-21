@@ -11,13 +11,13 @@ services:
       context: ../front
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://172.16.3.21/api}
     container_name: union_web
     restart: always
     ports:
       - "127.0.0.1:3000:3000"  # Solo Nginx (host) puede accederlo
     env_file:
-      - .env.frontend
+      - ../.env.frontend
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000"]
       interval: 30s

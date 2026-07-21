@@ -28,13 +28,21 @@ deploy_backend() {
   sleep 5
   docker compose -f deploy/docker-compose.backend.yml ps
   log "Backend desplegado. Verificando health..."
-  curl -sf http://localhost:4000/api/health && log "API respondiendo correctamente" || \
-    warn "API aún iniciando, espera 30s y vuelve a verificar"
+  # El puerto publicado es 172.16.3.22:4000, no localhost
+  curl -sf http://172.16.3.22:4000/api/health && log "API respondiendo correctamente" || \
+    warn "API aún iniciando, espera 30s y vuelve a verificar: curl http://172.16.3.22:4000/api/health"
 }
 
 deploy_frontend() {
   log "══ Desplegando Frontend ══"
   git pull origin main
+  # Variables para build args (NEXT_PUBLIC_*) y env del contenedor
+  if [ -f .env.frontend ]; then
+    set -a
+    # shellcheck disable=SC1091
+    source .env.frontend
+    set +a
+  fi
   docker compose -f deploy/docker-compose.frontend.yml build --no-cache
   docker compose -f deploy/docker-compose.frontend.yml up -d
   sleep 10

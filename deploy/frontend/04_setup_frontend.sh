@@ -160,13 +160,12 @@ log "══ [4/5] Firewall — solo 80/443 al mundo ══"
 ufw allow 80/tcp  comment "HTTP"
 ufw allow 443/tcp comment "HTTPS"
 
-log "══ [5/5] Creando archivo de entorno de producción ══"
-mkdir -p /opt/muni_union
-cat > /opt/muni_union/.env.frontend << EOF
+log "══ [5/5] Plantilla de entorno de producción ══"
+cat > /root/muni_union.env.frontend << EOF
 NODE_ENV=production
 NEXT_PUBLIC_API_URL=https://${THIS_IP}/api
 EOF
-chown -R deploy:deploy /opt/muni_union
+chmod 600 /root/muni_union.env.frontend
 
 echo ""
 log "════════════════════════════════════════════"
@@ -176,7 +175,8 @@ log "  Nginx activo y escuchando en :80 y :443"
 log "  Sistema interno:  https://${THIS_IP}"
 log "  Portal público:   https://${PUBLIC_DOMAIN}"
 log ""
-warn "  PENDIENTE:"
-warn "  1. Clonar repo: git clone ... /opt/muni_union"
-warn "  2. Ejecutar: docker compose -f deploy/docker-compose.frontend.yml up -d --build"
+warn "  PENDIENTE (en este orden):"
+warn "  1. git clone https://github.com/a1nthon1y/muni_union.git /opt/muni_union"
+warn "  2. sudo cp /root/muni_union.env.frontend /opt/muni_union/.env.frontend && sudo chown deploy:deploy /opt/muni_union/.env.frontend"
+warn "  3. cd /opt/muni_union && docker compose -f deploy/docker-compose.frontend.yml up -d --build"
 log "════════════════════════════════════════════"
