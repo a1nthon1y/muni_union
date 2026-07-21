@@ -50,32 +50,29 @@ openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
   -subj   "/CN=${PUBLIC_DOMAIN}/O=Municipalidad La Union/OU=Portal Publico"
 
 log "══ [3/5] Instalando configuración Nginx ══"
+# Debian incluye sites-enabled/* dentro del bloque http de nginx.conf.
+# Upstreams y limit_req van en conf.d; sites-available solo bloques server.
+
+cat > /etc/nginx/conf.d/muni-union-upstreams.conf << NGINX_HTTP
+upstream frontend { server 127.0.0.1:3000; keepalive 32; }
+upstream backend  { server ${BACKEND_IP}:4000; keepalive 32; }
+
+limit_req_zone \$binary_remote_addr zone=public:10m rate=10r/s;
+
+client_max_body_size 25M;
+
+proxy_http_version 1.1;
+proxy_set_header Host              \$host;
+proxy_set_header X-Real-IP         \$remote_addr;
+proxy_set_header X-Forwarded-For   \$proxy_add_x_forwarded_for;
+proxy_set_header X-Forwarded-Proto \$scheme;
+NGINX_HTTP
+
 cat > /etc/nginx/sites-available/muni-union << NGINX_CONF
-worker_processes auto;
-
-events { worker_connections 1024; }
-
-http {
-    include       mime.types;
-    default_type  application/octet-stream;
-    server_tokens off;
-    gzip on;
-    gzip_types text/plain text/css application/json application/javascript;
-    client_max_body_size 25M;
-
-    proxy_http_version 1.1;
-    proxy_set_header Host              \$host;
-    proxy_set_header X-Real-IP         \$remote_addr;
-    proxy_set_header X-Forwarded-For   \$proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto \$scheme;
-
-    # Upstreams
-    upstream frontend { server 127.0.0.1:3000; keepalive 32; }
-    upstream backend  { server ${BACKEND_IP}:4000; keepalive 32; }
-
     # ── HTTP → HTTPS redirect ──────────────────────────────────
     server {
         listen 80 default_server;
+        listen [::]:80 default_server;
         server_name _;
         return 301 https://\$host\$request_uri;
     }
@@ -83,6 +80,7 @@ http {
     # ── SISTEMA INTERNO (red municipal, acceso completo) ───────
     server {
         listen 443 ssl;
+        listen [::]:443 ssl;
         server_name ${THIS_IP};
 
         ssl_certificate     /etc/nginx/ssl/internal/cert.pem;
@@ -95,7 +93,6 @@ http {
         add_header X-Content-Type-Options "nosniff" always;
         add_header X-Frame-Options "SAMEORIGIN" always;
 
-        # Restricción a red interna
         allow 172.16.0.0/16;
         allow 192.168.0.0/16;
         deny all;
@@ -112,10 +109,9 @@ http {
     }
 
     # ── PORTAL PÚBLICO (internet, solo verificación) ───────────
-    limit_req_zone \$binary_remote_addr zone=public:10m rate=10r/s;
-
     server {
         listen 443 ssl;
+        listen [::]:443 ssl;
         server_name ${PUBLIC_DOMAIN};
 
         ssl_certificate     /etc/nginx/ssl/public/cert.pem;
@@ -145,11 +141,10 @@ http {
         }
 
         location / {
+            default_type application/json;
             return 403 '{"error":"Acceso no autorizado"}';
-            add_header Content-Type application/json;
         }
     }
-}
 NGINX_CONF
 
 ln -sf /etc/nginx/sites-available/muni-union /etc/nginx/sites-enabled/

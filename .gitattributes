@@ -1,0 +1,2 @@
+# Scripts de despliegue deben usar LF (evita "set: pipefail" en Linux)
+*.sh text eol=lf
