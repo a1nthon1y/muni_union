@@ -22,4 +22,4 @@ RUN mkdir -p uploads/documentos
 EXPOSE 4000
 
 # Comando para iniciar
-CMD ["npm", "start"]
+CMD ["node", "src/server.js"]
