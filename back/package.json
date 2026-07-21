@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "nodemon --env-file=.env src/server.js",
     "start": "node --env-file=.env src/server.js",
-    "build": "echo 'Backend is ready (Node.js/Express - no compilation step required)'"
+    "build": "node scripts/build-check.js"
   },
   "keywords": [],
   "author": "",
