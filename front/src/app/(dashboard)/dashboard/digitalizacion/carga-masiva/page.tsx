@@ -85,7 +85,7 @@ export default function CargaMasivaPage() {
 
             const { data } = await api.post<ResumenImportacion>("/importacion", formData, {
                 headers: { "Content-Type": "multipart/form-data" },
-                timeout: 300000, // 5 minutos para archivos grandes
+                timeout: 1000000, // 10 minutos para archivos grandes
                 onUploadProgress: (progressEvent) => {
                     const progress = progressEvent.total
                         ? Math.round((progressEvent.loaded * 100) / progressEvent.total)
@@ -229,7 +229,7 @@ export default function CargaMasivaPage() {
                             </li>
                         </ul>
                     </div>
-                    
+
                     <div className="space-y-3">
                         <h5 className="text-[10px] font-black text-blue-800/60 uppercase tracking-widest border-b border-blue-100 pb-1">Datos del Ciudadano</h5>
                         <ul className="space-y-2">
@@ -448,35 +448,35 @@ export default function CargaMasivaPage() {
                         {/* RESUMEN ESTADÍSTICO */}
                         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                             {[
-                                { label: 'TOTAL FILAS',       value: resumen.total,           icon: FileSpreadsheet, color: 'slate'   },
-                                { label: 'ACTAS NUEVAS',      value: resumen.exitosos,         icon: CheckCircle2,    color: 'emerald' },
-                                { label: 'YA EXISTÍAN',       value: resumen.omitidos,         icon: AlertTriangle,   color: 'blue'    },
-                                { label: 'DOCS VINCULADOS',   value: resumen.docs_vinculados,  icon: AlertTriangle,   color: 'amber'   },
-                                { label: 'ERRORES',           value: resumen.errores,          icon: XCircle,         color: 'rose'    }
+                                { label: 'TOTAL FILAS', value: resumen.total, icon: FileSpreadsheet, color: 'slate' },
+                                { label: 'ACTAS NUEVAS', value: resumen.exitosos, icon: CheckCircle2, color: 'emerald' },
+                                { label: 'YA EXISTÍAN', value: resumen.omitidos, icon: AlertTriangle, color: 'blue' },
+                                { label: 'DOCS VINCULADOS', value: resumen.docs_vinculados, icon: AlertTriangle, color: 'amber' },
+                                { label: 'ERRORES', value: resumen.errores, icon: XCircle, color: 'rose' }
                             ].map((stat, i) => (
                                 <div key={i} className={cn(
                                     "p-6 rounded-[28px] border flex flex-col items-center justify-center gap-2 transition-all hover:translate-y-[-4px]",
-                                    stat.color === 'slate'   ? "bg-white dark:bg-slate-800 border-slate-100" :
-                                    stat.color === 'emerald' ? "bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-100/50" :
-                                    stat.color === 'blue'    ? "bg-blue-50/50 dark:bg-blue-950/20 border-blue-100/50" :
-                                    stat.color === 'amber'   ? "bg-amber-50/50 dark:bg-amber-950/20 border-amber-100/50" :
-                                                               "bg-rose-50/50 dark:bg-rose-950/20 border-rose-100/50"
+                                    stat.color === 'slate' ? "bg-white dark:bg-slate-800 border-slate-100" :
+                                        stat.color === 'emerald' ? "bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-100/50" :
+                                            stat.color === 'blue' ? "bg-blue-50/50 dark:bg-blue-950/20 border-blue-100/50" :
+                                                stat.color === 'amber' ? "bg-amber-50/50 dark:bg-amber-950/20 border-amber-100/50" :
+                                                    "bg-rose-50/50 dark:bg-rose-950/20 border-rose-100/50"
                                 )}>
                                     <div className={cn("p-3 rounded-2xl mb-1 shadow-sm",
-                                        stat.color === 'slate'   ? "bg-slate-50 text-slate-400" :
-                                        stat.color === 'emerald' ? "bg-white text-emerald-500" :
-                                        stat.color === 'blue'    ? "bg-white text-blue-500" :
-                                        stat.color === 'amber'   ? "bg-white text-amber-500" :
-                                                                   "bg-white text-rose-500"
+                                        stat.color === 'slate' ? "bg-slate-50 text-slate-400" :
+                                            stat.color === 'emerald' ? "bg-white text-emerald-500" :
+                                                stat.color === 'blue' ? "bg-white text-blue-500" :
+                                                    stat.color === 'amber' ? "bg-white text-amber-500" :
+                                                        "bg-white text-rose-500"
                                     )}>
                                         <stat.icon className="h-6 w-6" />
                                     </div>
                                     <p className={cn("text-4xl font-black tracking-tight",
-                                        stat.color === 'slate'   ? "text-slate-800" :
-                                        stat.color === 'emerald' ? "text-emerald-700" :
-                                        stat.color === 'blue'    ? "text-blue-700" :
-                                        stat.color === 'amber'   ? "text-amber-700" :
-                                                                   "text-rose-700"
+                                        stat.color === 'slate' ? "text-slate-800" :
+                                            stat.color === 'emerald' ? "text-emerald-700" :
+                                                stat.color === 'blue' ? "text-blue-700" :
+                                                    stat.color === 'amber' ? "text-amber-700" :
+                                                        "text-rose-700"
                                     )}>{stat.value}</p>
                                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">{stat.label}</p>
                                 </div>
