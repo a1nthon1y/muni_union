@@ -91,11 +91,12 @@ export default function LoginForm() {
                             name="username"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel className="std-label">Nombre de Usuario</FormLabel>
+                                    <FormLabel className="std-label" htmlFor="username-input">Nombre de Usuario</FormLabel>
                                     <FormControl>
                                         <div className="relative group">
                                             <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
                                             <Input
+                                                id="username-input"
                                                 placeholder="ingrese su usuario"
                                                 {...field}
                                                 className="pl-10 std-input font-bold"
@@ -112,11 +113,12 @@ export default function LoginForm() {
                             name="password"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel className="std-label">Contraseña</FormLabel>
+                                    <FormLabel className="std-label" htmlFor="password-input">Contraseña</FormLabel>
                                     <FormControl>
                                         <div className="relative group">
                                             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
                                             <Input
+                                                id="password-input"
                                                 type={showPassword ? "text" : "password"}
                                                 placeholder="••••••••"
                                                 {...field}
