@@ -1,235 +1,250 @@
-# 🔌 Manual de Integración de API REST
-**Sistema de Registro Civil — Municipalidad Distrital de La Unión**  
-Versión 1.0.0 · Julio 2026
-
-Este manual detalla los endpoints, la autenticación y las estructuras de datos requeridas para que sistemas externos o de terceros (ej. mesa de partes, sistemas tributarios locales, validadores de identidad) consuman las APIs REST del sistema de Registro Civil de la municipalidad.
+# Manual de Integración API — Sistema de Registro Civil
+**Municipalidad Distrital de La Unión — Piura, Perú**  
+Versión 1.3.0 | Julio 2026
 
 ---
 
-## 🌐 1. URL Base
+## A quién va dirigido
 
-El punto de acceso a la API REST varía según el ámbito de consumo:
+Este manual es para desarrolladores o sistemas externos (mesa de partes, tributario, validadores, etc.) que necesitan **consultar o registrar datos** mediante la API REST del Registro Civil.
 
-* **Consumo Interno (Desde servidores/sistemas dentro de la red municipal):**
-  ```
-  https://172.16.3.22:4000/api
-  ```
-* **Consumo Vía Proxy (Desde la LAN general o VPN autorizada):**
-  ```
-  https://172.16.3.21/api
-  ```
+No describe cómo instalar servidores. Para eso use el **Manual de Instalación**. Para operación diaria de infraestructura use el **Manual Técnico**.
 
 ---
 
-## 🔑 2. Autenticación y Ciclo de Vida
+## 1. URL base (producción)
 
-El sistema implementa autenticación basada en **JSON Web Tokens (JWT)**. Para sistemas de terceros, la autenticación se realiza mediante cabeceras HTTP estándar.
+Use preferentemente el proxy HTTPS del Frontend (recomendado):
 
-### Flujo de Trabajo para Sistemas Externos:
-1. El sistema externo envía sus credenciales al endpoint `/auth/login`.
-2. La API responde con el objeto de usuario y setea la cookie `auth_token`. Para sistemas que no admiten cookies, se puede extraer el token o cabecera JWT.
-3. El sistema externo debe enviar en cada petición subsecuente la cabecera:
-   ```http
-   Authorization: Bearer <TU_ACCESS_TOKEN>
-   ```
+```
+https://172.16.3.21/api
+```
 
----
+Acceso directo al Backend (red interna, puerto de la API):
 
-## 📡 3. Endpoints Principales
+```
+http://172.16.3.22:4000/api
+```
 
-### 🔓 3.1. Autenticación
+**Verificación pública (sin login):**
 
-#### A. Iniciar Sesión (Login)
-* **Método:** `POST`
-* **Ruta:** `/auth/login`
-* **Cuerpo de la Petición (JSON):**
-  ```json
-  {
-    "username": "usuario_api",
-    "password": "ContraseñaEstablecida"
-  }
-  ```
-* **Respuesta Exitosa (200 OK):**
-  ```json
-  {
-    "usuario": {
-      "id": 5,
-      "username": "usuario_api",
-      "nombres": "Integrador",
-      "apellidos": "Terceros",
-      "rol_id": 2,
-      "rol": "OPERADOR",
-      "activo": true
-    }
-  }
-  ```
-  *Nota: Las cookies `auth_token` y `refresh_token` se adjuntan en la respuesta HTTPS.*
+```
+https://172.16.3.21/api/verificar/solicitud/{id}
+```
+
+También existe el portal web ciudadano:
+
+```
+https://172.16.3.21/verificar
+https://172.16.3.21/verificar/000001
+```
 
 ---
 
-### 📋 3.2. Gestión de Actas (Nacimiento, Matrimonio, Defunción)
+## 2. Autenticación (JWT / cookies)
 
-#### A. Listar Actas (Filtros + Paginación)
-* **Método:** `GET`
-* **Ruta:** `/actas`
-* **Parámetros de consulta (Query Params):**
-  * `page` (opcional): Número de página (default `1`).
-  * `limit` (opcional): Resultados por página (default `10`).
-  * `q` (opcional): Texto a buscar (nombres, apellidos, número de acta, DNI, CUI).
-  * `tipo` (opcional): Filtrar por tipo (`NACIMIENTO`, `MATRIMONIO`, `DEFUNCION`).
-* **Respuesta Exitosa (200 OK):**
-  ```json
-  {
-    "data": [
-      {
-        "id": 1024,
-        "tipo_acta": "NACIMIENTO",
-        "numero_acta": "NAC-L5-144",
-        "anio": 2024,
-        "fecha_acta": "2024-05-12",
-        "observaciones": "",
-        "cui": "70321455",
-        "estado": "ACTIVO",
-        "persona_principal": "Juan Pérez Gómez"
-      }
-    ],
-    "total": 1
-  }
-  ```
+La aplicación web usa cookies `httpOnly` (`auth_token`, `refresh_token`).
 
-#### B. Obtener Detalle de un Acta
-* **Método:** `GET`
-* **Ruta:** `/actas/:id`
-* **Respuesta Exitosa (200 OK):**
-  ```json
-  {
-    "id": 1024,
-    "tipo_acta": "NACIMIENTO",
-    "numero_acta": "NAC-L5-144",
-    "anio": 2024,
-    "fecha_acta": "2024-05-12T05:00:00.000Z",
-    "observaciones": "",
-    "cui": "70321455",
-    "estado": "ACTIVO",
-    "persona_principal_id": 342,
-    "persona_principal": {
-      "id": 342,
-      "nombres": "Juan",
-      "apellido_paterno": "Pérez",
-      "apellido_materno": "Gómez",
-      "dni": "70321455",
-      "fecha_nacimiento": "2024-05-10"
-    }
-  }
-  ```
+Para integraciones externas típicas:
 
-#### C. Crear un Acta
-* **Método:** `POST`
-* **Ruta:** `/actas`
-* **Cuerpo de la Petición (JSON):**
-  ```json
-  {
-    "persona_principal_id": 342,
-    "tipo_acta": "NACIMIENTO",
-    "numero_acta": "NAC-L5-144",
-    "anio": 2024,
-    "fecha_acta": "2024-05-12",
-    "cui": "70321455",
-    "observaciones": "Inscripción oportuna"
-  }
-  ```
-* **Respuesta Exitosa (201 Created):**
-  ```json
-  {
-    "id": 1024,
-    "message": "Acta registrada con éxito."
-  }
-  ```
+1. Hacer login.
+2. Enviar en cada petición autenticada la cookie de sesión **o**, si su cliente lo soporta, el token en:
 
----
+```http
+Authorization: Bearer <access_token>
+```
 
-### 👤 3.3. Gestión de Personas/Ciudadanos
+3. Si el token expira, usar el flujo de refresh (`/auth/refresh`) según el cliente.
 
-#### A. Listar/Buscar Personas
-* **Método:** `GET`
-* **Ruta:** `/personas`
-* **Parámetros de consulta:**
-  * `q`: Búsqueda por DNI o nombres/apellidos.
-* **Respuesta Exitosa (200 OK):**
-  ```json
-  [
-    {
-      "id": 342,
-      "nombres": "Juan",
-      "apellido_paterno": "Pérez",
-      "apellido_materno": "Gómez",
-      "dni": "70321455",
-      "fecha_nacimiento": "2024-05-10T05:00:00.000Z"
-    }
-  ]
-  ```
+### Login
 
----
-
-### 🔍 3.4. Portal de Verificación Pública (Sin Autenticación)
-
-Este endpoint permite a sistemas de consulta rápida verificar la validez de una constancia o trámite emitido por el sistema usando su código numérico de identificación (impreso en el pie del documento). **No requiere cabeceras de autorización.**
-
-* **Método:** `GET`
-* **Ruta:** `/verificar/solicitud/:id`
-* **Respuesta Exitosa (200 OK):**
-  ```json
-  {
-    "valido": true,
-    "constancia": {
-      "numero": "000321",
-      "tipo_solicitud": "COPIA_CERTIFICADA",
-      "estado": "ATENDIDO",
-      "fecha_solicitud": "2026-07-15T14:30:00.000Z",
-      "fecha_atencion": "2026-07-16T10:00:00.000Z",
-      "solicitante": "J. Pérez Gómez",
-      "cantidad_documentos": 2,
-      "total": "20.00",
-      "atendido_por": "Ana Espinoza"
-    }
-  }
-  ```
-* **Respuesta en caso de código inválido o inexistente (404 Not Found):**
-  ```json
-  {
-    "valido": false,
-    "message": "No se encontró ninguna constancia con ese número. Verifique que el código sea correcto."
-  }
-  ```
-
----
-
-## 🚫 4. Manejo de Errores y Códigos HTTP
-
-La API REST responde utilizando códigos de estado HTTP estándar. Todas las respuestas de error tienen el siguiente formato:
+- **Método:** `POST`
+- **Ruta:** `/auth/login`
+- **Cuerpo:**
 
 ```json
 {
-  "message": "Detalle descriptivo del error presentado"
+  "username": "aespinoza",
+  "password": "123456"
 }
 ```
 
-### Códigos de Retorno Comunes:
+> En producción el administrador inicial es `aespinoza` / `123456` (debe cambiarse). Para integraciones conviene crear un usuario de servicio con permisos mínimos, no usar el admin diario.
 
-| Código HTTP | Significado | Causa común |
-| :--- | :--- | :--- |
-| **200 OK** | Éxito | Operación completada con datos de retorno. |
-| **201 Created** | Creado | Nuevo registro insertado con éxito. |
-| **400 Bad Request** | Solicitud incorrecta | Falta de campos obligatorios o formatos inválidos. |
-| **401 Unauthorized** | No autenticado | Token JWT omitido, dañado o expirado. Retorna campo `code: "TOKEN_EXPIRED"` si requiere refresco. |
-| **403 Forbidden** | Acceso prohibido | El usuario/sistema no cuenta con el rol o permisos requeridos para la acción. |
-| **404 Not Found** | No encontrado | El recurso solicitado (acta, persona, solicitud) no existe. |
-| **429 Too Many Requests**| Límite excedido | Se sobrepasaron las peticiones máximas por minuto por IP (ej: login o verificación pública). |
-| **500 Internal Error** | Error de servidor | Excepción no controlada en base de datos o lógica del API. |
+**Respuesta 200:** objeto `usuario` + cookies de sesión.
 
 ---
 
-## 🛡️ 5. Restricciones y Seguridad
+## 3. Endpoints principales
 
-1. **CORS:** La API restringe las llamadas cruzadas en navegadores. Si consumes las APIs mediante Axios/Fetch en un frontend de otro dominio, el dominio de origen debe estar en la lista blanca (`FRONTEND_URL` del backend). Peticiones backend-to-backend (ej. curl, Node.js, PHP, Python, Java) no están limitadas por CORS.
-2. **Rate Limiting:** El endpoint `/api/verificar/*` posee una restricción activa de seguridad contra raspado de datos (*scraping*) de máximo **20 consultas por minuto por dirección IP**.
+Todas las rutas siguientes se anteponen a la URL base (`.../api`).
+
+### 3.1 Actas
+
+#### Listar
+
+- `GET /actas`
+- Query params útiles:
+  - `page`, `limit`
+  - `q` — nombres / DNI
+  - `tipo` — `NACIMIENTO` | `MATRIMONIO` | `DEFUNCION`
+  - `anio`
+  - `numero` — código completo (`NAC-L1-1`) = exacto; solo dígitos = folio exacto
+  - `libro` — `2` o `L2`
+  - `fecha_desde`, `fecha_hasta`
+  - `dni`
+
+#### Detalle
+
+- `GET /actas/:id`
+
+#### Crear
+
+- `POST /actas`
+- Requiere autenticación y permisos.
+- Cuerpo mínimo típico: `persona_principal_id`, `tipo_acta`, `numero_acta`, `anio`, `fecha_acta`. En matrimonio también `persona_secundaria_id`.
+
+### 3.2 Personas
+
+- `GET /personas?q=...` — buscar por DNI o nombres
+- `POST /personas` — crear (según permisos)
+
+### 3.3 Solicitudes
+
+- `GET /solicitudes`
+- `POST /solicitudes`
+- `PATCH /solicitudes/:id/atender` (según implementación actual)
+
+### 3.4 Verificación pública (sin auth)
+
+- `GET /verificar/solicitud/:id`
+
+Ejemplo:
+
+```bash
+curl -sk "https://172.16.3.21/api/verificar/solicitud/1"
+```
+
+Respuesta típica si existe:
+
+```json
+{
+  "valido": true,
+  "constancia": {
+    "numero": "000001",
+    "tipo_solicitud": "COPIA_CERTIFICADA",
+    "estado": "ATENDIDO"
+  }
+}
+```
+
+Si no existe: `valido: false` y mensaje descriptivo.
+
+### 3.5 Importación masiva (solo admin)
+
+- `POST /importacion`
+- `multipart/form-data`: Excel (`.xlsx`/`.xls`) y ZIP opcional
+- Límites de producción: hasta 500 MB por archivo; el proceso puede tardar varios minutos
+- Nginx y el Frontend están configurados para esperas largas (ver Manual Técnico)
+
+### 3.6 Configuración (URL pública)
+
+- `GET /configuracion` — autenticado
+- `PUT /configuracion/url-verificacion` — solo admin
+
+```json
+{
+  "url_verificacion_publica": "https://172.16.3.21"
+}
+```
+
+Valor por defecto de producción: IP `https://172.16.3.21`.
+
+### 3.7 Backup (solo admin)
+
+- `GET /backup/info`
+- `GET /backup/download`
+
+### 3.8 Salud
+
+```bash
+curl -skf https://172.16.3.21/api/health
+curl -f http://172.16.3.22:4000/api/health
+```
+
+Esperado: `"status":"ok"` y `"services":{"db":"ok"}`.
+
+---
+
+## 4. Códigos HTTP comunes
+
+| Código | Significado | Qué hacer |
+|---|---|---|
+| 200 / 201 | Éxito | Continuar |
+| 400 | Datos inválidos | Revisar cuerpo/params |
+| 401 | No autenticado / token vencido | Login o refresh |
+| 403 | Sin permiso | Usar usuario con rol/permiso adecuado |
+| 404 | No encontrado | Verificar ID |
+| 429 | Demasiadas peticiones | Esperar y reintentar |
+| 500 | Error interno | Revisar logs del Backend |
+
+Errores suelen venir como:
+
+```json
+{ "message": "Descripción del problema" }
+```
+
+---
+
+## 5. Seguridad para integradores
+
+1. **CORS:** si llama desde un navegador en otro origen, ese origen debe estar en `FRONTEND_URL` del Backend (producción actual: `https://172.16.3.21`). Llamadas servidor-a-servidor (curl, backend propio) no sufren CORS.
+2. **SSL a la base de datos:** la API usa `DB_SSL=true` hacia `172.16.3.23`. Eso es interno; el integrador no se conecta directo a PostgreSQL salvo acuerdo explícito.
+3. **No exponga** usuario/contraseña de BD ni JWT en clientes públicos.
+4. Preferir un **usuario de integración** con permisos mínimos, no el administrador `aespinoza`.
+5. La verificación pública está limitada por tasa (rate limit) para evitar abusos.
+
+### Conexión BD (solo si un sistema interno autorizado consulta directo)
+
+| Dato | Valor producción |
+|---|---|
+| Host | `172.16.3.23` |
+| Puerto | `5432` |
+| Base | `registro_muni_union` |
+| Usuario | `app_user` |
+| Contraseña | `muniunion2026_prod` |
+| SSL | obligatorio (`true`) |
+
+> En general **no** se recomienda que terceros escriban directo en PostgreSQL. Use la API.
+
+---
+
+## 6. Ejemplo rápido con curl
+
+```bash
+# Salud
+curl -skf https://172.16.3.21/api/health
+
+# Login (guarda cookies en jar)
+curl -sk -c /tmp/muni.jar -X POST https://172.16.3.21/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"aespinoza","password":"123456"}'
+
+# Listar actas del libro 2, año 1940
+curl -sk -b /tmp/muni.jar \
+  "https://172.16.3.21/api/actas?libro=2&anio=1940&limit=20"
+
+# Verificar constancia pública
+curl -sk "https://172.16.3.21/api/verificar/solicitud/1"
+```
+
+---
+
+## 7. Relación con otros manuales
+
+| Manual | Contenido |
+|---|---|
+| Usuario | Uso diario en pantalla |
+| Técnico | Servidores, Nginx, backups, variables |
+| Instalación | Cómo montar las 4 VMs |
+| Integración (este) | Cómo llamar a la API |
