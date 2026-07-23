@@ -117,7 +117,7 @@ export function NavContent({ isCollapsed, pathname, usuario, onNavClick }: {
                                             </span>
                                         )}
                                         {isCollapsed && isActive && (
-                                            <div className="absolute left-[-10px] w-1.5 h-1.5 bg-primary rounded-full shadow-[0_0_10px_rgba(59,130,246,0.8)]" />
+                                            <div className="absolute -left-2.5 w-1.5 h-1.5 bg-primary rounded-full shadow-[0_0_10px_rgba(59,130,246,0.8)]" />
                                         )}
                                     </Link>
                                 );
