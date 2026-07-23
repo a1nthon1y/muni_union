@@ -1,31 +1,35 @@
 # Manual Técnico — Sistema de Registro Civil
 **Municipalidad Distrital de La Unión**
-Versión 1.1.0 | Julio 2026
+Versión 1.2.0 | Julio 2026
 
 ---
 
 ## 1. Descripción general
 
-Sistema web para la gestión de registros civiles (actas de nacimiento, matrimonio y defunción), solicitudes de copias certificadas, digitalización de documentos y auditoría de operaciones.
+Sistema web para registros civiles (nacimiento, matrimonio, defunción), solicitudes de copias certificadas, digitalización, importación masiva, auditoría y verificación pública de constancias.
+
+Dirigido a administradores del sistema e infraestructura.
+
+**Cómo imprimir este manual:** abrir `MANUAL_TECNICO.html` en el navegador → **Ctrl+P** → Guardar como PDF o Imprimir.
 
 ---
 
-## 2. Arquitectura de producción
+## 2. Arquitectura de producción actual
 
 ```
- Usuarios LAN / portal público
+ Usuarios LAN / portal verificación
              │ HTTPS :443
              ▼
  VM Frontend 172.16.3.21
- Nginx (host) → Next.js Docker (127.0.0.1:3000)
-             │ API privada :4000
+ Nginx (host) → Next.js Docker (127.0.0.1:3000)  contenedor: union_web
+             │ API :4000
              ▼
  VM Backend 172.16.3.22
- Express Docker → NFS uploads/logs (VM .24)
+ Express Docker (union_api) → NFS uploads/logs (VM .24)
              │ TLS PostgreSQL :5432
              ▼
  VM PostgreSQL 172.16.3.23
- PostgreSQL 15 → NFS backups (VM .24)
+ PostgreSQL 15 → BD registro_muni_union → NFS backups (VM .24)
              │
              ▼
  VM Storage 172.16.3.24
@@ -36,123 +40,284 @@ Sistema web para la gestión de registros civiles (actas de nacimiento, matrimon
 
 | VM | IP | Servicio | Exposición |
 |---|---|---|---|
-| Frontend | `172.16.3.21` | Nginx Debian + Next.js Docker | HTTPS 80/443; Next solo `127.0.0.1:3000` |
-| Backend | `172.16.3.22` | Express Docker (`union_api`) | `172.16.3.22:4000`, solo desde Frontend |
-| PostgreSQL | `172.16.3.23` | PostgreSQL 15 con TLS | `5432`, solo desde Backend |
+| Frontend | `172.16.3.21` | Nginx Debian + Next.js Docker `union_web` | HTTPS 80/443; Next solo `127.0.0.1:3000` |
+| Backend | `172.16.3.22` | Express Docker `union_api` | `172.16.3.22:4000` (desde Frontend) |
+| PostgreSQL | `172.16.3.23` | PostgreSQL 15 TLS | `5432` (desde Backend) |
 | Storage | `172.16.3.24` | NFS | Solo Backend y PostgreSQL |
 
-### 2.2 Orden de dependencia
+### 2.2 URLs de producción actual
 
-1. Storage (`.24`)
-2. PostgreSQL (`.23`)
-3. Backend (`.22`)
-4. Frontend (`.21`)
+| Uso | URL |
+|---|---|
+| Sistema interno (login y operación) | `https://172.16.3.21` |
+| API vía Nginx | `https://172.16.3.21/api` |
+| Health Backend directo | `http://172.16.3.22:4000/api/health` |
+| Verificación pública (activa por IP) | `https://172.16.3.21/verificar` |
+| Ejemplo constancia | `https://172.16.3.21/verificar/000001` |
+| Dominio público preparado en Nginx | `verificar.muniunion.gob.pe` (requiere DNS + certificado) |
 
-No iniciar un servicio dependiente antes del anterior: el Backend necesita PostgreSQL y los montajes NFS; el Frontend necesita que la API esté disponible.
+### 2.3 Credenciales iniciales de aplicación
 
-### 2.3 Patrón de aplicación
+| Campo | Valor |
+|---|---|
+| Usuario admin | `aespinoza` |
+| Contraseña inicial | `123456` |
+| Base de datos | `registro_muni_union` |
+| Usuario BD app | `app_user` |
+| Ruta del código en VMs | `/opt/muni_union` |
 
-- **Separación de capas:** Rutas → Controladores → Servicios → BD
-- **Stateless:** Autenticación via JWT en cookies `httpOnly` (sin estado en servidor)
-- **Modular:** Cada entidad tiene su propio controller, service y route
-- **Soft delete:** Ningún registro se borra físicamente; se marca con `fecha_eliminacion`
-
----
-
-## 3. Estructura de directorios
-
-```
-muni_union/
-├── back/                        # API REST
-│   ├── src/
-│   │   ├── config/
-│   │   │   ├── db.js            # Pool PostgreSQL + timezone Lima
-│   │   │   ├── logger.js        # Logger Pino
-│   │   │   └── swagger.js       # Documentación OpenAPI
-│   │   ├── controllers/         # Lógica de cada endpoint
-│   │   ├── middlewares/
-│   │   │   ├── auth.middleware.js       # Verificación JWT
-│   │   │   ├── auditMiddleware.js       # Auditoría automática
-│   │   │   ├── errorHandler.js          # Manejo global de errores
-│   │   │   ├── permisos.middleware.js   # Permisos granulares
-│   │   │   ├── role.middleware.js       # Control por rol
-│   │   │   ├── upload.middleware.js     # Multer (archivos)
-│   │   │   └── validate.middleware.js   # express-validator
-│   │   ├── migrations/          # Scripts SQL versionados
-│   │   ├── routes/              # Definición de rutas
-│   │   ├── services/            # Lógica de negocio + queries
-│   │   ├── app.js               # Configuración Express
-│   │   └── server.js            # Punto de entrada
-│   ├── uploads/                 # Archivos digitalizados (volumen Docker)
-│   └── .env.example             # Plantilla de variables de entorno
-├── front/                       # Aplicación Next.js
-│   └── src/
-│       ├── app/                 # Páginas (App Router)
-│       │   ├── (dashboard)/     # Rutas protegidas (requieren login)
-│       │   ├── login/           # Página de autenticación
-│       │   ├── print/           # Vistas de impresión (PDF)
-│       │   └── verificar/       # Portal público de verificación
-│       ├── components/          # Componentes UI reutilizables
-│       ├── hooks/               # Custom hooks React
-│       ├── services/            # Clientes HTTP (Axios)
-│       ├── store/               # Estado global (Zustand)
-│       ├── types/               # Interfaces TypeScript
-│       └── utils/
-│           ├── api.ts           # Instancia Axios + interceptor refresh
-│           └── dateUtils.ts     # Utilidades de fechas
-├── deploy/
-│   ├── 00_base_hardening.sh     # Base Debian para las cuatro VMs
-│   ├── backend/03_setup_backend.sh
-│   ├── db/02_setup_postgresql.sh
-│   ├── frontend/04_setup_frontend.sh
-│   ├── storage/01_setup_storage.sh
-│   ├── docker-compose.backend.yml
-│   ├── docker-compose.frontend.yml
-│   ├── deploy.sh                # Actualiza Backend o Frontend
-│   └── health_check.sh
-├── MANUAL_TECNICO.md
-├── MANUAL_USUARIO.md
-└── README.md
-```
+Cambiar la contraseña del admin al primer ingreso. Crear el resto de usuarios desde el módulo **Usuarios**.
 
 ---
 
-## 4. Base de datos
+## 3. Orden de dependencia al arrancar
 
-### 4.1 Diagrama de tablas
+1. Storage `.24`
+2. PostgreSQL `.23`
+3. Backend `.22`
+4. Frontend `.21`
 
+---
+
+## 4. Nginx de producción (VM Frontend `.21`)
+
+Nginx corre en el **host Debian** (no en Docker). Next.js escucha solo en `127.0.0.1:3000` (`union_web`). La API está en `172.16.3.22:4000`.
+
+### 4.1 Puertos y firewall
+
+| Puerto | Uso |
+|---|---|
+| `80` | HTTP → redirige a HTTPS |
+| `443` | HTTPS (sistema interno + portal público) |
+| `3000` | Solo localhost (Next.js) |
+| `4000` | Backend en `.22` (Nginx hace proxy) |
+
+```bash
+sudo ufw status
+# Debe permitir 80/tcp y 443/tcp
+sudo ss -tlnp | grep -E ':80|:443|:3000'
 ```
-roles ──────────────── usuarios ──────────── usuario_permisos
-                           │
-                           ├── refresh_tokens
-                           │
-tipos_documento ─── personas ◄────────────── actas ──── documentos_digitales
-                                              │
-                                        detalle_solicitud ◄── solicitudes ── solicitantes
-                                                                    │
-                                                               auditoria
-```
 
-### 4.2 Tablas principales
+### 4.2 Archivos de configuración
 
-| Tabla | Descripción | Filas esperadas |
+| Archivo | Contenido |
+|---|---|
+| `/etc/nginx/conf.d/muni-union-upstreams.conf` | `upstream`, límites de cuerpo, timeouts de proxy |
+| `/etc/nginx/sites-available/muni-union` | Bloques `server` (HTTP redirect, interno, público) |
+| `/etc/nginx/sites-enabled/muni-union` | Enlace simbólico al anterior |
+
+### 4.3 SSL / certificados
+
+| Uso | Ruta | CN típico |
 |---|---|---|
-| `actas` | Registros de nacimiento, matrimonio y defunción | Miles/decenas de miles |
-| `personas` | Ciudadanos registrados en el sistema | Similar a actas |
-| `solicitudes` | Solicitudes de copias certificadas | Cientos por año |
-| `detalle_solicitud` | Detalle de actas por solicitud | N:1 con solicitudes |
-| `documentos_digitales` | Archivos PDF/imagen adjuntos a actas | Similar a actas |
-| `auditoria` | Log de todas las operaciones | Alto volumen |
-| `refresh_tokens` | Sesiones activas (limpieza automática cada 6h) | Bajo |
+| Sistema interno (IP) | `/etc/nginx/ssl/internal/cert.pem` + `key.pem` | `172.16.3.21` |
+| Portal público (dominio) | `/etc/nginx/ssl/public/cert.pem` + `key.pem` | `verificar.muniunion.gob.pe` |
 
-### 4.3 Convenciones
+Protocolos: TLS 1.2 / 1.3. El navegador puede advertir certificado autofirmado en la IP interna; es esperado hasta instalar un certificado institucional.
 
-- **Soft delete:** `fecha_eliminacion TIMESTAMP` en todas las tablas operacionales. Siempre filtrar con `WHERE fecha_eliminacion IS NULL`.
-- **Zona horaria:** Todas las operaciones en `America/Lima`. Forzado en el pool de conexiones y en `server.js`.
-- **Numeración de actas modo CLASICO:** formato `{TIPO}-L{libro}-{numero}` (ej. `NAC-L1-45`)
-- **Numeración modo CUI:** código alfanumérico libre (RENIEC)
+### 4.4 Acceso dual
 
-### 4.4 Orden de ejecución de migraciones
+| Entrada | `server_name` | Rutas |
+|---|---|---|
+| Sistema interno | `172.16.3.21` | App, `/api/*`, `/uploads/*`, `/verificar/*` |
+| Portal público | `verificar.muniunion.gob.pe` | Solo `/verificar/*`, `/api/verificar/*`, `/_next/*` |
+
+Producción actual opera por IP. Verificación ciudadana:
+
+```
+https://172.16.3.21/verificar
+https://172.16.3.21/verificar/000001
+```
+
+### 4.5 Carga masiva (límites Nginx reales)
+
+Para Excel/ZIP grandes, en `/etc/nginx/conf.d/muni-union-upstreams.conf` debe quedar:
+
+```nginx
+upstream frontend { server 127.0.0.1:3000; keepalive 32; }
+upstream backend  { server 172.16.3.22:4000; keepalive 32; }
+
+limit_req_zone $binary_remote_addr zone=public:10m rate=10r/s;
+
+client_max_body_size 500M;
+client_body_timeout 300s;
+proxy_connect_timeout 15s;
+proxy_send_timeout 360s;
+proxy_read_timeout 360s;
+send_timeout 360s;
+
+proxy_http_version 1.1;
+proxy_set_header Host              $host;
+proxy_set_header X-Real-IP         $remote_addr;
+proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+proxy_set_header X-Forwarded-Proto $scheme;
+```
+
+| Parámetro | Valor producción | Para qué |
+|---|---|---|
+| `client_max_body_size` | `500M` | Importación Excel/ZIP y uploads |
+| `client_body_timeout` | `300s` | Subida de archivos grandes |
+| `proxy_send_timeout` / `proxy_read_timeout` | `360s` (15 min) | Procesamiento largo de importación |
+| Timeout Axios frontend | `600000` ms (10 min) | Espera de respuesta en carga masiva |
+
+Después de editar:
+
+```bash
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+### 4.6 Proxy de API y documentos
+
+En el bloque interno (`server_name 172.16.3.21`) deben existir al menos:
+
+```nginx
+location / {
+    proxy_pass http://frontend;
+}
+
+location /api/ {
+    proxy_pass http://backend;
+}
+
+location /uploads/ {
+    proxy_pass http://backend;
+}
+```
+
+Sin `/uploads/`, las actas digitalizadas no se abren desde la interfaz aunque existan en NFS.
+
+### 4.7 Configurar dominio público desde el sistema (por defecto = IP)
+
+Menú admin → **Configuración**.
+
+- **Valor por defecto de producción:** `https://172.16.3.21`
+- Migración `006` y fallback del Backend usan esa IP si no hay valor en BD.
+- Futuro dominio (ejemplo): `https://verificar.muniunion.gob.pe` (sin barra final)
+
+La URL se imprime en constancias. **No** actualiza sola Nginx ni DNS.
+
+Para activar un dominio real:
+
+1. DNS del dominio → `172.16.3.21`
+2. Editar `server_name` del bloque público en `/etc/nginx/sites-available/muni-union`
+3. Certificado TLS en `/etc/nginx/ssl/public/`
+4. `sudo nginx -t && sudo systemctl reload nginx`
+5. Guardar la misma URL en **Configuración**
+
+API:
+
+```bash
+GET /api/configuracion
+PUT /api/configuracion/url-verificacion
+{ "url_verificacion_publica": "https://172.16.3.21" }
+```
+
+Migración:
+
+```bash
+psql -U app_user -h 172.16.3.23 -d registro_muni_union \
+  -f /opt/muni_union/back/src/migrations/006_configuracion_sistema.sql
+```
+
+---
+
+## 5. Actualización de la aplicación
+
+```bash
+# Backend (.22)
+cd /opt/muni_union
+git pull
+bash deploy/deploy.sh backend
+
+# Frontend (.21)
+cd /opt/muni_union
+git pull
+bash deploy/deploy.sh frontend
+```
+
+No usar `deploy.sh all` en una sola VM. `git pull` solo no reconstruye Next.js.
+
+Si Docker falla al bajar `node:20-slim` por IPv6:
+
+```bash
+sudo sysctl -w net.ipv6.conf.all.disable_ipv6=1
+sudo systemctl restart docker
+sudo docker pull node:20-slim
+```
+
+---
+
+## 6. Salud del sistema
+
+```bash
+# Backend
+curl -f http://172.16.3.22:4000/api/health
+
+# Frontend vía Nginx
+curl -skf https://172.16.3.21/api/health
+sudo docker ps
+sudo nginx -t
+```
+
+Respuesta esperada: `"status":"ok"` y `"services":{"db":"ok"}`.
+
+---
+
+## 7. Backups (varias formas)
+
+### 7.1 Desde la aplicación (recomendado para admin de sistema)
+
+1. Login como admin en `https://172.16.3.21`
+2. Menú → **Backup BD**
+3. Descargar `.sql`
+4. Guardar en medio seguro
+
+El backup usa las variables `DB_*` del Backend (`DB_HOST=172.16.3.23`, `DB_NAME=registro_muni_union`, `DB_SSL=true`). Con `postgresql-client` en la imagen Backend usa `pg_dump` completo.
+
+### 7.2 Desde la VM PostgreSQL `.23` (recomendado para administrador de infraestructura)
+
+```bash
+ssh deploy@172.16.3.23
+
+# Backup personalizado (recomendado para restauración)
+sudo -u postgres pg_dump -Fc registro_muni_union \
+  > /mnt/backups/manual_$(date +%F_%H%M).dump
+
+# Backup SQL plano
+sudo -u postgres pg_dump -Fp --no-owner --no-acl registro_muni_union \
+  > /mnt/backups/manual_$(date +%F_%H%M).sql
+
+# Listar backups
+ls -lh /mnt/backups/
+```
+
+### 7.3 Restaurar
+
+```bash
+# Desde dump personalizado (.dump)
+sudo -u postgres pg_restore -d registro_muni_union --clean --if-exists \
+  /mnt/backups/manual_YYYY-MM-DD_HHMM.dump
+
+# Desde SQL plano
+sudo -u postgres psql -d registro_muni_union -f /mnt/backups/manual_YYYY-MM-DD_HHMM.sql
+```
+
+Antes de restaurar o migrar: siempre generar un backup nuevo.
+
+---
+
+## 8. Base de datos
+
+### 8.1 Conexión
+
+```bash
+ssh deploy@172.16.3.23
+sudo -u postgres psql -d registro_muni_union
+# o
+psql -U app_user -h 172.16.3.23 -d registro_muni_union
+```
+
+### 8.2 Migraciones (orden)
 
 ```bash
 psql -U app_user -h 172.16.3.23 -d registro_muni_union -f back/src/migrations/000_schema.sql
@@ -161,217 +326,110 @@ psql -U app_user -h 172.16.3.23 -d registro_muni_union -f back/src/migrations/00
 psql -U app_user -h 172.16.3.23 -d registro_muni_union -f back/src/migrations/003_usuario_permisos.sql
 psql -U app_user -h 172.16.3.23 -d registro_muni_union -f back/src/migrations/004_usuario_permisos_modificar.sql
 psql -U app_user -h 172.16.3.23 -d registro_muni_union -f back/src/migrations/005_seed_data.sql
+psql -U app_user -h 172.16.3.23 -d registro_muni_union -f back/src/migrations/006_configuracion_sistema.sql
 ```
+
+Instalación limpia alternativa: `deploy/db/init_db.sh limpia` en la VM PostgreSQL.
 
 ---
 
-## 5. API REST
+## 9. Variables de entorno relevantes
 
-### 5.1 Autenticación
+### Backend (`/opt/muni_union/.env.backend` en `.22`)
 
-- **Mecanismo:** JWT en cookies `httpOnly` (no accesibles desde JavaScript)
-- **Access token:** 1 hora de vigencia
-- **Refresh token:** 7 días, almacenado como hash SHA-256 en BD
-- **Rotación:** Cada refresh genera un nuevo par de tokens y revoca el anterior
-- **Rate limiting:** Login: 10 intentos / 15 min. Refresh: 30 / 15 min. Verificación pública: 20 / min.
-
-### 5.2 Endpoints principales
-
-| Método | Ruta | Auth | Descripción |
-|---|---|---|---|
-| POST | `/api/auth/login` | No | Iniciar sesión |
-| POST | `/api/auth/logout` | Sí | Cerrar sesión |
-| POST | `/api/auth/refresh` | No | Renovar token |
-| GET | `/api/auth/me` | Sí | Usuario actual |
-| GET | `/api/actas` | Sí | Listar actas (filtros + paginación) |
-| POST | `/api/actas` | Sí | Registrar acta |
-| PUT | `/api/actas/:id` | Sí + permiso | Editar acta |
-| PATCH | `/api/actas/:id/anular` | Sí + permiso | Anular acta |
-| GET | `/api/actas/siguiente-numero` | Sí | Sugerir N° correlativo |
-| GET | `/api/personas` | Sí | Listar ciudadanos |
-| GET | `/api/solicitudes` | Sí | Listar solicitudes |
-| POST | `/api/solicitudes` | Sí | Nueva solicitud |
-| PATCH | `/api/solicitudes/:id/atender` | Sí | Marcar como atendida |
-| GET | `/api/reportes/dashboard` | Sí | Estadísticas |
-| POST | `/api/importacion` | Sí (ADMIN) | Carga masiva `.xlsx`/`.xls` + ZIP opcional |
-| GET | `/api/auditoria` | Sí (admin) | Log de auditoría |
-| GET | `/api/verificar/solicitud/:id` | **No** | Verificación pública |
-
-Documentación completa (solo en desarrollo): `http://localhost:4000/api/docs`
-
-### 5.3 Formato de respuesta de error
-
-```json
-{
-  "message": "Descripción del error"
-}
-```
-
-Código 400: validación / datos incorrectos  
-Código 401: no autenticado o token expirado (`code: "TOKEN_EXPIRED"`)  
-Código 403: sin permisos  
-Código 404: recurso no encontrado  
-Código 500: error interno (en producción no expone detalles)
-
----
-
-## 6. Seguridad
-
-| Medida | Implementación |
+| Variable | Valor producción típico |
 |---|---|
-| Contraseñas | bcrypt (10 rondas) |
-| Tokens | JWT firmados + cookies httpOnly + SameSite |
-| Headers HTTP | Helmet (CSP, HSTS, X-Frame-Options, etc.) |
-| CORS | Lista blanca de orígenes (variable `FRONTEND_URL`) |
-| Rate limiting | express-rate-limit en login, refresh y verificación |
-| SQL Injection | Queries parametrizadas (pg pool, nunca string interpolation) |
-| Uploads | Digitalización: PDF/JPG/PNG hasta 20 MB; importación: `.xlsx`/`.xls` y ZIP hasta 500 MB por archivo |
-| Logs | Pino (sin datos sensibles en producción) |
-| Swagger | Deshabilitado en `NODE_ENV=production` |
+| `DB_HOST` | `172.16.3.23` |
+| `DB_NAME` | `registro_muni_union` |
+| `DB_USER` | `app_user` |
+| `DB_SSL` | `true` |
+| `FRONTEND_URL` | `https://172.16.3.21` (agregar dominio público separado por coma si aplica) |
+| `NODE_ENV` | `production` |
+| `PORT` | `4000` |
+
+### Frontend (`/opt/muni_union/.env.frontend` en `.21`)
+
+| Variable | Valor |
+|---|---|
+| `NEXT_PUBLIC_API_URL` | `https://172.16.3.21/api` |
+| `NODE_ENV` | `production` |
 
 ---
 
-## 7. Acceso dual de red
+## 10. Importación masiva
 
-| Entrada | `server_name` en Nginx | Rutas expuestas |
-|---|---|---|
-| Portal público | `verificar.muniunion.gob.pe` | `/verificar/*`, `/api/verificar/*`, `/_next/*` |
-| Sistema interno | `https://172.16.3.21` | Aplicación, `/api/*` y `/uploads/*` |
+- Endpoint: `POST /api/importacion` (ADMIN)
+- Excel `.xlsx`/`.xls` + ZIP opcional
+- Límites: 30.000 filas; 500 MB/archivo
+- Frontend timeout: 10 minutos
+- Nginx: `client_max_body_size 500M` y timeouts de proxy ≥ 15 min
 
----
-
-## 8. Procesos de mantenimiento automático
-
-El servidor ejecuta cada 6 horas (`server.js`):
-- **Limpieza de refresh tokens expirados:** `DELETE FROM refresh_tokens WHERE expires_at < NOW()`
-- **Purga de auditoría antigua:** registros de más de 2 años
+Resultados: `OK`, `OMITIDO`, `OMITIDO_DOC`, `ERROR`.
 
 ---
 
-## 9. Importación masiva
+## 11. Filtros de actas (listado y exportación)
 
-El módulo de importación (`POST /api/importacion`) acepta:
-- Archivo Excel `.xlsx` o `.xls`
-- ZIP opcional con PDF, JPG o PNG; se vinculan por `nombre_archivo_pdf` y, cuando existe, `carpeta_ruta`
-- Límite: 30.000 filas por lote
-- Límite de carga: 500 MB por archivo
-- Deduplicación de actas por `numero_acta + anio`
-- Resultado por fila: `OK`, `OMITIDO`, `OMITIDO_DOC` o `ERROR`
-
-Columnas requeridas: `nombres`, `apellido_paterno`, `apellido_materno`, `tipo_acta`, `fecha_acta` + (`libro` y `numero_acta`) o `cui`.
-
-### Operación y diagnóstico
-
-- El frontend espera hasta 10 minutos por la respuesta de una importación.
-- Nginx en Frontend debe permitir cuerpo de hasta 500 MB y tiempos de proxy de al menos 15 minutos.
-- Si se agota el tiempo en navegador, no reintentar de inmediato: verificar actas y documentos, porque el Backend puede continuar procesando.
-- Las coincidencias de personas sin DNI no son una identidad confiable. Antes de nuevas cargas históricas debe aplicarse una política de revisión para coincidencias ambiguas.
+| Filtro | Comportamiento |
+|---|---|
+| Código con guiones (`NAC-L1-1`) | Exacto |
+| Folio numérico (`1`) | Folio exacto (no parcial) |
+| Libro (`2` o `L2`) | Segmento exacto del código |
+| Texto/DNI/año/tipo/fechas | Combinables; exportación usa los mismos filtros |
 
 ---
 
-## 10. Variables de entorno
+## 12. Logs y almacenamiento
 
-Ver `back/.env.example` para la lista completa con descripción de cada variable.
-
-| Variable | Requerida | Descripción |
-|---|---|---|
-| `DB_HOST` | Sí | Host PostgreSQL |
-| `DB_NAME` | Sí | `registro_muni_union` en producción |
-| `DB_PASSWORD` | Sí | Contraseña BD |
-| `DB_SSL` | Sí en producción | `true`; PostgreSQL solo acepta conexión TLS desde Backend |
-| `JWT_SECRET` | Sí | Clave de firma JWT (mín. 64 chars) |
-| `REFRESH_TOKEN_SECRET` | Sí | Clave refresh token (diferente al anterior) |
-| `NODE_ENV` | Sí | `development` o `production` |
-| `FRONTEND_URL` | Sí | Origen(es) permitidos por CORS |
-| `PORT` | No | Puerto del servidor (default: 4000) |
+| Recurso | Ubicación |
+|---|---|
+| Uploads | NFS montado en Backend: `/mnt/uploads` → `/app/uploads` |
+| Logs app | `/mnt/logs` + `docker logs union_api` / `union_web` |
+| Backups DB | `/mnt/backups` en VM PostgreSQL / Storage |
 
 ---
 
-## 11. Logs
+## 13. Seguridad operativa
 
-El sistema usa **Pino** como logger. En desarrollo: salida coloreada (pino-pretty). En producción: JSON estructurado en el volumen NFS `/mnt/logs` del Backend y en los logs de Docker.
-
-Niveles: `info` (operaciones normales), `warn` (errores recuperables), `error` (errores no controlados).
-
----
-
-## 12. Operación de producción
-
-### 12.1 Verificación de salud
-
-```bash
-# Backend (.22)
-curl -f http://172.16.3.22:4000/api/health
-
-# Frontend (.21)
-curl -skf https://172.16.3.21/api/health
-sudo docker ps
-sudo nginx -t
-```
-
-La respuesta esperada del health es `"status":"ok"` y `"services":{"db":"ok"}`.
-
-### 12.2 Actualizar la aplicación
-
-Publicar primero los cambios validados en `main`. Luego actualizar cada VM de forma independiente:
-
-```bash
-# En Backend (.22)
-cd /opt/muni_union
-bash deploy/deploy.sh backend
-
-# En Frontend (.21)
-cd /opt/muni_union
-bash deploy/deploy.sh frontend
-```
-
-No ejecutar `deploy.sh all` en una sola VM: Backend y Frontend son máquinas diferentes. `git pull` por sí solo no actualiza Next.js; el despliegue Frontend reconstruye `union_web`.
-
-### 12.3 Base de datos y restauración
-
-Antes de aplicar una migración o corregir datos, crear un backup:
-
-```bash
-sudo -u postgres pg_dump -Fc registro_muni_union \
-  > /mnt/backups/manual_$(date +%F_%H%M).dump
-```
-
-Aplicar primero la migración en `.23`, luego actualizar Backend y, si hubo cambios de interfaz, Frontend.
-
-### 12.4 Nginx y archivos digitalizados
-
-Nginx corre en el host de la VM Frontend. Después de cambiar archivos en `/etc/nginx/`:
-
-```bash
-sudo nginx -t && sudo systemctl reload nginx
-```
-
-El servidor interno debe enrutar `/api/` y `/uploads/` al Backend; de lo contrario los PDF/imagen registrados no podrán abrirse desde la interfaz.
+- PostgreSQL solo acepta SSL desde Backend (`DB_SSL=true`).
+- Puerto 5432 no expuesto a Internet.
+- Backend `:4000` solo red municipal.
+- JWT en cookies `httpOnly`.
+- Swagger deshabilitado en producción.
+- Soft delete (`fecha_eliminacion`).
 
 ---
 
-## 13. Dependencias principales
+## 14. API REST (resumen)
+
+| Método | Ruta | Auth | Uso |
+|---|---|---|---|
+| POST | `/api/auth/login` | No | Login |
+| GET | `/api/actas` | Sí | Listado/filtros |
+| POST | `/api/importacion` | Admin | Carga masiva |
+| GET | `/api/backup/download` | Admin | Backup SQL |
+| GET | `/api/configuracion` | Sí | Leer URL pública |
+| PUT | `/api/configuracion/url-verificacion` | Admin | Guardar URL pública |
+| GET | `/api/verificar/solicitud/:id` | No | Verificación pública |
+
+---
+
+## 15. Dependencias principales
 
 ### Backend
-| Paquete | Versión | Uso |
-|---|---|---|
-| express | ^5.2.1 | Framework HTTP |
-| pg | ^8.17 | Cliente PostgreSQL |
-| jsonwebtoken | ^9.0 | JWT |
-| bcrypt | ^6.0 | Hash de contraseñas |
-| multer | ^2.0 | Upload de archivos |
-| xlsx | ^0.18 | Importación Excel |
-| helmet | ^8.1 | Headers de seguridad |
-| pino | ^10.3 | Logging |
+express, pg, jsonwebtoken, bcrypt, multer, xlsx, helmet, pino, postgresql-client (imagen Docker para `pg_dump`)
 
 ### Frontend
-| Paquete | Versión | Uso |
-|---|---|---|
-| next | 16.1.6 | Framework React |
-| react | 19.2 | UI |
-| axios | ^1.13 | HTTP client |
-| zustand | ^5.0 | Estado global |
-| recharts | ^3.8 | Gráficos dashboard |
-| zod | ^4.3 | Validación de formularios |
-| react-hook-form | ^7.71 | Manejo de formularios |
-| xlsx | ^0.18 | Exportación Excel |
+Next.js 16, React 19, Axios, Zustand, Zod, react-hook-form
+
+---
+
+## 16. Checklist post-despliegue
+
+1. `curl -f http://172.16.3.22:4000/api/health`
+2. `curl -skf https://172.16.3.21/api/health`
+3. Login `aespinoza` / `123456` → cambiar contraseña
+4. Aplicar migración `006_configuracion_sistema.sql` si aún no existe
+5. Menú **Configuración** → confirmar URL `https://172.16.3.21`
+6. Probar `https://172.16.3.21/verificar`
+7. Probar Backup BD y/o `pg_dump` en `.23`

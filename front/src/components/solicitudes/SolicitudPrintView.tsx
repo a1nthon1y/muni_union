@@ -1,15 +1,34 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Solicitud } from "@/types/solicitud";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { configuracionService } from "@/services/configuracion.service";
 
 interface SolicitudPrintViewProps {
     solicitud: Solicitud;
 }
 
+const DEFAULT_URL = "https://172.16.3.21";
+
 export function SolicitudPrintView({ solicitud }: SolicitudPrintViewProps) {
     const total = solicitud.detalles?.reduce((acc, curr) => acc + Number(curr.total), 0) || 0;
+    const [baseUrl, setBaseUrl] = useState(DEFAULT_URL);
+
+    useEffect(() => {
+        let mounted = true;
+        configuracionService.get()
+            .then((data) => {
+                if (mounted && data.url_verificacion_publica) {
+                    setBaseUrl(data.url_verificacion_publica.replace(/\/+$/, ""));
+                }
+            })
+            .catch(() => {
+                // Si falla, se mantiene la IP de producción actual.
+            });
+        return () => { mounted = false; };
+    }, []);
 
     return (
         <div className="print-container bg-white text-black p-0 font-serif leading-relaxed block overflow-visible">
@@ -137,8 +156,7 @@ export function SolicitudPrintView({ solicitud }: SolicitudPrintViewProps) {
                         Verifique la autenticidad de este documento en:
                     </p>
                     <p className="text-[10px] font-black text-slate-800 font-mono tracking-wider break-all">
-                        {typeof window !== "undefined" ? window.location.origin : "https://sistema.muniunion.gob.pe"}
-                        /verificar/{solicitud.id.toString().padStart(6, "0")}
+                        {baseUrl}/verificar/{solicitud.id.toString().padStart(6, "0")}
                     </p>
                     <p className="text-[8px] font-black uppercase tracking-[0.4em] text-slate-300 mt-2">
                         Sistema Unificado · Unión V2.0 · {format(new Date(), "yyyy")}

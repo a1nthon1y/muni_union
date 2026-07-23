@@ -1,6 +1,6 @@
 # Manual de Usuario — Sistema de Registro Civil
 **Municipalidad Distrital de La Unión**
-Versión 1.1.0 | Julio 2026
+Versión 1.2.0 | Julio 2026
 
 ---
 
@@ -8,12 +8,24 @@ Versión 1.1.0 | Julio 2026
 
 El Sistema de Registro Civil permite registrar, consultar y digitalizar actas de nacimiento, matrimonio y defunción. También permite atender solicitudes de copias certificadas.
 
-Este manual está dirigido al personal que utiliza el sistema en la municipalidad. Cada sección indica **dónde ingresar**, **qué acción realizar** y **qué resultado esperar**.
+Este manual está dirigido al personal municipal. Cada sección indica **dónde ingresar**, **qué acción realizar** y **qué resultado esperar**.
 
-**Acceso al sistema:** Ingresar desde cualquier navegador en la red interna de la municipalidad:
+**Acceso al sistema (producción actual):**
+
 ```
-https://[IP del servidor]
+https://172.16.3.21
 ```
+
+Navegadores recomendados: Google Chrome, Microsoft Edge o Mozilla Firefox.
+
+**Usuario administrador inicial**
+
+| Campo | Valor |
+|---|---|
+| Usuario | `aespinoza` |
+| Contraseña | `123456` |
+
+Cambiar esta contraseña en el primer ingreso. Los demás usuarios los crea el administrador desde el módulo **Usuarios**.
 
 ---
 
@@ -21,82 +33,70 @@ https://[IP del servidor]
 
 | Rol | Qué puede hacer |
 |---|---|
-| **Administrador** | Acceso total: usuarios, auditoría, todas las operaciones |
-| **Operador** | Digitalización, personas, actas, solicitudes (según permisos asignados) |
+| **Administrador** | Acceso total: usuarios, auditoría, backup, configuración, importación y todas las operaciones |
+| **Operador** | Digitalización, personas, actas y solicitudes según permisos asignados |
 
 ---
 
 ## 3. Inicio de sesión
 
-1. Abrir el navegador e ingresar la dirección del sistema.
-2. En la pantalla de login, ingresar **usuario** y **contraseña**.
-3. Hacer clic en **Ingresar**.
-4. Al ingresar exitosamente se muestra el **Dashboard**.
+1. Abrir el navegador e ingresar `https://172.16.3.21`.
+2. Ingresar **usuario** y **contraseña**.
+3. Clic en **Ingresar**.
+4. Al ingresar se muestra el **Dashboard**.
 
-> Si la sesión expira automáticamente, el sistema redirige al login. Las credenciales se mantienen activas por 1 hora; el sistema las renueva automáticamente mientras esté en uso.
+> Si la sesión expira, el sistema redirige al login. Mientras se use el sistema, la sesión se renueva automáticamente.
 
-**Cerrar sesión:** Hacer clic en el ícono de usuario (esquina superior derecha) → **Cerrar sesión**.
+**Cerrar sesión:** ícono de usuario (esquina superior derecha) → **Cerrar sesión**.
 
 ---
 
 ## 4. Dashboard
 
-La pantalla principal muestra:
-
-- **Tarjetas de resumen:** Total de actas registradas, ciudadanos, solicitudes pendientes y atendidas del mes.
-- **Gráfico de evolución:** Actas registradas por mes (últimos 6 meses), separadas por tipo.
-- **Gráfico de solicitudes:** Distribución por estado (Pendiente / Atendido / Anulado).
+- Tarjetas de resumen: actas, ciudadanos, solicitudes pendientes y atendidas.
+- Gráfico de evolución de actas (últimos 6 meses).
+- Gráfico de solicitudes por estado.
 
 ---
 
 ## 5. Módulo de Actas
 
-### 5.1 Ver listado de actas
-
 Menú → **Actas**
 
-La tabla muestra todas las actas activas. Se puede:
-- **Buscar** por nombre, DNI o número de acta (campo de búsqueda superior).
-- **Filtrar** por tipo (Nacimiento / Matrimonio / Defunción), año, estado.
-- **Paginar** con los controles inferiores.
-- **Exportar** a Excel con el botón correspondiente.
+### 5.1 Buscar y filtrar
+
+Use los filtros superiores. La exportación Excel usa los mismos filtros visibles.
+
+| Campo | Comportamiento |
+|---|---|
+| Buscar por DNI o nombres | Búsqueda parcial por titular o cónyuge |
+| Código o folio | Código completo (`NAC-L1-1`) = coincidencia exacta. Solo número (`1`) = folio exacto |
+| Libro | Exacto: `2` o `L2` |
+| Año / Tipo / Fechas | Filtran el listado y la exportación |
 
 ### 5.2 Registrar nueva acta
 
 1. Clic en **Nueva Acta**.
-2. Seleccionar el **tipo** (Nacimiento, Matrimonio o Defunción).
-3. Seleccionar el **modo de numeración:**
-   - **Libro Clásico:** ingresar libro y número. El sistema sugiere el siguiente número disponible automáticamente.
-   - **CUI (RENIEC):** ingresar el código CUI directamente.
-4. Completar los datos del **titular** (buscar ciudadano existente o crear nuevo).
-5. Para **Matrimonio:** completar también los datos del cónyuge (obligatorio).
-6. Ingresar la **fecha del acta** y observaciones si corresponde.
-7. Clic en **Guardar**.
+2. Seleccionar tipo (Nacimiento, Matrimonio o Defunción).
+3. Modo de numeración:
+   - **Libro Clásico:** libro y número.
+   - **CUI (RENIEC):** código CUI.
+4. Completar titular (buscar o crear persona).
+5. En Matrimonio, completar también el cónyuge.
+6. Ingresar fecha del acta y observaciones.
+7. **Guardar**.
 
-### 5.3 Ver detalle de un acta
-
-Hacer clic en cualquier fila de la tabla → se abre el panel lateral con toda la información.
+### 5.3 Detalle, impresión y documento
 
 Desde el detalle se puede:
-- **Imprimir / generar PDF:** botón **Imprimir** → se abre una ventana con el documento oficial listo para imprimir o guardar como PDF.
-- **Ver documento digitalizado:** si el acta tiene PDF adjunto, botón **Ver Acta**.
-- **Editar:** botón **Editar Acta** (requiere permiso).
+- **Imprimir** el acta (luego Ctrl+P o Guardar como PDF).
+- **Ver Acta** si tiene documento digitalizado.
+- **Editar** (si tiene permiso).
 
-### 5.4 Editar un acta
+### 5.4 Anular / reactivar
 
-Solo usuarios con permiso de modificación pueden editar. Se pueden modificar todos los campos excepto el tipo de acta.
-
-### 5.5 Anular un acta
-
-1. En el listado, buscar el acta → menú de acciones (⋮) → **Anular**.
-2. Ingresar el **motivo de anulación** (obligatorio).
-3. Confirmar.
-
-El acta queda en estado **ANULADO** y el motivo se agrega a las observaciones. No se elimina físicamente.
-
-### 5.6 Reactivar un acta anulada (solo Administrador)
-
-Menú de acciones → **Reactivar**. El acta vuelve a estado ACTIVO.
+- **Anular:** menú ⋮ → Anular → motivo obligatorio.
+- **Reactivar:** solo Administrador.
 
 ---
 
@@ -104,237 +104,129 @@ Menú de acciones → **Reactivar**. El acta vuelve a estado ACTIVO.
 
 Menú → **Digitalización**
 
-Permite adjuntar archivos PDF o imagen a actas existentes que aún no tienen documento digital.
+1. Buscar el acta.
+2. Seleccionar archivo PDF, JPG o PNG (máx. **20 MB**).
+3. **Subir documento**.
 
-1. Buscar el acta por número o nombre.
-2. Seleccionar el archivo desde el equipo.
-3. Clic en **Subir documento**.
-
-**Formatos y límite:** PDF, JPG o PNG; máximo **20 MB por archivo**.
-
-> Si se sube un nuevo documento a un acta que ya tiene archivo, el documento anterior se reemplaza. Verificar el archivo antes de confirmar.
+Si el acta ya tenía documento, el nuevo archivo lo reemplaza.
 
 ---
 
-## 7. Módulo de Personas (Ciudadanos)
+## 7. Módulo de Personas
 
 Menú → **Personas**
 
-Registro de ciudadanos del distrito. Cada acta está vinculada a uno o más ciudadanos.
-
-### Registrar nueva persona
-1. Clic en **Nueva Persona**.
-2. Completar: tipo de documento, número, nombres, apellidos, sexo, fecha de nacimiento, teléfono, dirección.
-3. **Guardar**.
-
-> Antes de crear una persona, buscarla por DNI y por nombres. Para recién nacidos sin DNI, seleccionar el tipo de documento **Sin documento**. Si el sistema muestra una coincidencia sin DNI, no asumir que es la misma persona: verificar el acta física y solicitar revisión al administrador si hay duda.
-
-### Buscar persona
-Usar el campo de búsqueda: acepta nombre completo, apellidos o DNI. La búsqueda tolera errores tipográficos menores.
+Antes de crear, buscar por DNI y por nombres. Para recién nacidos sin DNI usar **Sin documento**. Si aparece una coincidencia dudosa sin DNI, revisar el acta física antes de continuar.
 
 ---
 
-## 8. Módulo de Solicitudes
+## 8. Módulo de Solicitudes (Trámites)
 
-Menú → **Trámites**
+Menú → **Solicitudes**
 
-Gestiona las solicitudes de copias certificadas que presentan los ciudadanos.
-
-### 8.1 Nueva solicitud
-
-1. Clic en **Nueva Solicitud**.
-2. Buscar el **solicitante** por DNI. Si no existe, completar sus datos.
-3. Seleccionar el **tipo de solicitud** (ej. Copia Certificada).
-4. Agregar las **actas** solicitadas: buscar por número o nombre, indicar cantidad y precio unitario.
-5. **Guardar**.
-
-La solicitud queda en estado **PENDIENTE**.
-
-### 8.2 Atender una solicitud
-
-Cuando el ciudadano recoge su documento y paga:
-1. Buscar la solicitud en el listado.
-2. Clic en **Atender** → confirmar.
-
-La solicitud pasa a estado **ATENDIDO**.
-
-### 8.3 Imprimir Constancia de Trámite
-
-Desde el detalle de la solicitud → botón **Imprimir Constancia**.
-
-Se genera un documento oficial con:
-- Número de constancia (ej. `N° 000001`)
-- Datos del solicitante
-- Detalle de actas solicitadas, cantidades y precios
-- Total pagado
-- Espacio para firmas
-- **URL de verificación pública** al pie del documento
-
-### 8.4 Anular una solicitud
-
-Menú de acciones → **Anular** → ingresar motivo → confirmar.
+1. **Nueva Solicitud** → buscar solicitante → agregar actas → guardar (queda **PENDIENTE**).
+2. **Atender** cuando el ciudadano recoge el documento.
+3. **Imprimir Constancia** desde el detalle. Al pie aparece la URL de verificación pública.
 
 ---
 
 ## 9. Verificación de constancias (ciudadano)
 
-El ciudadano que recibe una Constancia de Trámite puede verificar su autenticidad desde cualquier lugar:
+En producción actual la verificación funciona por IP, sin login:
 
-1. Abrir el navegador e ingresar la URL indicada al pie de la constancia:
-   ```
-   https://verificar.muniunion.gob.pe/verificar/000001
-   ```
-   O ingresar directamente a `https://verificar.muniunion.gob.pe/verificar` y escribir el número.
-
-2. El sistema muestra si la constancia es **válida** (verde) o **no encontrada** (rojo).
-
-> Esta verificación **no requiere login** y está disponible desde cualquier red.
-
----
-
-## 10. Módulo de Importación masiva
-
-Menú → **Importación** (Administrador)
-
-Permite cargar actas históricas en lote desde una plantilla Excel. Es una operación exclusiva del Administrador; antes de iniciar, revisar que el Excel y los documentos correspondan al mismo lote.
-
-### Antes de importar
-
-1. Descargar la **plantilla oficial** desde la pantalla de Importación.
-2. Usar solo archivos **`.xlsx` o `.xls`**. No se admiten archivos CSV.
-3. Completar los campos obligatorios de cada fila:
-   - `nombres`, `apellido_paterno`, `apellido_materno`
-   - `tipo_acta`
-   - `fecha_acta`
-   - `libro` y `numero_acta`, salvo que se use CUI
-4. Registrar `sexo` únicamente como **M** o **F**. Una letra distinta hace que esa fila quede en error.
-5. Usar una fecha válida para `fecha_acta`, por ejemplo `2026-07-22` o `22/07/2026`.
-6. Para nacimientos sin DNI, dejar el DNI vacío y registrar **Sin documento** como tipo de documento.
-
-> **Importante sobre ciudadanos sin DNI:** no se debe asumir que dos personas con el mismo nombre y fecha de nacimiento son la misma persona. Si hay una coincidencia dudosa, conservar el acta física y solicitar revisión antes de continuar con nuevos lotes.
-
-### Preparar el ZIP de documentos (opcional)
-
-El ZIP puede contener PDFs, JPG o PNG. Para que un documento se vincule:
-
-- La columna `nombre_archivo_pdf` debe tener exactamente el nombre del archivo, por ejemplo `NACIMIENTO_001.pdf`.
-- Si se usa `carpeta_ruta`, debe coincidir con la estructura dentro del ZIP.
-
-Ejemplo:
-
-```text
-Excel
-nombre_archivo_pdf = NACIMIENTO_001.pdf
-carpeta_ruta       = nacimientos/libro_1
-
-ZIP
-nacimientos/libro_1/NACIMIENTO_001.pdf
+```
+https://172.16.3.21/verificar
+https://172.16.3.21/verificar/000001
 ```
 
-Si los archivos tienen nombres únicos, el sistema también puede encontrarlos por nombre. Si hay nombres repetidos, `carpeta_ruta` es obligatoria para evitar vincular el documento equivocado.
+También se puede escribir solo el número en la pantalla de verificación.
 
-### Pasos para importar
+**URL por defecto del sistema:** `https://172.16.3.21` (configurada en menú **Configuración**).  
+Cuando exista un dominio público, el administrador puede cambiarla; las nuevas constancias usarán esa URL. Mientras tanto, usar siempre la IP.
 
-1. Seleccionar el Excel preparado.
-2. Seleccionar el ZIP de documentos si corresponde.
-3. Revisar que los archivos sean los correctos.
-4. Clic en **Importar**.
-5. Mantener abierta la pantalla hasta que se muestre el resumen. Los lotes con muchos documentos pueden tardar hasta **10 minutos**.
-6. No pulsar Importar nuevamente mientras el proceso esté en curso ni inmediatamente después de un mensaje de tiempo de espera.
-
-### Resultados de la importación
-
-| Resultado | Qué significa | Qué debe hacer el usuario |
-|---|---|---|
-| **OK** | El acta fue creada correctamente. | Verificar una muestra de registros y documentos. |
-| **OMITIDO** | El acta ya existía. No se creó una copia. | Revisar el mensaje; no volver a cargar la misma fila sin corregir algo. |
-| **OMITIDO_DOC** | El acta ya existía sin documento y el PDF/imagen fue vinculado. | Abrir el acta y usar **Ver Acta** para confirmar el archivo. |
-| **ERROR** | La fila no fue registrada. El resumen muestra el motivo. | Corregir solo las filas con error y volver a importarlas. |
-
-### Si una fila sale con ERROR
-
-1. Leer el mensaje de la fila: indica el campo que debe corregirse.
-2. Corregir la fila en un Excel nuevo o en una copia del Excel original.
-3. Si esa fila tenía documento, incluir también su PDF/imagen en el ZIP del reintento.
-4. Importar únicamente las filas que fallaron.
-
-> No borrar las actas que sí se registraron. No volver a importar un ZIP completo solo por una fila fallida, salvo que se haya verificado que todas las actas del lote están sin documento.
-
-**Límites:** máximo **30.000 filas** por lote y **500 MB por archivo** cargado. Para lotes históricos grandes, se recomienda empezar con una prueba de 5 a 10 filas.
+> La importación masiva de archivos grandes (hasta 500 MB) está habilitada en el servidor. Si una carga tarda, espere hasta 10 minutos y no reintente de inmediato.
 
 ---
 
-## 11. Módulo de Reportes
+## 10. Importación masiva (solo Administrador)
 
-Menú → **Reportes** (Administrador)
+Menú → **Digitalización** → **Carga masiva** (o acceso de importación según menú).
 
-Muestra estadísticas en el Dashboard. Incluye:
-- Evolución mensual de actas por tipo (últimos 6 meses).
-- Solicitudes por estado.
-- Total de ingresos por solicitudes atendidas.
+- Archivos: `.xlsx` / `.xls` y ZIP opcional (PDF/JPG/PNG).
+- Límites: 30.000 filas; 500 MB por archivo.
+- Resultados: `OK`, `OMITIDO`, `OMITIDO_DOC`, `ERROR`.
+- Esperar hasta 10 minutos. No reintentar de inmediato si aparece tiempo de espera.
 
----
-
-## 12. Módulo de Auditoría
-
-Menú → **Auditoría** (solo Administrador)
-
-Registro de todas las operaciones realizadas en el sistema:
-- Quién hizo la acción (usuario).
-- Qué operación (crear, editar, eliminar, login, etc.).
-- En qué registro.
-- Desde qué IP.
-- Cuándo.
-
-Se puede filtrar por usuario, operación, módulo y rango de fechas. Se puede exportar a Excel.
+Si una fila sale con ERROR: corregir solo esa fila y volver a importarla con su documento.
 
 ---
 
-## 13. Módulo de Usuarios
+## 11. Backup de base de datos (solo Administrador)
 
-Menú → **Usuarios** (solo Administrador)
+Menú → **Backup BD**
 
-### Crear usuario
-1. Clic en **Nuevo Usuario**.
-2. Completar: nombre, apellidos, nombre de usuario, contraseña, rol.
-3. Para usuarios con rol **Operador**, configurar los permisos específicos:
-   - Puede anular actas
-   - Puede eliminar actas
-   - Puede modificar actas
-   - Puede eliminar personas
-   - Puede modificar personas
-4. **Guardar**.
+1. Revisar tablas, tamaño y método (`pg_dump` completo o exportación de datos).
+2. Clic en **Descargar Backup Ahora**.
+3. Guardar el archivo `.sql` en un medio seguro.
 
-### Editar / desactivar usuario
-- Clic en el ícono de edición en la fila del usuario.
-- Para desactivar sin eliminar: desmarcar **Activo**.
+El administrador técnico también puede generar backup desde la VM PostgreSQL (`172.16.3.23`). Ver Manual Técnico.
 
 ---
 
-## 14. Cambio de contraseña
+## 12. Configuración del dominio público (solo Administrador)
 
-Desde el menú de usuario (esquina superior derecha) → **Configuración** → cambiar contraseña.
+Menú → **Configuración**
 
-> Se recomienda cambiar la contraseña inicial `123456` del usuario administrador inmediatamente al primer ingreso.
+Aquí se define la **URL base** impresa en las constancias:
+
+- **Por defecto (producción):** `https://172.16.3.21`
+- Futuro dominio público (ejemplo): `https://verificar.muniunion.gob.pe`
+
+No agregue barra final. Después de guardar, las nuevas constancias usarán esa URL.
+
+> Cambiar la URL en el sistema no configura sola el DNS ni Nginx. Si se usa un dominio nuevo, el área de sistemas debe actualizar Nginx, puertos 80/443 y certificados en `172.16.3.21` (detalle en Manual Técnico).
 
 ---
 
-## 15. Preguntas frecuentes
+## 13. Usuarios (solo Administrador)
 
-**¿Puedo recuperar un acta eliminada?**
-Las actas nunca se borran permanentemente. Si fue anulada, puede reactivarse (solo Administrador). Contactar al administrador del sistema.
+Menú → **Usuarios**
 
-**¿Qué pasa si el sistema no carga?**
-Verificar conexión a la red interna de la municipalidad. Si el problema persiste, contactar al área de sistemas.
+1. **Nuevo Usuario** → datos, rol y permisos.
+2. Para Operador, configurar permisos de anular/eliminar/modificar.
+3. Para desactivar: desmarcar **Activo**.
 
-**¿Cómo imprimo el documento de un acta?**
-Abrir el detalle del acta → botón **Imprimir** → en la ventana que se abre, usar Ctrl+P o el botón RE-IMPRIMIR.
+Usuario inicial: `aespinoza` / `123456` → cambiar contraseña al primer ingreso.
 
-**¿Cuántos usuarios pueden usar el sistema al mismo tiempo?**
-El sistema permite trabajo simultáneo. Si se percibe lentitud, guardar el trabajo en curso y comunicarlo al administrador.
+---
 
-**¿Dónde están guardados los archivos digitalizados?**
-Se guardan de forma segura en el servidor de la municipalidad. El personal usuario no debe mover, renombrar ni eliminar archivos directamente desde el servidor.
+## 14. Auditoría (solo Administrador)
 
-**¿Qué hago si una importación muestra “Error inesperado”?**
-No volver a cargar el mismo lote inmediatamente. Esperar unos minutos y revisar si las actas ya aparecen en el sistema. Si no aparecen, guardar una captura del mensaje y comunicarla al administrador junto con el Excel y ZIP usados.
+Menú → **Auditoría**
+
+Registro de quién hizo qué operación, sobre qué registro, desde qué IP y cuándo. Se puede filtrar y exportar.
+
+---
+
+## 15. Cambio de contraseña
+
+Menú de usuario (esquina superior derecha) → cambiar contraseña.
+
+---
+
+## 16. Preguntas frecuentes
+
+**¿Cuál es la dirección del sistema?**  
+`https://172.16.3.21`
+
+**¿Dónde verifica el ciudadano su constancia?**  
+`https://172.16.3.21/verificar` (o la URL impresa en la constancia).
+
+**¿Cómo imprimo los manuales HTML?**  
+Abrir `MANUAL_USUARIO.html` o `MANUAL_TECNICO.html` en el navegador y usar **Ctrl+P** → Guardar como PDF o Imprimir.
+
+**¿Qué hago si una importación muestra “Error inesperado”?**  
+No volver a cargar de inmediato. Esperar y revisar si las actas ya aparecen. Si no, avisar al administrador con captura, Excel y ZIP.
+
+**¿Puedo recuperar un acta anulada?**  
+Sí, el Administrador puede reactivarla. Las actas no se borran físicamente.

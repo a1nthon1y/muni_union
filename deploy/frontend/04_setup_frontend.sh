@@ -59,7 +59,13 @@ upstream backend  { server ${BACKEND_IP}:4000; keepalive 32; }
 
 limit_req_zone \$binary_remote_addr zone=public:10m rate=10r/s;
 
-client_max_body_size 25M;
+# Carga masiva / digitalización: Excel+ZIP y PDFs grandes
+client_max_body_size 500M;
+client_body_timeout 300s;
+proxy_connect_timeout 15s;
+proxy_send_timeout 360s;
+proxy_read_timeout 360s;
+send_timeout 360s;
 
 proxy_http_version 1.1;
 proxy_set_header Host              \$host;
@@ -104,6 +110,10 @@ cat > /etc/nginx/sites-available/muni-union << NGINX_CONF
         }
 
         location /api/ {
+            proxy_pass http://backend;
+        }
+
+        location /uploads/ {
             proxy_pass http://backend;
         }
     }

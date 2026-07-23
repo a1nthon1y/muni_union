@@ -18,6 +18,7 @@ import reportesRoutes from "./routes/reportes.routes.js";
 import importacionRoutes from "./routes/importacion.routes.js";
 import verificarRoutes from "./routes/verificar.routes.js";
 import backupRoutes from "./routes/backup.routes.js";
+import configuracionRoutes from "./routes/configuracion.routes.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
 import { auditMiddleware } from "./middlewares/auditMiddleware.js";
 const __filename = fileURLToPath(import.meta.url);
@@ -72,6 +73,7 @@ app.use("/api/auditoria", auditoriaRoutes);
 app.use("/api/reportes", reportesRoutes);
 app.use("/api/importacion", importacionRoutes);
 app.use("/api/backup",     backupRoutes);
+app.use("/api/configuracion", configuracionRoutes);
 // Documentación API (solo en desarrollo)
 if (process.env.NODE_ENV !== "production") {
     app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec, {

@@ -14,6 +14,7 @@ import {
     ChevronRight,
     LucideIcon,
     Database,
+    Globe,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import Image from "next/image";
@@ -59,6 +60,7 @@ const navGroups: NavGroup[] = [
             { label: "Usuarios",  href: "/dashboard/usuarios",  icon: UserCircle2, roles: [1] },
             { label: "Auditoría", href: "/dashboard/auditoria", icon: Activity,    roles: [1] },
             { label: "Backup BD", href: "/dashboard/backup",    icon: Database,    roles: [1] },
+            { label: "Configuración", href: "/dashboard/configuracion", icon: Globe, roles: [1] },
         ]
     }
 ];
