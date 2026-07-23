@@ -19,12 +19,11 @@ import {
     RotateCcw
 } from "lucide-react";
 import { Pagination } from "@/components/shared/Pagination";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
 import { useState, useEffect } from "react";
 import { useDebounce } from "@/hooks/useDebounce";
 import { toast } from "sonner";
 import { reportesService } from "@/services/reportes.service";
+import type { ActasFilters } from "@/services/actas.service";
 import { dateUtils } from "@/utils/dateUtils";
 import { Loader2 } from "lucide-react";
 
@@ -77,7 +76,7 @@ interface ActasTableProps {
     onDeleteDoc?: (acta: Acta) => void;
     onViewDoc?: (acta: Acta) => void;
     onDownloadDoc?: (acta: Acta) => void;
-    onSearch: (filtros: any) => void;
+    onSearch: (filtros: Partial<ActasFilters>) => void;
 }
 
 export function ActasTable({
@@ -88,7 +87,6 @@ export function ActasTable({
     onView,
     onEdit,
     onDelete,
-    onDeleteDoc,
     onAnular,
     onReactivar,
     onUploadDoc,
@@ -136,20 +134,20 @@ export function ActasTable({
             await reportesService.exportActas(filters);
             await new Promise(resolve => setTimeout(resolve, 1500));
             toast.success("Descarga lista", { id: toastId });
-        } catch (error) {
+        } catch {
             toast.error("Error al generar el reporte", { id: toastId });
         } finally {
             setExporting(false);
         }
     };
 
-    useEffect(() => { onSearch({ q: debouncedSearch }); }, [debouncedSearch]);
-    useEffect(() => { onSearch({ numero: debouncedNumero }); }, [debouncedNumero]);
-    useEffect(() => { onSearch({ libro: debouncedLibro }); }, [debouncedLibro]);
-    useEffect(() => { onSearch({ anio: debouncedAnio }); }, [debouncedAnio]);
-    useEffect(() => { onSearch({ tipo: searchTipo === "TODOS" ? "" : searchTipo }); }, [searchTipo]);
-    useEffect(() => { onSearch({ fecha_desde: fechaDesde }); }, [fechaDesde]);
-    useEffect(() => { onSearch({ fecha_hasta: fechaHasta }); }, [fechaHasta]);
+    useEffect(() => { onSearch({ q: debouncedSearch }); }, [debouncedSearch, onSearch]);
+    useEffect(() => { onSearch({ numero: debouncedNumero }); }, [debouncedNumero, onSearch]);
+    useEffect(() => { onSearch({ libro: debouncedLibro }); }, [debouncedLibro, onSearch]);
+    useEffect(() => { onSearch({ anio: debouncedAnio }); }, [debouncedAnio, onSearch]);
+    useEffect(() => { onSearch({ tipo: searchTipo === "TODOS" ? "" : searchTipo }); }, [searchTipo, onSearch]);
+    useEffect(() => { onSearch({ fecha_desde: fechaDesde }); }, [fechaDesde, onSearch]);
+    useEffect(() => { onSearch({ fecha_hasta: fechaHasta }); }, [fechaHasta, onSearch]);
 
     const getTipoActaBadge = (tipo: string) => {
         switch (tipo) {
@@ -192,7 +190,7 @@ export function ActasTable({
 
                 {/* FILTROS FILA 1: texto + número + año + tipo */}
                 <div className="flex-1 space-y-2">
-                    <div className="flex items-center gap-3 bg-card h-[70px] px-5 rounded-2xl border border-border shadow-sm">
+                    <div className="flex items-center gap-3 bg-card h-17.5 px-5 rounded-2xl border border-border shadow-sm">
                         <div className="relative flex-1">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 icon-std text-slate-400" />
                             <Input

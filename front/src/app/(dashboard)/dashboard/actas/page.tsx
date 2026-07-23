@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { FileDigit, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { actasService } from "@/services/actas.service";
+import { actasService, type ActasFilters } from "@/services/actas.service";
 import { ActasTable } from "@/components/actas/ActasTable";
 import { ActaEditSheet } from "@/components/actas/ActaEditSheet";
 import { ActaDetailSheet } from "@/components/actas/ActaDetailSheet";
@@ -35,7 +35,7 @@ export default function ActasPage() {
         limit: 10,
         totalPages: 1
     });
-    const [filtros, setFiltros] = useState({
+    const [filtros, setFiltros] = useState<ActasFilters>({
         tipo: "",
         anio: "",
         q: "",
@@ -87,13 +87,13 @@ export default function ActasPage() {
         fetchActas();
     }, [fetchActas]);
 
-    const handleSearch = (nuevosFiltros: any) => {
+    const handleSearch = useCallback((nuevosFiltros: Partial<ActasFilters>) => {
         setFiltros(prev => ({
             ...prev,
             ...nuevosFiltros,
             page: 1
         }));
-    };
+    }, []);
 
     const handlePageChange = (newPage: number) => {
         setFiltros(prev => ({ ...prev, page: newPage }));
@@ -330,7 +330,7 @@ export default function ActasPage() {
                             placeholder="Ej: Error en datos del titular, orden judicial, duplicidad de registro..."
                             value={motivoAnulacion}
                             onChange={(e) => setMotivoAnulacion(e.target.value)}
-                            className="resize-none min-h-[80px]"
+                            className="resize-none min-h-20"
                         />
                         {motivoAnulacion.trim() === '' && (
                             <p className="text-xs text-red-500">El motivo es obligatorio</p>
