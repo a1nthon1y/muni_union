@@ -107,6 +107,7 @@ export function ActasTable({
 
     const [searchTerm, setSearchTerm] = useState("");
     const [searchNumero, setSearchNumero] = useState("");
+    const [searchLibro, setSearchLibro] = useState("");
     const [searchAnio, setSearchAnio] = useState("");
     const [searchTipo, setSearchTipo] = useState("TODOS");
     const [fechaDesde, setFechaDesde] = useState("");
@@ -115,6 +116,7 @@ export function ActasTable({
 
     const debouncedSearch = useDebounce(searchTerm, 500);
     const debouncedNumero = useDebounce(searchNumero, 500);
+    const debouncedLibro = useDebounce(searchLibro, 500);
     const debouncedAnio = useDebounce(searchAnio, 500);
 
     const handleExport = async () => {
@@ -123,6 +125,7 @@ export function ActasTable({
             tipo: searchTipo !== "TODOS" ? searchTipo : "",
             anio: searchAnio,
             numero: searchNumero,
+            libro: searchLibro,
             q: searchTerm,
             fecha_desde: fechaDesde,
             fecha_hasta: fechaHasta,
@@ -140,8 +143,9 @@ export function ActasTable({
         }
     };
 
-    useEffect(() => { onSearch({ dni: debouncedSearch }); }, [debouncedSearch]);
+    useEffect(() => { onSearch({ q: debouncedSearch }); }, [debouncedSearch]);
     useEffect(() => { onSearch({ numero: debouncedNumero }); }, [debouncedNumero]);
+    useEffect(() => { onSearch({ libro: debouncedLibro }); }, [debouncedLibro]);
     useEffect(() => { onSearch({ anio: debouncedAnio }); }, [debouncedAnio]);
     useEffect(() => { onSearch({ tipo: searchTipo === "TODOS" ? "" : searchTipo }); }, [searchTipo]);
     useEffect(() => { onSearch({ fecha_desde: fechaDesde }); }, [fechaDesde]);
@@ -200,10 +204,16 @@ export function ActasTable({
                         </div>
                         <Separator orientation="vertical" className="h-8 mx-1 opacity-50" />
                         <Input
-                            placeholder="N° Acta"
+                            placeholder="Código o folio"
                             className="std-input w-28 border-none bg-transparent focus-visible:ring-0 h-11 font-semibold"
                             value={searchNumero}
                             onChange={(e) => setSearchNumero(e.target.value)}
+                        />
+                        <Input
+                            placeholder="Libro"
+                            className="std-input w-20 border-none bg-transparent focus-visible:ring-0 h-11 font-semibold"
+                            value={searchLibro}
+                            onChange={(e) => setSearchLibro(e.target.value)}
                         />
                         <Input
                             placeholder="Año"
@@ -248,6 +258,7 @@ export function ActasTable({
                             onClick={() => {
                                 setSearchTerm("");
                                 setSearchNumero("");
+                                setSearchLibro("");
                                 setSearchAnio("");
                                 setSearchTipo("TODOS");
                                 setFechaDesde("");

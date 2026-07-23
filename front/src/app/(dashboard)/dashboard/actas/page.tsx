@@ -38,8 +38,9 @@ export default function ActasPage() {
     const [filtros, setFiltros] = useState({
         tipo: "",
         anio: "",
-        dni: "",
+        q: "",
         numero: "",
+        libro: "",
         page: 1,
         limit: 10
     });

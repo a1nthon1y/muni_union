@@ -2,6 +2,7 @@ import { pool } from "../config/db.js";
 import fs from "fs";
 import path from "path";
 import logger from "../config/logger.js";
+import { construirFiltrosActas } from "./actas-filtros.js";
 
 // Columnas del titular (sin prefijo — compatibilidad con frontend existente)
 const TITULAR_COLS = `
@@ -44,7 +45,7 @@ export const crearActa = async (datos, usuario_id) => {
 };
 
 export const listarActas = async (filtros = {}) => {
-    const { q, tipo, anio, dni, numero, fecha_desde, fecha_hasta, page = 1, limit = 10 } = filtros;
+    const { page = 1, limit = 10 } = filtros;
     const offset = (parseInt(page) - 1) * parseInt(limit);
 
     let queryBase = `
@@ -53,32 +54,8 @@ export const listarActas = async (filtros = {}) => {
         LEFT JOIN  personas p2 ON a.persona_secundaria_id = p2.id
         WHERE a.fecha_eliminacion IS NULL
     `;
-    const params = [];
-
-    if (q) {
-        params.push(`%${q}%`);
-        queryBase += ` AND (
-            (p.apellido_paterno  || ' ' || p.apellido_materno  || ' ' || p.nombres)  ILIKE $${params.length}
-            OR (p2.apellido_paterno || ' ' || p2.apellido_materno || ' ' || p2.nombres) ILIKE $${params.length}
-            OR p.dni  ILIKE $${params.length}
-            OR p2.dni ILIKE $${params.length}
-        )`;
-    }
-    if (tipo)   { params.push(tipo);          queryBase += ` AND a.tipo_acta = $${params.length}`; }
-    if (anio)   { params.push(parseInt(anio)); queryBase += ` AND a.anio = $${params.length}`; }
-    if (numero) { params.push(`%${numero}%`); queryBase += ` AND a.numero_acta ILIKE $${params.length}`; }
-    if (dni) {
-        params.push(`%${dni}%`);
-        queryBase += ` AND (p.dni ILIKE $${params.length} OR p2.dni ILIKE $${params.length})`;
-    }
-    if (fecha_desde) {
-        params.push(fecha_desde);
-        queryBase += ` AND a.fecha_acta >= $${params.length}`;
-    }
-    if (fecha_hasta) {
-        params.push(fecha_hasta);
-        queryBase += ` AND a.fecha_acta <= $${params.length}`;
-    }
+    const { clausulas, params } = construirFiltrosActas(filtros);
+    if (clausulas.length > 0) queryBase += ` AND ${clausulas.join(" AND ")}`;
 
     const total = parseInt(
         (await pool.query(`SELECT COUNT(*) AS total ${queryBase}`, params)).rows[0].total

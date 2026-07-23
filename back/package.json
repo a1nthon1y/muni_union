@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "nodemon --env-file=.env src/server.js",
     "start": "node --env-file=.env src/server.js",
-    "build": "node scripts/build-check.js"
+    "build": "node scripts/build-check.js",
+    "test": "node --test"
   },
   "keywords": [],
   "author": "",

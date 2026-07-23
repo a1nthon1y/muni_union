@@ -1,7 +1,7 @@
 FROM node:20-slim
 
-# curl para healthcheck de Docker Compose
-RUN apt-get update && apt-get install -y --no-install-recommends curl \
+# curl para healthcheck y pg_dump para respaldos completos
+RUN apt-get update && apt-get install -y --no-install-recommends curl postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

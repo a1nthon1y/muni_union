@@ -367,15 +367,15 @@
 
 <!-- ══════════════════ PORTADA ══════════════════ -->
 <div class="cover">
-  <div class="seal">⚖️</div>
-  <div class="badge">Documentación Técnica — Versión 1.0.0</div>
+  <div class="seal">MDU</div>
+  <div class="badge">Documentación Técnica — Versión 1.1.0</div>
   <h1>Manual Técnico<br><span>Sistema de Registro Civil</span></h1>
   <p class="subtitle">Municipalidad Distrital de La Unión — Piura, Perú</p>
   <div class="meta">
-    <div class="meta-item"><label>Versión</label><span>1.0.0</span></div>
-    <div class="meta-item"><label>Fecha</label><span>Abril 2026</span></div>
+    <div class="meta-item"><label>Versión</label><span>1.1.0</span></div>
+    <div class="meta-item"><label>Fecha</label><span>Julio 2026</span></div>
     <div class="meta-item"><label>Clasificación</label><span>Uso Institucional</span></div>
-    <div class="meta-item"><label>Sistema</label><span>STDU v2.0</span></div>
+    <div class="meta-item"><label>Sistema</label><span>Registro Civil</span></div>
   </div>
 </div>
 
@@ -409,7 +409,8 @@
     <li><a href="#cap9"><span class="toc-num">09</span> Importación Masiva</a></li>
     <li><a href="#cap10"><span class="toc-num">10</span> Variables de Entorno</a></li>
     <li><a href="#cap11"><span class="toc-num">11</span> Logs</a></li>
-    <li><a href="#cap12"><span class="toc-num">12</span> Dependencias Principales</a></li>
+    <li><a href="#cap12"><span class="toc-num">12</span> Operación de Producción</a></li>
+    <li><a href="#cap13"><span class="toc-num">13</span> Dependencias Principales</a></li>
   </ul>
 </div>
 
@@ -422,7 +423,7 @@
   <div class="section-header">
     <div class="icon">🏛️</div>
     <div>
-      <strong>Sistema de Registro Civil — STDU v2.0</strong>
+      <strong>Sistema de Registro Civil</strong>
       <p>Plataforma web para la gestión digital de registros civiles, solicitudes de copias certificadas, digitalización documental y auditoría de operaciones de la Municipalidad Distrital de La Unión.</p>
     </div>
   </div>
@@ -436,33 +437,33 @@
 <!-- CAP 2 -->
 <div class="chapter" id="cap2">
   <h2><span class="ch-num">02</span> Arquitectura del Sistema</h2>
-  <p>El sistema implementa una arquitectura de tres capas separadas en contenedores Docker, con Nginx como único punto de entrada a la red externa.</p>
+  <p>Producción usa cuatro VMs Debian 12 en Proxmox. Nginx corre en el host Frontend; Next.js y Express se ejecutan en contenedores Docker separados.</p>
 
   <div class="arch-diagram">
     <div style="color:#64748b;font-size:.75rem;margin-bottom:1rem;letter-spacing:.1em;text-transform:uppercase;">Diagrama de Componentes</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:1rem;">
-      <div style="text-align:center;color:#94a3b8;font-size:.75rem;">Internet (ciudadanos)</div>
-      <div style="text-align:center;color:#94a3b8;font-size:.75rem;">Red LAN (trabajadores)</div>
+      <div style="text-align:center;color:#94a3b8;font-size:.75rem;">Portal público</div>
+      <div style="text-align:center;color:#94a3b8;font-size:.75rem;">Red municipal</div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.3rem;">
       <div style="text-align:center;color:#93c5fd;font-size:.8rem;">verificar.muniunion.gob.pe</div>
-      <div style="text-align:center;color:#86efac;font-size:.8rem;">192.168.x.x</div>
+      <div style="text-align:center;color:#86efac;font-size:.8rem;">172.16.3.21</div>
     </div>
     <div class="arrow">▼ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ▼</div>
     <div class="layer" style="text-align:center;background:rgba(37,99,235,.2);border-color:rgba(37,99,235,.4);">
-      <span>NGINX</span> — Proxy inverso + SSL + separación de accesos
+      <span>VM FRONTEND .21</span> — Nginx host + SSL + Next.js Docker :3000
     </div>
     <div class="arrow">▼</div>
     <div class="layer">
-      <span>NEXT.JS</span> :3000 — Frontend (App Router, TypeScript, Tailwind)
+      <span>VM BACKEND .22</span> — Express Docker :4000 + NFS uploads/logs
     </div>
     <div class="arrow">▼</div>
     <div class="layer">
-      <span>EXPRESS 5</span> :4000 — API REST (Node.js 20+, ES Modules)
+      <span>VM POSTGRESQL .23</span> — PostgreSQL 15 TLS :5432 + NFS backups
     </div>
     <div class="arrow">▼</div>
     <div class="layer" style="background:rgba(5,150,105,.1);border-color:rgba(5,150,105,.3);">
-      <span>POSTGRESQL 15</span> :5432 — Solo accesible desde red interna Docker
+      <span>VM STORAGE .24</span> — NFS: uploads, logs y backups
     </div>
   </div>
 
@@ -471,10 +472,10 @@
     <table>
       <thead><tr><th>Componente</th><th>Tecnología</th><th>Puerto</th><th>Acceso externo</th></tr></thead>
       <tbody>
-        <tr><td><strong>Frontend</strong></td><td>Next.js 16, React 19, TypeScript</td><td>3000 (interno)</td><td>Vía Nginx</td></tr>
-        <tr><td><strong>Backend API</strong></td><td>Node.js 20+, Express 5</td><td>4000 (interno)</td><td>Vía Nginx</td></tr>
-        <tr><td><strong>Base de datos</strong></td><td>PostgreSQL 15</td><td>5432 (Docker LAN)</td><td>❌ No expuesto</td></tr>
-        <tr><td><strong>Proxy inverso</strong></td><td>Nginx Alpine</td><td>80, 443</td><td>✅ Público/interno</td></tr>
+        <tr><td><strong>Frontend .21</strong></td><td>Nginx Debian + Next.js Docker</td><td>80/443; 3000 solo localhost</td><td>Portal público y sistema interno</td></tr>
+        <tr><td><strong>Backend .22</strong></td><td>Node.js 20+, Express Docker</td><td>4000</td><td>Solo desde Frontend</td></tr>
+        <tr><td><strong>PostgreSQL .23</strong></td><td>PostgreSQL 15 TLS</td><td>5432</td><td>Solo desde Backend</td></tr>
+        <tr><td><strong>Storage .24</strong></td><td>NFS</td><td>2049</td><td>Solo Backend y PostgreSQL</td></tr>
       </tbody>
     </table>
   </div>
@@ -528,16 +529,18 @@
 │       └── utils/
 │           ├── api.ts           # Instancia Axios + interceptor refresh
 │           └── dateUtils.ts     # Utilidades de fechas
-├── nginx/
-│   ├── nginx.conf               # Config dual (público + interno)
-│   └── ssl/
-│       ├── public/              # Certificado portal de verificación
-│       └── internal/            # Certificado sistema interno
-├── scripts/
-│   └── backup_db.sh             # Script de backup automático
+├── deploy/
+│   ├── 00_base_hardening.sh     # Base Debian para las cuatro VMs
+│   ├── backend/03_setup_backend.sh
+│   ├── db/02_setup_postgresql.sh
+│   ├── frontend/04_setup_frontend.sh
+│   ├── storage/01_setup_storage.sh
+│   ├── docker-compose.backend.yml
+│   ├── docker-compose.frontend.yml
+│   ├── deploy.sh                # Actualiza Backend o Frontend
+│   └── health_check.sh
 ├── MANUAL_TECNICO.html          # Este documento
 ├── MANUAL_USUARIO.html          # Manual de usuario
-├── docker-compose.yml
 └── README.md</code></pre>
 </div>
 
@@ -585,12 +588,12 @@ tipos_documento ─── personas ◄──────────────
 
   <h3 id="cap4-4">4.4 Orden de ejecución de migraciones</h3>
   <p>Ejecutar en orden estricto sobre la base de datos vacía:</p>
-  <pre><code class="language-bash">psql -U postgres -d muni_union -f back/src/migrations/000_schema.sql
-psql -U postgres -d muni_union -f back/src/migrations/001_refresh_tokens.sql
-psql -U postgres -d muni_union -f back/src/migrations/002_indexes.sql
-psql -U postgres -d muni_union -f back/src/migrations/003_usuario_permisos.sql
-psql -U postgres -d muni_union -f back/src/migrations/004_usuario_permisos_modificar.sql
-psql -U postgres -d muni_union -f back/src/migrations/005_seed_data.sql</code></pre>
+  <pre><code class="language-bash">psql -U app_user -h 172.16.3.23 -d registro_muni_union -f back/src/migrations/000_schema.sql
+psql -U app_user -h 172.16.3.23 -d registro_muni_union -f back/src/migrations/001_refresh_tokens.sql
+psql -U app_user -h 172.16.3.23 -d registro_muni_union -f back/src/migrations/002_indexes.sql
+psql -U app_user -h 172.16.3.23 -d registro_muni_union -f back/src/migrations/003_usuario_permisos.sql
+psql -U app_user -h 172.16.3.23 -d registro_muni_union -f back/src/migrations/004_usuario_permisos_modificar.sql
+psql -U app_user -h 172.16.3.23 -d registro_muni_union -f back/src/migrations/005_seed_data.sql</code></pre>
   <div class="callout warn">
     <div class="callout-icon">⚠️</div>
     <div>Todos los scripts usan <code>IF NOT EXISTS</code> — son idempotentes. Pueden ejecutarse más de una vez sin efectos secundarios.</div>
@@ -636,7 +639,7 @@ psql -U postgres -d muni_union -f back/src/migrations/005_seed_data.sql</code></
         <tr><td><span class="badge-method post">POST</span></td><td><code>/api/solicitudes</code></td><td>Sí</td><td>Nueva solicitud</td></tr>
         <tr><td><span class="badge-method patch">PATCH</span></td><td><code>/api/solicitudes/:id/atender</code></td><td>Sí</td><td>Marcar como atendida</td></tr>
         <tr><td><span class="badge-method get">GET</span></td><td><code>/api/reportes/dashboard</code></td><td>Sí</td><td>Estadísticas del dashboard</td></tr>
-        <tr><td><span class="badge-method post">POST</span></td><td><code>/api/importacion/actas</code></td><td>Sí</td><td>Carga masiva Excel/CSV + ZIP</td></tr>
+        <tr><td><span class="badge-method post">POST</span></td><td><code>/api/importacion</code></td><td>Sí (ADMIN)</td><td>Carga masiva .xlsx/.xls + ZIP opcional</td></tr>
         <tr><td><span class="badge-method get">GET</span></td><td><code>/api/auditoria</code></td><td>Sí (admin)</td><td>Log de auditoría</td></tr>
         <tr><td><span class="badge-method get">GET</span></td><td><code>/api/verificar/solicitud/:id</code></td><td><strong>No</strong></td><td>Verificación pública de constancias</td></tr>
       </tbody>
@@ -679,7 +682,7 @@ psql -U postgres -d muni_union -f back/src/migrations/005_seed_data.sql</code></
         <tr><td>CORS</td><td>Lista blanca de orígenes via variable <code>FRONTEND_URL</code></td></tr>
         <tr><td>Rate limiting</td><td>express-rate-limit en login, refresh y verificación pública</td></tr>
         <tr><td>SQL Injection</td><td>Queries parametrizadas en todas las sentencias (nunca interpolación de strings)</td></tr>
-        <tr><td>Uploads</td><td>Multer con validación de tipo MIME y límite de 25 MB</td></tr>
+        <tr><td>Uploads</td><td>Digitalización: PDF/JPG/PNG hasta 20 MB; importación hasta 500 MB por archivo</td></tr>
         <tr><td>Logs</td><td>Pino — sin datos sensibles en producción</td></tr>
         <tr><td>Swagger</td><td>Deshabilitado cuando <code>NODE_ENV=production</code></td></tr>
         <tr><td>PostgreSQL</td><td>Puerto 5432 no expuesto a internet (solo red interna Docker)</td></tr>
@@ -697,7 +700,7 @@ psql -U postgres -d muni_union -f back/src/migrations/005_seed_data.sql</code></
       <thead><tr><th>Entrada</th><th>server_name (Nginx)</th><th>Rutas expuestas</th><th>Usuarios</th></tr></thead>
       <tbody>
         <tr><td><strong>Portal público</strong></td><td><code>$PUBLIC_DOMAIN</code><br>(ej. verificar.muniunion.gob.pe)</td><td><code>/verificar/*</code><br><code>/api/verificar/*</code><br><code>/_next/*</code></td><td>Ciudadanos — cualquier red</td></tr>
-        <tr><td><strong>Sistema interno</strong></td><td><code>$INTERNAL_DOMAIN</code><br>(ej. 192.168.1.100)</td><td>Todo el sistema completo</td><td>Trabajadores — solo LAN</td></tr>
+        <tr><td><strong>Sistema interno</strong></td><td><code>https://172.16.3.21</code></td><td>Aplicación, <code>/api/*</code> y <code>/uploads/*</code></td><td>Trabajadores — solo LAN</td></tr>
       </tbody>
     </table>
   </div>
@@ -723,13 +726,14 @@ psql -U postgres -d muni_union -f back/src/migrations/005_seed_data.sql</code></
 <!-- CAP 9 -->
 <div class="chapter" id="cap9">
   <h2><span class="ch-num">09</span> Importación Masiva</h2>
-  <p>El endpoint <code>POST /api/importacion/actas</code> acepta carga masiva de registros históricos:</p>
+  <p>El endpoint <code>POST /api/importacion</code> acepta carga masiva de registros históricos:</p>
   <ul>
-    <li>Archivo <strong>Excel (.xlsx)</strong> o <strong>CSV</strong> con columnas definidas</li>
-    <li>Archivo <strong>ZIP</strong> con PDFs opcionales (se vinculan automáticamente por nombre de archivo)</li>
+    <li>Archivo <strong>Excel (.xlsx o .xls)</strong> con columnas definidas</li>
+    <li>Archivo <strong>ZIP</strong> opcional con PDF, JPG o PNG; se vincula por <code>nombre_archivo_pdf</code> y <code>carpeta_ruta</code></li>
     <li>Límite: <strong>30.000 filas por lote</strong></li>
+    <li>Límite de carga: <strong>500 MB por archivo</strong></li>
     <li>Deduplicación automática por <code>numero_acta + anio</code></li>
-    <li>Detección de homonimia por nombre completo + DNI</li>
+    <li>Resultados por fila: <code>OK</code>, <code>OMITIDO</code>, <code>OMITIDO_DOC</code> o <code>ERROR</code></li>
   </ul>
   <h4>Columnas requeridas</h4>
   <div class="table-wrap">
@@ -758,8 +762,9 @@ psql -U postgres -d muni_union -f back/src/migrations/005_seed_data.sql</code></
       <thead><tr><th>Variable</th><th>Obligatoria</th><th>Descripción</th></tr></thead>
       <tbody>
         <tr><td><code>DB_HOST</code></td><td>✅</td><td>IP o hostname del servidor PostgreSQL</td></tr>
+        <tr><td><code>DB_NAME</code></td><td>✅</td><td><code>registro_muni_union</code> en producción</td></tr>
         <tr><td><code>DB_PASSWORD</code></td><td>✅</td><td>Contraseña de la base de datos</td></tr>
-        <tr><td><code>DB_SSL</code></td><td>No</td><td><code>true</code> si la BD usa SSL (Neon.tech), <code>false</code> en local</td></tr>
+        <tr><td><code>DB_SSL</code></td><td>✅ en producción</td><td><code>true</code>; PostgreSQL acepta solo TLS desde Backend</td></tr>
         <tr><td><code>JWT_SECRET</code></td><td>✅</td><td>Clave de firma JWT — mínimo 64 caracteres aleatorios</td></tr>
         <tr><td><code>REFRESH_TOKEN_SECRET</code></td><td>✅</td><td>Clave refresh — diferente a JWT_SECRET, mínimo 64 chars</td></tr>
         <tr><td><code>NODE_ENV</code></td><td>✅</td><td><code>development</code> o <code>production</code></td></tr>
@@ -790,7 +795,44 @@ openssl rand -base64 64</code></pre>
 
 <!-- CAP 12 -->
 <div class="chapter" id="cap12">
-  <h2><span class="ch-num">12</span> Dependencias Principales</h2>
+  <h2><span class="ch-num">12</span> Operación de Producción</h2>
+  <h3>Verificación de salud</h3>
+  <pre><code># Backend (.22)
+curl -f http://172.16.3.22:4000/api/health
+
+# Frontend (.21)
+curl -skf https://172.16.3.21/api/health
+sudo docker ps
+sudo nginx -t</code></pre>
+  <p>La respuesta esperada incluye <code>"status":"ok"</code> y <code>"services":{"db":"ok"}</code>.</p>
+
+  <h3>Actualizar la aplicación</h3>
+  <p>Publicar primero los cambios validados en la rama <code>main</code>. Actualizar cada VM por separado:</p>
+  <pre><code># Backend (.22)
+cd /opt/muni_union
+bash deploy/deploy.sh backend
+
+# Frontend (.21)
+cd /opt/muni_union
+bash deploy/deploy.sh frontend</code></pre>
+  <div class="callout warn">
+    <div class="callout-icon">⚠️</div>
+    <div>No ejecutar <code>deploy.sh all</code> en una sola VM. Un <code>git pull</code> no actualiza por sí solo el frontend: el despliegue Frontend reconstruye el contenedor <code>union_web</code>.</div>
+  </div>
+
+  <h3>Base de datos y cambios de esquema</h3>
+  <pre><code>sudo -u postgres pg_dump -Fc registro_muni_union \
+  > /mnt/backups/manual_$(date +%F_%H%M).dump</code></pre>
+  <p>Antes de una migración o corrección de datos, crear backup. Aplicar primero el SQL en PostgreSQL (.23), luego actualizar Backend y, si cambió la interfaz, Frontend.</p>
+
+  <h3>Nginx y archivos digitalizados</h3>
+  <pre><code>sudo nginx -t && sudo systemctl reload nginx</code></pre>
+  <p>Nginx en Frontend debe enrutar <code>/api/</code> y <code>/uploads/</code> al Backend. Para importación masiva, debe permitir hasta 500 MB y tiempos de proxy mayores al timeout de 10 minutos del frontend.</p>
+</div>
+
+<!-- CAP 13 -->
+<div class="chapter" id="cap13">
+  <h2><span class="ch-num">13</span> Dependencias Principales</h2>
   <h3>Backend</h3>
   <div class="table-wrap">
     <table>

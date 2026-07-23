@@ -25,7 +25,8 @@ interface BackupInfo {
     tamanio: string;
     version: string;
     metodBackup: string;
-    onPremise: boolean;
+    pgDumpDisponible: boolean;
+    entorno: "produccion" | "desarrollo";
 }
 
 const LS_KEY = "muni_union_ultimo_backup";
@@ -172,20 +173,21 @@ export default function BackupPage() {
             {/* Método de backup */}
             {!loadingInfo && info && (
                 <div className={`flex items-start gap-3 px-5 py-4 rounded-2xl border ${
-                    info.onPremise
+                    info.pgDumpDisponible
                         ? "bg-emerald-50 border-emerald-200"
                         : "bg-amber-50 border-amber-200"
                 }`}>
-                    {info.onPremise
+                    {info.pgDumpDisponible
                         ? <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
                         : <AlertCircle  className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
                     }
                     <div>
-                        <p className={`text-sm font-bold ${info.onPremise ? "text-emerald-800" : "text-amber-800"}`}>
-                            {info.onPremise ? "Servidor on-premise detectado" : "Modo desarrollo (Neon cloud)"}
+                        <p className={`text-sm font-bold ${info.pgDumpDisponible ? "text-emerald-800" : "text-amber-800"}`}>
+                            {info.entorno === "produccion" ? "Servidor de producción" : "Servidor de desarrollo"}
                         </p>
-                        <p className={`text-xs mt-0.5 ${info.onPremise ? "text-emerald-700" : "text-amber-700"}`}>
+                        <p className={`text-xs mt-0.5 ${info.pgDumpDisponible ? "text-emerald-700" : "text-amber-700"}`}>
                             Método: <span className="font-bold">{info.metodBackup}</span>
+                            {!info.pgDumpDisponible && " · Instale pg_dump para incluir el esquema completo."}
                             {" · "}{info.version}
                         </p>
                     </div>

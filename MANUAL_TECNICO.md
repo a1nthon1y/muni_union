@@ -1,6 +1,6 @@
 # Manual Técnico — Sistema de Registro Civil
 **Municipalidad Distrital de La Unión**
-Versión 1.0.0 | Abril 2026
+Versión 1.1.0 | Julio 2026
 
 ---
 
@@ -10,45 +10,47 @@ Sistema web para la gestión de registros civiles (actas de nacimiento, matrimon
 
 ---
 
-## 2. Arquitectura del sistema
+## 2. Arquitectura de producción
 
 ```
-                    Internet                    Red LAN (municipalidad)
-                       │                               │
-              verificar.muniunion.gob.pe        192.168.x.x
-                       │                               │
-              ┌────────▼───────────────────────────────▼────────┐
-              │                  NGINX                           │
-              │  • Portal público: solo /verificar/*             │
-              │  • Sistema interno: acceso completo              │
-              └────────────────────┬────────────────────────────┘
-                                   │
-              ┌────────────────────▼────────────────────────────┐
-              │            NEXT.JS  (puerto 3000)                │
-              │  App Router — TypeScript — Tailwind CSS          │
-              └────────────────────┬────────────────────────────┘
-                                   │
-              ┌────────────────────▼────────────────────────────┐
-              │            EXPRESS 5  (puerto 4000)              │
-              │  API REST — ES Modules — Node.js 20+             │
-              └────────────────────┬────────────────────────────┘
-                                   │
-              ┌────────────────────▼────────────────────────────┐
-              │          POSTGRESQL 15  (puerto 5432)            │
-              │  Solo accesible desde la red interna Docker      │
-              └─────────────────────────────────────────────────┘
+ Usuarios LAN / portal público
+             │ HTTPS :443
+             ▼
+ VM Frontend 172.16.3.21
+ Nginx (host) → Next.js Docker (127.0.0.1:3000)
+             │ API privada :4000
+             ▼
+ VM Backend 172.16.3.22
+ Express Docker → NFS uploads/logs (VM .24)
+             │ TLS PostgreSQL :5432
+             ▼
+ VM PostgreSQL 172.16.3.23
+ PostgreSQL 15 → NFS backups (VM .24)
+             │
+             ▼
+ VM Storage 172.16.3.24
+ NFS: uploads, logs y backups
 ```
 
 ### 2.1 Componentes
 
-| Componente | Tecnología | Puerto | Acceso |
+| VM | IP | Servicio | Exposición |
 |---|---|---|---|
-| Frontend | Next.js 16, React 19, TypeScript | 3000 (interno) | Vía Nginx |
-| Backend API | Node.js 20+, Express 5 | 4000 (interno) | Vía Nginx |
-| Base de datos | PostgreSQL 15 | 5432 (solo LAN Docker) | Solo backend |
-| Proxy inverso | Nginx Alpine | 80, 443 | Público/interno |
+| Frontend | `172.16.3.21` | Nginx Debian + Next.js Docker | HTTPS 80/443; Next solo `127.0.0.1:3000` |
+| Backend | `172.16.3.22` | Express Docker (`union_api`) | `172.16.3.22:4000`, solo desde Frontend |
+| PostgreSQL | `172.16.3.23` | PostgreSQL 15 con TLS | `5432`, solo desde Backend |
+| Storage | `172.16.3.24` | NFS | Solo Backend y PostgreSQL |
 
-### 2.2 Patrón arquitectónico
+### 2.2 Orden de dependencia
+
+1. Storage (`.24`)
+2. PostgreSQL (`.23`)
+3. Backend (`.22`)
+4. Frontend (`.21`)
+
+No iniciar un servicio dependiente antes del anterior: el Backend necesita PostgreSQL y los montajes NFS; el Frontend necesita que la API esté disponible.
+
+### 2.3 Patrón de aplicación
 
 - **Separación de capas:** Rutas → Controladores → Servicios → BD
 - **Stateless:** Autenticación via JWT en cookies `httpOnly` (sin estado en servidor)
@@ -98,14 +100,18 @@ muni_union/
 │       └── utils/
 │           ├── api.ts           # Instancia Axios + interceptor refresh
 │           └── dateUtils.ts     # Utilidades de fechas
-├── nginx/
-│   ├── nginx.conf               # Config dual (público + interno)
-│   └── ssl/
-│       ├── public/              # Cert para portal de verificación
-│       └── internal/            # Cert para sistema interno
-├── scripts/
-│   └── backup_db.sh             # Backup automático PostgreSQL
-├── docker-compose.yml
+├── deploy/
+│   ├── 00_base_hardening.sh     # Base Debian para las cuatro VMs
+│   ├── backend/03_setup_backend.sh
+│   ├── db/02_setup_postgresql.sh
+│   ├── frontend/04_setup_frontend.sh
+│   ├── storage/01_setup_storage.sh
+│   ├── docker-compose.backend.yml
+│   ├── docker-compose.frontend.yml
+│   ├── deploy.sh                # Actualiza Backend o Frontend
+│   └── health_check.sh
+├── MANUAL_TECNICO.md
+├── MANUAL_USUARIO.md
 └── README.md
 ```
 
@@ -149,12 +155,12 @@ tipos_documento ─── personas ◄──────────────
 ### 4.4 Orden de ejecución de migraciones
 
 ```bash
-psql -U postgres -d muni_union -f back/src/migrations/000_schema.sql
-psql -U postgres -d muni_union -f back/src/migrations/001_refresh_tokens.sql
-psql -U postgres -d muni_union -f back/src/migrations/002_indexes.sql
-psql -U postgres -d muni_union -f back/src/migrations/003_usuario_permisos.sql
-psql -U postgres -d muni_union -f back/src/migrations/004_usuario_permisos_modificar.sql
-psql -U postgres -d muni_union -f back/src/migrations/005_seed_data.sql
+psql -U app_user -h 172.16.3.23 -d registro_muni_union -f back/src/migrations/000_schema.sql
+psql -U app_user -h 172.16.3.23 -d registro_muni_union -f back/src/migrations/001_refresh_tokens.sql
+psql -U app_user -h 172.16.3.23 -d registro_muni_union -f back/src/migrations/002_indexes.sql
+psql -U app_user -h 172.16.3.23 -d registro_muni_union -f back/src/migrations/003_usuario_permisos.sql
+psql -U app_user -h 172.16.3.23 -d registro_muni_union -f back/src/migrations/004_usuario_permisos_modificar.sql
+psql -U app_user -h 172.16.3.23 -d registro_muni_union -f back/src/migrations/005_seed_data.sql
 ```
 
 ---
@@ -187,7 +193,7 @@ psql -U postgres -d muni_union -f back/src/migrations/005_seed_data.sql
 | POST | `/api/solicitudes` | Sí | Nueva solicitud |
 | PATCH | `/api/solicitudes/:id/atender` | Sí | Marcar como atendida |
 | GET | `/api/reportes/dashboard` | Sí | Estadísticas |
-| POST | `/api/importacion/actas` | Sí | Carga masiva Excel/CSV+ZIP |
+| POST | `/api/importacion` | Sí (ADMIN) | Carga masiva `.xlsx`/`.xls` + ZIP opcional |
 | GET | `/api/auditoria` | Sí (admin) | Log de auditoría |
 | GET | `/api/verificar/solicitud/:id` | **No** | Verificación pública |
 
@@ -219,7 +225,7 @@ Código 500: error interno (en producción no expone detalles)
 | CORS | Lista blanca de orígenes (variable `FRONTEND_URL`) |
 | Rate limiting | express-rate-limit en login, refresh y verificación |
 | SQL Injection | Queries parametrizadas (pg pool, nunca string interpolation) |
-| Uploads | Multer con validación de tipo MIME y límite de tamaño |
+| Uploads | Digitalización: PDF/JPG/PNG hasta 20 MB; importación: `.xlsx`/`.xls` y ZIP hasta 500 MB por archivo |
 | Logs | Pino (sin datos sensibles en producción) |
 | Swagger | Deshabilitado en `NODE_ENV=production` |
 
@@ -229,8 +235,8 @@ Código 500: error interno (en producción no expone detalles)
 
 | Entrada | `server_name` en Nginx | Rutas expuestas |
 |---|---|---|
-| Portal público | `$PUBLIC_DOMAIN` | `/verificar/*`, `/api/verificar/*`, `/_next/*` |
-| Sistema interno | `$INTERNAL_DOMAIN` | Todo el sistema |
+| Portal público | `verificar.muniunion.gob.pe` | `/verificar/*`, `/api/verificar/*`, `/_next/*` |
+| Sistema interno | `https://172.16.3.21` | Aplicación, `/api/*` y `/uploads/*` |
 
 ---
 
@@ -244,14 +250,22 @@ El servidor ejecuta cada 6 horas (`server.js`):
 
 ## 9. Importación masiva
 
-El módulo de importación (`POST /api/importacion/actas`) acepta:
-- Archivo Excel (`.xlsx`) o CSV con columnas definidas
-- ZIP con PDFs opcionales (se vinculan automáticamente por nombre de archivo)
+El módulo de importación (`POST /api/importacion`) acepta:
+- Archivo Excel `.xlsx` o `.xls`
+- ZIP opcional con PDF, JPG o PNG; se vinculan por `nombre_archivo_pdf` y, cuando existe, `carpeta_ruta`
 - Límite: 30.000 filas por lote
-- Deduplicación automática por `numero_acta + anio`
-- Detección de homonimia por nombres completos + DNI
+- Límite de carga: 500 MB por archivo
+- Deduplicación de actas por `numero_acta + anio`
+- Resultado por fila: `OK`, `OMITIDO`, `OMITIDO_DOC` o `ERROR`
 
 Columnas requeridas: `nombres`, `apellido_paterno`, `apellido_materno`, `tipo_acta`, `fecha_acta` + (`libro` y `numero_acta`) o `cui`.
+
+### Operación y diagnóstico
+
+- El frontend espera hasta 10 minutos por la respuesta de una importación.
+- Nginx en Frontend debe permitir cuerpo de hasta 500 MB y tiempos de proxy de al menos 15 minutos.
+- Si se agota el tiempo en navegador, no reintentar de inmediato: verificar actas y documentos, porque el Backend puede continuar procesando.
+- Las coincidencias de personas sin DNI no son una identidad confiable. Antes de nuevas cargas históricas debe aplicarse una política de revisión para coincidencias ambiguas.
 
 ---
 
@@ -262,7 +276,9 @@ Ver `back/.env.example` para la lista completa con descripción de cada variable
 | Variable | Requerida | Descripción |
 |---|---|---|
 | `DB_HOST` | Sí | Host PostgreSQL |
+| `DB_NAME` | Sí | `registro_muni_union` en producción |
 | `DB_PASSWORD` | Sí | Contraseña BD |
+| `DB_SSL` | Sí en producción | `true`; PostgreSQL solo acepta conexión TLS desde Backend |
 | `JWT_SECRET` | Sí | Clave de firma JWT (mín. 64 chars) |
 | `REFRESH_TOKEN_SECRET` | Sí | Clave refresh token (diferente al anterior) |
 | `NODE_ENV` | Sí | `development` o `production` |
@@ -273,13 +289,68 @@ Ver `back/.env.example` para la lista completa con descripción de cada variable
 
 ## 11. Logs
 
-El sistema usa **Pino** como logger. En desarrollo: salida coloreada (pino-pretty). En producción: JSON estructurado.
+El sistema usa **Pino** como logger. En desarrollo: salida coloreada (pino-pretty). En producción: JSON estructurado en el volumen NFS `/mnt/logs` del Backend y en los logs de Docker.
 
 Niveles: `info` (operaciones normales), `warn` (errores recuperables), `error` (errores no controlados).
 
 ---
 
-## 12. Dependencias principales
+## 12. Operación de producción
+
+### 12.1 Verificación de salud
+
+```bash
+# Backend (.22)
+curl -f http://172.16.3.22:4000/api/health
+
+# Frontend (.21)
+curl -skf https://172.16.3.21/api/health
+sudo docker ps
+sudo nginx -t
+```
+
+La respuesta esperada del health es `"status":"ok"` y `"services":{"db":"ok"}`.
+
+### 12.2 Actualizar la aplicación
+
+Publicar primero los cambios validados en `main`. Luego actualizar cada VM de forma independiente:
+
+```bash
+# En Backend (.22)
+cd /opt/muni_union
+bash deploy/deploy.sh backend
+
+# En Frontend (.21)
+cd /opt/muni_union
+bash deploy/deploy.sh frontend
+```
+
+No ejecutar `deploy.sh all` en una sola VM: Backend y Frontend son máquinas diferentes. `git pull` por sí solo no actualiza Next.js; el despliegue Frontend reconstruye `union_web`.
+
+### 12.3 Base de datos y restauración
+
+Antes de aplicar una migración o corregir datos, crear un backup:
+
+```bash
+sudo -u postgres pg_dump -Fc registro_muni_union \
+  > /mnt/backups/manual_$(date +%F_%H%M).dump
+```
+
+Aplicar primero la migración en `.23`, luego actualizar Backend y, si hubo cambios de interfaz, Frontend.
+
+### 12.4 Nginx y archivos digitalizados
+
+Nginx corre en el host de la VM Frontend. Después de cambiar archivos en `/etc/nginx/`:
+
+```bash
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+El servidor interno debe enrutar `/api/` y `/uploads/` al Backend; de lo contrario los PDF/imagen registrados no podrán abrirse desde la interfaz.
+
+---
+
+## 13. Dependencias principales
 
 ### Backend
 | Paquete | Versión | Uso |

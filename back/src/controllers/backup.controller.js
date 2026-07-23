@@ -1,6 +1,7 @@
 import { exec, spawn } from "child_process";
 import { promisify } from "util";
 import { pool } from "../config/db.js";
+import { obtenerParamsDB } from "../services/backup-db-config.js";
 
 const execAsync = promisify(exec);
 
@@ -12,29 +13,6 @@ async function pgDumpDisponible() {
     } catch {
         return false;
     }
-}
-
-/** Extrae los parámetros de conexión del entorno */
-function obtenerParamsDB() {
-    if (process.env.DATABASE_URL) {
-        const url = new URL(process.env.DATABASE_URL);
-        return {
-            host:     url.hostname,
-            port:     url.port || "5432",
-            user:     url.username,
-            password: decodeURIComponent(url.password),
-            database: url.pathname.replace("/", ""),
-            ssl:      url.searchParams.get("sslmode") === "require",
-        };
-    }
-    return {
-        host:     process.env.DB_HOST     || "localhost",
-        port:     process.env.DB_PORT     || "5432",
-        user:     process.env.DB_USER,
-        password: process.env.DB_PASSWORD,
-        database: process.env.DB_NAME,
-        ssl:      process.env.DB_SSL === "true",
-    };
 }
 
 /** Escapa un valor para usarlo en un INSERT SQL */
@@ -191,7 +169,8 @@ export const infoBackup = async (req, res) => {
             tamanio:      sizeRes.rows[0].tamanio,
             version:      versionRes.rows[0].version.split(" ").slice(0, 2).join(" "),
             metodBackup:  tienePgDump ? "pg_dump (completo)" : "Programático (solo datos)",
-            onPremise:    tienePgDump,
+            pgDumpDisponible: tienePgDump,
+            entorno: process.env.NODE_ENV === "production" ? "produccion" : "desarrollo",
         });
     } catch (err) {
         console.error("[backup] Error en infoBackup:", err.message);

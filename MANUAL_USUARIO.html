@@ -58,7 +58,7 @@
   .cover .meta { border-top: 1px solid rgba(255,255,255,.18); padding-top: 2rem; display: flex; gap: 3rem; justify-content: center; flex-wrap: wrap; }
   .cover .meta-item label { display: block; font-size: .65rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: rgba(255,255,255,.45); margin-bottom: .2rem; }
   .cover .meta-item span { font-size: .9rem; font-weight: 500; color: rgba(255,255,255,.85); }
-  .cover .seal { width: 80px; height: 80px; border: 2px solid rgba(255,255,255,.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 2rem; font-size: 2rem; }
+  .cover .seal { width: 80px; height: 80px; border: 2px solid rgba(255,255,255,.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 2rem; font-size: 1rem; font-weight: 700; letter-spacing: .08em; }
 
   /* ── Índice ──────────────────────────────────────────────── */
   .toc-page { padding: 4rem 5rem; page-break-after: always; max-width: 800px; margin: 0 auto; }
@@ -141,6 +141,7 @@
     table { page-break-inside: avoid; }
     .callout { page-break-inside: avoid; }
     .steps li { page-break-inside: avoid; }
+    .table-wrap, .module-card, ul, ol { page-break-inside: avoid; }
   }
 
   .print-btn { position: fixed; bottom: 2rem; right: 2rem; background: var(--primary); color: #fff; border: none; padding: .8rem 1.6rem; border-radius: 999px; font-family: var(--font); font-size: .85rem; font-weight: 600; cursor: pointer; box-shadow: 0 4px 20px rgba(0,0,0,.25); letter-spacing: .04em; z-index: 100; }
@@ -151,15 +152,15 @@
 
 <!-- PORTADA -->
 <div class="cover">
-  <div class="seal">📋</div>
-  <div class="badge">Manual de Usuario — Versión 1.0.0</div>
+  <div class="seal">MDU</div>
+  <div class="badge">Manual de Usuario — Versión 1.1.0</div>
   <h1>Guía de Usuario<br><span>Sistema de Registro Civil</span></h1>
   <p class="subtitle">Municipalidad Distrital de La Unión — Piura, Perú</p>
   <div class="meta">
-    <div class="meta-item"><label>Versión</label><span>1.0.0</span></div>
-    <div class="meta-item"><label>Fecha</label><span>Abril 2026</span></div>
+    <div class="meta-item"><label>Versión</label><span>1.1.0</span></div>
+    <div class="meta-item"><label>Fecha</label><span>Julio 2026</span></div>
     <div class="meta-item"><label>Dirigido a</label><span>Personal Administrativo</span></div>
-    <div class="meta-item"><label>Sistema</label><span>STDU v2.0</span></div>
+    <div class="meta-item"><label>Sistema</label><span>Registro Civil</span></div>
   </div>
 </div>
 
@@ -205,7 +206,8 @@
 <!-- CAP 1 -->
 <div class="chapter" id="cap1">
   <h2><span class="ch-num">01</span> Introducción</h2>
-  <p>El <strong>Sistema de Registro Civil (STDU)</strong> permite gestionar de forma digital los registros de nacimiento, matrimonio y defunción del distrito, así como las solicitudes de copias certificadas realizadas por los ciudadanos.</p>
+  <p>El <strong>Sistema de Registro Civil</strong> permite registrar, consultar y digitalizar actas de nacimiento, matrimonio y defunción del distrito, así como atender solicitudes de copias certificadas.</p>
+  <p>Esta guía está dirigida al personal municipal. Cada sección explica dónde ingresar, qué acción realizar y qué resultado esperar.</p>
   <div class="callout info">
     <div class="callout-icon">🖥️</div>
     <div><strong>Acceso al sistema:</strong> Ingresar desde cualquier navegador web conectado a la red interna de la municipalidad:<br>
@@ -351,12 +353,12 @@
   <p>Permite adjuntar el archivo digital (PDF o imagen) al acta física correspondiente.</p>
   <ol class="steps">
     <li>Buscar el acta por número o por nombre del titular.</li>
-    <li>Seleccionar el archivo desde el equipo (PDF o imagen, tamaño máximo: <strong>25 MB</strong>).</li>
+    <li>Seleccionar el archivo desde el equipo.</li>
     <li>Hacer clic en <strong>"Subir documento"</strong>.</li>
   </ol>
   <div class="callout warn">
     <div class="callout-icon">📁</div>
-    <div>Solo se puede adjuntar un documento por acta. Si ya tiene uno y se sube otro, el anterior se reemplaza. Formatos aceptados: <strong>PDF, JPG, PNG</strong>.</div>
+    <div>Formatos aceptados: <strong>PDF, JPG y PNG</strong>; tamaño máximo: <strong>20 MB por archivo</strong>. Solo se puede adjuntar un documento por acta. Si ya tiene uno y se sube otro, el anterior se reemplaza.</div>
   </div>
 </div>
 
@@ -374,11 +376,11 @@
   </ol>
 
   <h3>Buscar persona</h3>
-  <p>El campo de búsqueda acepta nombre completo, apellidos o número de DNI. La búsqueda tolera <strong>errores tipográficos menores</strong> (búsqueda inteligente con pg_trgm).</p>
+  <p>El campo de búsqueda acepta nombre completo, apellidos o número de DNI.</p>
 
   <div class="callout tip">
     <div class="callout-icon">💡</div>
-    <div>Si al guardar una persona el sistema advierte un posible duplicado, revisar si ya existe el ciudadano antes de crear un registro nuevo. Los duplicados complican la trazabilidad de actas.</div>
+    <div>Antes de crear una persona, buscarla por DNI y por nombres. Para recién nacidos sin DNI, seleccionar <strong>Sin documento</strong>. Si aparece una coincidencia sin DNI, revisar el acta física antes de asumir que es la misma persona.</div>
   </div>
 </div>
 
@@ -455,32 +457,67 @@
 <div class="chapter" id="cap10">
   <h2><span class="ch-num">10</span> Importación Masiva <span class="role-admin">Solo Administrador</span></h2>
   <p>Acceso: menú lateral → <strong>Importación</strong></p>
-  <p>Permite cargar grandes volúmenes de actas históricas desde archivos Excel o CSV.</p>
+  <p>Permite cargar actas históricas desde una plantilla Excel. Antes de iniciar, comprobar que el Excel y los documentos corresponden al mismo lote.</p>
 
-  <h3>Pasos</h3>
+  <div class="callout warn">
+    <div class="callout-icon">⚠️</div>
+    <div><strong>Antes de importar:</strong> no continuar con un lote de nacimientos sin DNI si existen coincidencias dudosas de nombres y fecha de nacimiento. Conservar el acta física y solicitar revisión al administrador.</div>
+  </div>
+
+  <h3>Antes de importar</h3>
   <ol class="steps">
     <li>Descargar la <strong>plantilla Excel</strong> de ejemplo desde la pantalla de importación.</li>
-    <li>Completar los datos en la plantilla respetando el formato de columnas.</li>
-    <li>(Opcional) Preparar un archivo <strong>ZIP</strong> con los PDFs de las actas, usando los nombres indicados en la columna <code>nombre_archivo_pdf</code>.</li>
-    <li>Seleccionar el archivo Excel/CSV y el ZIP opcional.</li>
-    <li>Hacer clic en <strong>"Importar"</strong>.</li>
-    <li>El sistema procesa fila por fila y muestra un reporte con el resultado de cada una.</li>
+    <li>Usar solo archivos <strong>.xlsx</strong> o <strong>.xls</strong>. No se admiten archivos CSV.</li>
+    <li>Completar en cada fila: nombres, apellido paterno, apellido materno, tipo de acta, fecha de acta y, salvo CUI, libro y número de acta.</li>
+    <li>Registrar <strong>sexo</strong> únicamente como <strong>M</strong> o <strong>F</strong>. Para recién nacidos sin DNI, seleccionar <strong>Sin documento</strong>.</li>
+    <li>Usar una fecha válida en <strong>fecha_acta</strong>, por ejemplo <code>2026-07-22</code> o <code>22/07/2026</code>.</li>
   </ol>
+
+  <h3>Preparar el ZIP de documentos (opcional)</h3>
+  <p>El ZIP puede contener PDF, JPG o PNG. La columna <code>nombre_archivo_pdf</code> debe coincidir exactamente con el nombre del archivo. Si se usa <code>carpeta_ruta</code>, debe coincidir con la carpeta dentro del ZIP.</p>
+  <pre><code>Excel
+nombre_archivo_pdf = NACIMIENTO_001.pdf
+carpeta_ruta       = nacimientos/libro_1
+
+ZIP
+nacimientos/libro_1/NACIMIENTO_001.pdf</code></pre>
+  <p>Si los nombres de archivo se repiten, usar siempre <code>carpeta_ruta</code> para evitar vincular un documento equivocado.</p>
+
+  <h3>Importar el lote</h3>
+  <ol class="steps">
+    <li>Seleccionar el Excel preparado y, si corresponde, el ZIP de documentos.</li>
+    <li>Revisar que los archivos seleccionados sean los correctos.</li>
+    <li>Hacer clic en <strong>"Importar"</strong>.</li>
+    <li>Mantener abierta la pantalla hasta que se muestre el resumen. Un lote con muchos documentos puede tardar hasta <strong>10 minutos</strong>.</li>
+  </ol>
+  <div class="callout warn">
+    <div class="callout-icon">⏳</div>
+    <div>No volver a pulsar <strong>Importar</strong> mientras el proceso está en curso ni inmediatamente después de un mensaje de tiempo de espera. Primero verificar si las actas y documentos ya fueron registrados.</div>
+  </div>
 
   <h3>Resultados posibles por fila</h3>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>Estado</th><th>Descripción</th></tr></thead>
+      <thead><tr><th>Estado</th><th>Qué significa</th><th>Qué hacer</th></tr></thead>
       <tbody>
-        <tr><td>✅ <strong>OK</strong></td><td>Acta registrada correctamente</td></tr>
-        <tr><td>⏭️ <strong>OMITIDO</strong></td><td>El acta ya existía — se omite sin error (idempotente)</td></tr>
-        <tr><td>❌ <strong>ERROR</strong></td><td>Datos inválidos o incompletos — se muestra el motivo del error</td></tr>
+        <tr><td><strong>OK</strong></td><td>El acta fue creada correctamente.</td><td>Verificar una muestra de actas y documentos.</td></tr>
+        <tr><td><strong>OMITIDO</strong></td><td>El acta ya existía; no se creó una copia.</td><td>Leer el mensaje antes de volver a cargar la fila.</td></tr>
+        <tr><td><strong>OMITIDO_DOC</strong></td><td>El acta ya existía sin documento y el archivo fue vinculado.</td><td>Abrir el acta y usar <strong>Ver Acta</strong>.</td></tr>
+        <tr><td><strong>ERROR</strong></td><td>La fila no fue registrada; el resumen indica el motivo.</td><td>Corregir solo las filas con error y reintentarlas.</td></tr>
       </tbody>
     </table>
   </div>
+
+  <h3>Si una fila sale con ERROR</h3>
+  <ol class="steps">
+    <li>Leer el mensaje de la fila para identificar el campo que debe corregirse.</li>
+    <li>Preparar un Excel con las filas corregidas.</li>
+    <li>Si una fila tenía documento, incluir también su PDF o imagen en el ZIP del reintento.</li>
+    <li>Importar solo las filas que fallaron.</li>
+  </ol>
   <div class="callout tip">
     <div class="callout-icon">💡</div>
-    <div>El límite es <strong>30.000 filas por lote</strong>. Si el archivo es mayor, dividirlo en partes — las filas ya importadas se omiten automáticamente sin duplicarse.</div>
+    <div>Límite: <strong>30.000 filas por lote</strong> y <strong>500 MB por archivo</strong>. Para cargas históricas grandes, iniciar con una prueba de 5 a 10 filas. No borrar actas que sí se registraron y no reimportar un ZIP completo solo por una fila fallida.</div>
   </div>
 </div>
 
@@ -568,14 +605,11 @@
   <h3>¿Cómo guardo el documento de un acta como PDF?</h3>
   <p>Abrir el detalle del acta → botón <strong>"Imprimir"</strong>. En la ventana que se abre, presionar <strong>Ctrl+P</strong> y seleccionar <em>"Guardar como PDF"</em> como destino de impresión.</p>
 
-  <h3>¿Se pueden usar varios equipos al mismo tiempo?</h3>
-  <p>Sí. El sistema soporta múltiples usuarios concurrentes sin afectar el rendimiento.</p>
-
   <h3>¿Dónde están los archivos digitalizados?</h3>
-  <p>En el servidor de la municipalidad, dentro de la carpeta <code>uploads/</code> del sistema. Los backups automáticos incluyen esta carpeta.</p>
+  <p>Se almacenan de forma segura en el servidor de la municipalidad. El personal usuario no debe mover, renombrar ni eliminar archivos directamente desde el servidor.</p>
 
-  <h3>¿Con qué frecuencia se hace backup?</h3>
-  <p>El administrador del servidor debe configurar el backup automático diario a las 2:00 AM mediante el script incluido. Los backups se guardan con fecha y hora en la carpeta <code>backups/</code>.</p>
+  <h3>¿Qué hago si una importación muestra “Error inesperado”?</h3>
+  <p>No volver a cargar el mismo lote inmediatamente. Esperar unos minutos y verificar si las actas ya aparecen en el sistema. Si no aparecen, guardar una captura del mensaje y comunicarla al administrador junto con el Excel y ZIP usados.</p>
 
   <h3>El ciudadano dice que su URL de verificación no funciona</h3>
   <p>Verificar que el portal público esté activo. La URL de verificación es independiente del sistema interno — funciona desde cualquier red. Si el portal está caído, contactar al área de sistemas.</p>

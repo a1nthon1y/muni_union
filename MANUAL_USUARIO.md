@@ -1,12 +1,14 @@
 # Manual de Usuario — Sistema de Registro Civil
 **Municipalidad Distrital de La Unión**
-Versión 1.0.0 | Abril 2026
+Versión 1.1.0 | Julio 2026
 
 ---
 
 ## 1. Introducción
 
-El Sistema de Registro Civil (STDU) permite gestionar de forma digital los registros de nacimiento, matrimonio y defunción, así como las solicitudes de copias certificadas de los ciudadanos.
+El Sistema de Registro Civil permite registrar, consultar y digitalizar actas de nacimiento, matrimonio y defunción. También permite atender solicitudes de copias certificadas.
+
+Este manual está dirigido al personal que utiliza el sistema en la municipalidad. Cada sección indica **dónde ingresar**, **qué acción realizar** y **qué resultado esperar**.
 
 **Acceso al sistema:** Ingresar desde cualquier navegador en la red interna de la municipalidad:
 ```
@@ -105,8 +107,12 @@ Menú → **Digitalización**
 Permite adjuntar archivos PDF o imagen a actas existentes que aún no tienen documento digital.
 
 1. Buscar el acta por número o nombre.
-2. Seleccionar el archivo desde el equipo (PDF o imagen, máx. 25 MB).
+2. Seleccionar el archivo desde el equipo.
 3. Clic en **Subir documento**.
+
+**Formatos y límite:** PDF, JPG o PNG; máximo **20 MB por archivo**.
+
+> Si se sube un nuevo documento a un acta que ya tiene archivo, el documento anterior se reemplaza. Verificar el archivo antes de confirmar.
 
 ---
 
@@ -121,7 +127,7 @@ Registro de ciudadanos del distrito. Cada acta está vinculada a uno o más ciud
 2. Completar: tipo de documento, número, nombres, apellidos, sexo, fecha de nacimiento, teléfono, dirección.
 3. **Guardar**.
 
-> Si ya existe una persona con el mismo nombre, el sistema lo advierte para evitar duplicados.
+> Antes de crear una persona, buscarla por DNI y por nombres. Para recién nacidos sin DNI, seleccionar el tipo de documento **Sin documento**. Si el sistema muestra una coincidencia sin DNI, no asumir que es la misma persona: verificar el acta física y solicitar revisión al administrador si hay duda.
 
 ### Buscar persona
 Usar el campo de búsqueda: acepta nombre completo, apellidos o DNI. La búsqueda tolera errores tipográficos menores.
@@ -190,17 +196,71 @@ El ciudadano que recibe una Constancia de Trámite puede verificar su autenticid
 
 Menú → **Importación** (Administrador)
 
-Permite cargar actas en lote desde archivos Excel/CSV, con PDFs adjuntos opcionales en un ZIP.
+Permite cargar actas históricas en lote desde una plantilla Excel. Es una operación exclusiva del Administrador; antes de iniciar, revisar que el Excel y los documentos correspondan al mismo lote.
 
-### Pasos
-1. Descargar la **plantilla Excel** de ejemplo.
-2. Completar los datos según el formato indicado.
-3. (Opcional) Preparar un archivo ZIP con los PDFs, con los nombres indicados en la columna `nombre_archivo_pdf`.
-4. Seleccionar el archivo Excel/CSV y el ZIP (opcional).
-5. Clic en **Importar**.
-6. El sistema procesa fila por fila y muestra un reporte con: OK, OMITIDO (duplicado) o ERROR por fila.
+### Antes de importar
 
-**Límite:** 30.000 filas por lote. Si supera ese número, dividir en archivos más pequeños (los duplicados se omiten automáticamente en sucesivas importaciones).
+1. Descargar la **plantilla oficial** desde la pantalla de Importación.
+2. Usar solo archivos **`.xlsx` o `.xls`**. No se admiten archivos CSV.
+3. Completar los campos obligatorios de cada fila:
+   - `nombres`, `apellido_paterno`, `apellido_materno`
+   - `tipo_acta`
+   - `fecha_acta`
+   - `libro` y `numero_acta`, salvo que se use CUI
+4. Registrar `sexo` únicamente como **M** o **F**. Una letra distinta hace que esa fila quede en error.
+5. Usar una fecha válida para `fecha_acta`, por ejemplo `2026-07-22` o `22/07/2026`.
+6. Para nacimientos sin DNI, dejar el DNI vacío y registrar **Sin documento** como tipo de documento.
+
+> **Importante sobre ciudadanos sin DNI:** no se debe asumir que dos personas con el mismo nombre y fecha de nacimiento son la misma persona. Si hay una coincidencia dudosa, conservar el acta física y solicitar revisión antes de continuar con nuevos lotes.
+
+### Preparar el ZIP de documentos (opcional)
+
+El ZIP puede contener PDFs, JPG o PNG. Para que un documento se vincule:
+
+- La columna `nombre_archivo_pdf` debe tener exactamente el nombre del archivo, por ejemplo `NACIMIENTO_001.pdf`.
+- Si se usa `carpeta_ruta`, debe coincidir con la estructura dentro del ZIP.
+
+Ejemplo:
+
+```text
+Excel
+nombre_archivo_pdf = NACIMIENTO_001.pdf
+carpeta_ruta       = nacimientos/libro_1
+
+ZIP
+nacimientos/libro_1/NACIMIENTO_001.pdf
+```
+
+Si los archivos tienen nombres únicos, el sistema también puede encontrarlos por nombre. Si hay nombres repetidos, `carpeta_ruta` es obligatoria para evitar vincular el documento equivocado.
+
+### Pasos para importar
+
+1. Seleccionar el Excel preparado.
+2. Seleccionar el ZIP de documentos si corresponde.
+3. Revisar que los archivos sean los correctos.
+4. Clic en **Importar**.
+5. Mantener abierta la pantalla hasta que se muestre el resumen. Los lotes con muchos documentos pueden tardar hasta **10 minutos**.
+6. No pulsar Importar nuevamente mientras el proceso esté en curso ni inmediatamente después de un mensaje de tiempo de espera.
+
+### Resultados de la importación
+
+| Resultado | Qué significa | Qué debe hacer el usuario |
+|---|---|---|
+| **OK** | El acta fue creada correctamente. | Verificar una muestra de registros y documentos. |
+| **OMITIDO** | El acta ya existía. No se creó una copia. | Revisar el mensaje; no volver a cargar la misma fila sin corregir algo. |
+| **OMITIDO_DOC** | El acta ya existía sin documento y el PDF/imagen fue vinculado. | Abrir el acta y usar **Ver Acta** para confirmar el archivo. |
+| **ERROR** | La fila no fue registrada. El resumen muestra el motivo. | Corregir solo las filas con error y volver a importarlas. |
+
+### Si una fila sale con ERROR
+
+1. Leer el mensaje de la fila: indica el campo que debe corregirse.
+2. Corregir la fila en un Excel nuevo o en una copia del Excel original.
+3. Si esa fila tenía documento, incluir también su PDF/imagen en el ZIP del reintento.
+4. Importar únicamente las filas que fallaron.
+
+> No borrar las actas que sí se registraron. No volver a importar un ZIP completo solo por una fila fallida, salvo que se haya verificado que todas las actas del lote están sin documento.
+
+**Límites:** máximo **30.000 filas** por lote y **500 MB por archivo** cargado. Para lotes históricos grandes, se recomienda empezar con una prueba de 5 a 10 filas.
 
 ---
 
@@ -271,7 +331,10 @@ Verificar conexión a la red interna de la municipalidad. Si el problema persist
 Abrir el detalle del acta → botón **Imprimir** → en la ventana que se abre, usar Ctrl+P o el botón RE-IMPRIMIR.
 
 **¿Cuántos usuarios pueden usar el sistema al mismo tiempo?**
-El sistema soporta múltiples usuarios concurrentes sin degradación del rendimiento.
+El sistema permite trabajo simultáneo. Si se percibe lentitud, guardar el trabajo en curso y comunicarlo al administrador.
 
 **¿Dónde están guardados los archivos digitalizados?**
-En el servidor de la municipalidad, dentro de la carpeta `uploads/` del sistema. Se recomienda realizar backups periódicos de esta carpeta junto con la base de datos.
+Se guardan de forma segura en el servidor de la municipalidad. El personal usuario no debe mover, renombrar ni eliminar archivos directamente desde el servidor.
+
+**¿Qué hago si una importación muestra “Error inesperado”?**
+No volver a cargar el mismo lote inmediatamente. Esperar unos minutos y revisar si las actas ya aparecen en el sistema. Si no aparecen, guardar una captura del mensaje y comunicarla al administrador junto con el Excel y ZIP usados.

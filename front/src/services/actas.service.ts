@@ -2,7 +2,7 @@ import api from "@/utils/api";
 import { Acta, ActaInput, EstadoActa } from "@/types/acta";
 
 export const actasService = {
-    async getAll(filtros: { q?: string; tipo?: string; anio?: string; dni?: string; numero?: string; fecha_desde?: string; fecha_hasta?: string; page?: number; limit?: number } = {}) {
+    async getAll(filtros: { q?: string; tipo?: string; anio?: string; dni?: string; numero?: string; libro?: string; fecha_desde?: string; fecha_hasta?: string; page?: number; limit?: number } = {}) {
         const { data } = await api.get<{ data: Acta[]; pagination: any }>("/actas", { params: filtros });
         return data;
     },
