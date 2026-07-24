@@ -1,395 +1,115 @@
-# Sistema de Registro Civil — Municipalidad Distrital La Unión
+# Sistema de Registro Civil — Municipalidad Distrital de La Unión
 
-Sistema web para la digitalización, gestión y búsqueda de actas civiles (nacimiento, matrimonio y defunción), solicitudes de copias certificadas, gestión de personas y auditoría de operaciones.
+Sistema web para gestionar personas, actas de nacimiento/matrimonio/defunción, documentos digitalizados, solicitudes de copias, reportes, usuarios, auditoría, backups y verificación pública.
 
----
+## Documentación oficial
 
-## Tecnologías
+| Documento | Audiencia | Formatos |
+|---|---|---|
+| Manual Técnico | Infraestructura, soporte, desarrollo, DBA y seguridad | [Markdown](MANUAL_TECNICO.md) · [HTML imprimible](MANUAL_TECNICO.html) |
+| Manual de Usuario | Usuarios finales y administradores funcionales | [Markdown](MANUAL_USUARIO.md) · [HTML imprimible](MANUAL_USUARIO.html) |
 
-| Capa | Tecnología |
-|---|---|
-| Frontend | Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4, shadcn/ui, Zustand |
-| Backend | Node.js 20+, Express 5, ES Modules |
-| Base de datos | PostgreSQL 15+ |
-| Autenticación | JWT en cookies httpOnly (access 1h + refresh 7d) |
-| Servidor web | Nginx (reverse proxy + SSL) |
-| Contenedores | Docker + Docker Compose |
+Los antiguos manuales de Instalación e Integración API están obsoletos. Su contenido vigente fue incorporado en las secciones 5 y 7 del Manual Técnico.
 
----
+> El Manual Técnico es confidencial porque contiene direcciones y credenciales operativas. No debe publicarse ni distribuirse fuera del personal autorizado.
 
-## Requisitos previos
+## Arquitectura de producción
 
-- **Node.js** 20+
-- **PostgreSQL** 15+ (o cuenta en [Neon.tech](https://neon.tech) para desarrollo)
-- **Docker** + **Docker Compose** (para producción)
+El sistema es una aplicación web monolítica en capas distribuida en cuatro VMs Debian sobre Proxmox:
 
----
+| VM | IP | Función |
+|---|---|---|
+| Frontend | `172.16.3.21` | Nginx + Next.js (`union_web`) |
+| Backend | `172.16.3.22` | Express (`union_api`) |
+| PostgreSQL | `172.16.3.23` | PostgreSQL 15 con TLS |
+| Storage | `172.16.3.24` | NFS para uploads, logs provisionados y backups |
 
-## Estructura del proyecto
+La aplicación completa se limita a la red municipal. El dominio público solo permite verificación ciudadana.
 
-```
+## Tecnologías principales
+
+- Frontend: Node.js 20, Next.js 16.1.6, React 19.2.3, TypeScript y Tailwind CSS 4.
+- Backend: Node.js 20, Express 5.2.1 y ES Modules.
+- Datos: PostgreSQL 15, `pg_trgm` y NFS.
+- Operación: Docker, Docker Compose y Nginx.
+- Autenticación: JWT en cookies `httpOnly`, refresh tokens, roles y permisos granulares.
+
+Las versiones verificadas y limitaciones se encuentran en la sección 2.3 del Manual Técnico.
+
+## Estructura del repositorio
+
+```text
 muni_union/
-├── back/                   # API REST (Node.js / Express)
-│   ├── src/
-│   │   ├── config/         # DB, logger, Swagger
-│   │   ├── controllers/    # Lógica de controladores
-│   │   ├── middlewares/    # Auth, auditoría, validación, errores
-│   │   ├── migrations/     # SQL: esquema + índices
-│   │   ├── routes/         # Definición de rutas
-│   │   └── services/       # Lógica de negocio + queries
-│   ├── uploads/            # Archivos subidos (PDFs/imágenes)
-│   └── .env                # Variables de entorno (no subir a git)
-├── front/                  # Aplicación Next.js
+├── back/                  # API Express
 │   └── src/
-│       ├── app/            # Páginas (App Router)
-│       ├── components/     # Componentes reutilizables
-│       ├── services/       # Clientes HTTP (Axios)
-│       ├── store/          # Estado global (Zustand)
-│       └── types/          # Interfaces TypeScript
-├── nginx/
-│   └── nginx.conf          # Configuración Nginx (producción)
-├── scripts/
-│   └── backup_db.sh        # Script de backup automático de BD
-└── docker-compose.yml      # Orquestación de contenedores
+│       ├── config/
+│       ├── controllers/
+│       ├── middlewares/
+│       ├── migrations/   # 000_schema.sql a 006_configuracion_sistema.sql
+│       ├── routes/
+│       └── services/
+├── front/                 # Aplicación Next.js
+│   └── src/
+│       ├── app/
+│       ├── components/
+│       ├── services/
+│       ├── store/
+│       └── types/
+├── deploy/                # Despliegue vigente de cuatro VMs
+├── nginx/                 # Configuración local/desarrollo
+├── scripts/               # Utilidades locales
+├── MANUAL_TECNICO.*
+└── MANUAL_USUARIO.*
 ```
 
----
+## Desarrollo local
 
-## Configuración — Desarrollo local
-
-### 1. Clonar el repositorio
+Requisitos: Node.js 20+, PostgreSQL 15+ y npm.
 
 ```bash
 git clone https://github.com/a1nthon1y/muni_union.git
 cd muni_union
-```
-
-### 2. Configurar variables de entorno del backend
-
-```bash
 cp back/.env.example back/.env
 ```
 
-Editar `back/.env`:
+Configure `back/.env` para el entorno local. No copie secretos de producción ni versione archivos `.env`.
 
-```env
-# Base de Datos
-DB_HOST=localhost          # o endpoint de Neon.tech para desarrollo en la nube
-DB_PORT=5432
-DB_USER=postgres
-DB_PASSWORD=tu_password
-DB_NAME=muni_union
-DB_SSL=false               # true si usas Neon.tech
-
-# Seguridad — CAMBIAR en producción (mín. 64 chars aleatorios)
-JWT_SECRET=cambia_esto_por_una_clave_larga_y_aleatoria
-REFRESH_TOKEN_SECRET=cambia_esto_tambien_diferente_a_la_anterior
-
-# Servidor
-PORT=4000
-NODE_ENV=development
-
-# Frontend (para CORS) — separar por comas si hay varios puertos
-FRONTEND_URL=http://localhost:3000,http://localhost:3003
-```
-
-### 3. Preparar la base de datos
-
-```sql
--- En psql como postgres
-CREATE DATABASE muni_union;
-CREATE EXTENSION IF NOT EXISTS pg_trgm;  -- requerida para búsqueda fuzzy
-```
-
-Aplicar migraciones:
+Aplique las migraciones en orden:
 
 ```bash
-psql -U postgres -d muni_union -f back/src/migrations/001_schema.sql
-psql -U postgres -d muni_union -f back/src/migrations/002_indexes.sql
+for archivo in back/src/migrations/00{0..6}_*.sql; do
+  psql -U postgres -d muni_union -v ON_ERROR_STOP=1 -f "$archivo"
+done
 ```
 
-### 4. Instalar dependencias y arrancar
+Inicie cada componente:
 
 ```bash
-# Backend
+# Terminal 1
 cd back && npm install && npm run dev
-# Escucha en: http://localhost:4000
 
-# Frontend (nueva terminal)
+# Terminal 2
 cd front && npm install && npm run dev
-# Escucha en: http://localhost:3000
 ```
 
----
+- Frontend local: `http://localhost:3000`.
+- Backend local: `http://localhost:4000`.
+- Health: `http://localhost:4000/api/health`.
+- Swagger: `http://localhost:4000/api/docs`, solo desarrollo y con cobertura parcial (13 de 56 operaciones).
 
-## Documentación de la API (Swagger)
+## Producción
 
-Disponible **solo en modo desarrollo** en:
+No utilice el `docker-compose.yml` raíz ni las configuraciones legacy como guía de producción. El procedimiento oficial está en:
 
-```
-http://localhost:4000/api/docs
-```
+- Manual Técnico, sección 5: requisitos, instalación y despliegue.
+- Manual Técnico, sección 6: seguridad digital.
+- Manual Técnico, sección 7: catálogo completo de 56 endpoints e interoperabilidad.
+- Manual Técnico, sección 9: backups, restauración, actualización y diagnóstico.
 
-Incluye todos los endpoints documentados con ejemplos de request/response.
-Para autenticarse en Swagger: primero hacer `POST /api/auth/login` — la cookie se
-establecerá automáticamente en el navegador.
+Orden de encendido: `.24 → .23 → .22 → .21`. Apagado planificado: orden inverso.
 
-> En producción Swagger está deshabilitado por seguridad.
+## Estado de integraciones
 
----
+Implementado: API REST interna y verificación pública limitada.
 
-## Credenciales por defecto
-
-| Campo | Valor |
-|---|---|
-| Usuario | `aespinoza` |
-| Contraseña | `123456` |
-| Rol | Administrador |
-
-> **Cambiar la contraseña inmediatamente en producción** desde Gestión de Usuarios.
-
----
-
-## Roles del sistema
-
-| Rol ID | Nombre | Acceso |
-|---|---|---|
-| 1 | Administrador | Acceso total: usuarios, auditoría, CRUD completo |
-| 2 | Operador | Digitalización, personas, actas, solicitudes |
-
----
-
-## Tipos de actas
-
-| Tipo | Descripción |
-|---|---|
-| `NACIMIENTO` | Acta de nacimiento |
-| `MATRIMONIO` | Acta de matrimonio (requiere datos de cónyuge) |
-| `DEFUNCION` | Acta de defunción |
-
-### Modos de numeración
-
-- **Libro Clásico**: requiere `libro` + `número de acta` + `año`. El sistema sugiere automáticamente el siguiente número disponible por libro.
-- **RENIEC (CUI)**: requiere código CUI único. El sistema sugiere el siguiente CUI por tipo y año.
-
----
-
-## Endpoints principales
-
-| Método | Ruta | Descripción |
-|---|---|---|
-| POST | `/api/auth/login` | Iniciar sesión |
-| POST | `/api/auth/logout` | Cerrar sesión |
-| POST | `/api/auth/refresh` | Renovar token de acceso |
-| GET | `/api/auth/me` | Datos del usuario autenticado |
-| GET | `/api/personas` | Listar personas (paginado + búsqueda) |
-| GET | `/api/actas` | Listar actas (filtros: tipo, año, DNI, fecha) |
-| GET | `/api/actas/siguiente-numero` | Sugerir siguiente número de acta |
-| POST | `/api/actas` | Registrar nueva acta |
-| GET | `/api/solicitudes` | Listar solicitudes de copias certificadas |
-| GET | `/api/reportes/dashboard` | Estadísticas del dashboard |
-| POST | `/api/importacion/actas` | Carga masiva de actas (Excel/CSV) |
-| GET | `/api/auditoria` | Registro de auditoría (solo admin) |
-
-Ver documentación completa en `/api/docs` (modo desarrollo).
-
----
-
-## Arquitectura de red — Acceso dual
-
-El sistema opera con **dos puntos de entrada separados por Nginx**:
-
-| Entrada | Quién accede | Qué expone |
-|---|---|---|
-| IP/dominio **interno** (LAN) | Trabajadores de la municipalidad | Sistema completo (login, actas, solicitudes, reportes, etc.) |
-| IP/dominio **público** (internet) | Ciudadanos en cualquier red | Solo `/verificar` — portal de verificación de constancias |
-
-```
-Internet ──► verificar.muniunion.gob.pe ──► Nginx ──► solo /verificar/*
-Red LAN  ──► 192.168.x.x (o hostname)  ──► Nginx ──► sistema completo
-                                                    │
-                                          Next.js + Express + PostgreSQL
-                                          (una sola instancia en el servidor)
-```
-
-> **Beneficio:** Una sola instalación en el servidor on-premise. Nginx hace toda la separación. El portal público no requiere segunda VM ni segundo servidor.
-
----
-
-## Despliegue en producción (on-premise / servidor)
-
-### Requisitos del servidor
-
-- Ubuntu 22.04 LTS (recomendado)
-- Docker Engine + Docker Compose
-- **Dos IPs o un dominio público + IP interna fija**
-- Certificados SSL para cada entrada (ver paso 2)
-
-### 1. Variables de entorno de producción
-
-Crear `.env` en la raíz del proyecto:
-
-```env
-# Base de datos
-DB_USER=postgres
-DB_PASSWORD=password_muy_seguro_cambiar
-DB_NAME=muni_union
-
-# Seguridad — generar con: openssl rand -base64 64
-JWT_SECRET=...64_caracteres_aleatorios...
-REFRESH_TOKEN_SECRET=...64_caracteres_aleatorios_diferentes...
-
-# Red interna — trabajadores (IP o hostname LAN)
-INTERNAL_DOMAIN=192.168.1.100
-FRONTEND_URL=https://192.168.1.100
-
-# Portal público — ciudadanos (dominio con acceso a internet)
-PUBLIC_DOMAIN=verificar.muniunion.gob.pe
-NEXT_PUBLIC_API_URL=https://192.168.1.100/api
-```
-
-### 2. Certificados SSL
-
-```bash
-# Certificado INTERNO (autofirmado para la LAN)
-mkdir -p nginx/ssl/internal
-openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
-  -keyout nginx/ssl/internal/key.pem \
-  -out    nginx/ssl/internal/cert.pem \
-  -subj "/CN=192.168.1.100/O=Municipalidad La Union"
-
-# Certificado PÚBLICO (Let's Encrypt si hay dominio público)
-mkdir -p nginx/ssl/public
-# Opción A — Let's Encrypt (requiere dominio y puerto 80 abierto):
-#   certbot certonly --standalone -d verificar.muniunion.gob.pe
-#   cp /etc/letsencrypt/live/verificar.muniunion.gob.pe/fullchain.pem nginx/ssl/public/cert.pem
-#   cp /etc/letsencrypt/live/verificar.muniunion.gob.pe/privkey.pem   nginx/ssl/public/key.pem
-#
-# Opción B — autofirmado (si no hay dominio público):
-openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
-  -keyout nginx/ssl/public/key.pem \
-  -out    nginx/ssl/public/cert.pem \
-  -subj "/CN=verificar.muniunion.gob.pe/O=Municipalidad La Union"
-```
-
-### 3. Levantar todos los servicios
-
-```bash
-docker compose up -d --build
-```
-
-Servicios que levanta:
-- `union_db` — PostgreSQL 15 en `127.0.0.1:5432` (no expuesto a la red externa)
-- `union_api` — Backend Node.js en puerto `4000` (interno)
-- `union_web` — Frontend Next.js en puerto `3000` (interno)
-- `union_nginx` — Nginx en puertos `80` y `443` (público)
-
-### 4. Aplicar migraciones en producción
-
-```bash
-docker exec -it union_db psql -U postgres -d muni_union \
-  -f /docker-entrypoint-initdb.d/001_schema.sql
-docker exec -it union_db psql -U postgres -d muni_union \
-  -f /docker-entrypoint-initdb.d/002_indexes.sql
-```
-
-### 5. Verificar que todo funciona
-
-```bash
-docker compose ps          # todos en estado "running"
-docker compose logs -f     # ver logs en tiempo real
-curl http://localhost/api  # debe responder JSON
-```
-
----
-
-## Backup de la base de datos
-
-Script automático disponible en `scripts/backup_db.sh`.
-
-Ejecutar manualmente:
-
-```bash
-chmod +x scripts/backup_db.sh
-./scripts/backup_db.sh
-```
-
-Los backups se guardan en `backups/` con formato `backup_YYYYMMDD_HHMMSS.sql.gz`.
-
-Para automatizar con cron (diario a las 2am):
-
-```bash
-crontab -e
-# Agregar:
-0 2 * * * /ruta/al/proyecto/scripts/backup_db.sh >> /var/log/backup_muni.log 2>&1
-```
-
-Restaurar un backup:
-
-```bash
-gunzip -c backups/backup_20260414_020000.sql.gz | psql -U postgres -d muni_union
-```
-
----
-
-## Migración de BD: Neon → on-premise
-
-Para exportar el esquema desde Neon y llevarlo al servidor de producción:
-
-```bash
-# Exportar solo esquema (sin datos)
-pg_dump \
-  --schema-only \
-  --no-owner \
-  --no-privileges \
-  "postgresql://usuario:password@ep-xxx.neon.tech/neondb?sslmode=require" \
-  -f esquema.sql
-
-# Importar en servidor on-premise
-psql -U postgres -d muni_union -f esquema.sql
-```
-
-Para exportar con datos:
-
-```bash
-pg_dump \
-  --no-owner \
-  --no-privileges \
-  "postgresql://usuario:password@ep-xxx.neon.tech/neondb?sslmode=require" \
-  -f backup_completo.sql
-```
-
----
-
-## Consideraciones de seguridad para producción
-
-- [ ] Cambiar `JWT_SECRET` y `REFRESH_TOKEN_SECRET` por valores aleatorios de 64+ chars
-- [ ] Cambiar contraseña del usuario administrador por defecto
-- [ ] Configurar certificados SSL válidos en `nginx/ssl/`
-- [ ] Asegurarse que `NODE_ENV=production` (deshabilita Swagger y logs detallados)
-- [ ] El puerto `5432` de PostgreSQL NO debe estar expuesto a internet (Docker lo maneja)
-- [ ] Configurar reglas de firewall: solo puertos `80` y `443` públicos
-- [ ] Habilitar backup automático con cron
-
----
-
-## Funcionalidades implementadas
-
-- **Digitalización de actas**: registro de actas de nacimiento, matrimonio y defunción con archivo digital adjunto (PDF/imagen)
-- **Auto-sugerencia de numeración**: el sistema sugiere automáticamente el siguiente número de acta por tipo, año, libro y modo
-- **Búsqueda inteligente**: búsqueda por nombre, DNI o número de acta con tolerancia a errores tipográficos (GIN + pg_trgm)
-- **Gestión de personas**: registro de ciudadanos con validación de duplicados por nombre
-- **Solicitudes de copias certificadas**: flujo de atención y anulación con trazabilidad
-- **Carga masiva (Excel/CSV)**: importación de actas en lote con validación
-- **Auditoría completa**: registro automático de todas las operaciones del sistema
-- **Dashboard con gráficos**: evolución de actas por mes y estado de solicitudes
-- **Gestión de usuarios y roles**: administrador y operador
-- **Autenticación segura**: cookies httpOnly, refresh automático de token, logout total
-- **Exportación a Excel**: todas las tablas son exportables
-- **Diseño responsive**: optimizado para escritorio, tablet y móvil
-
----
-
-## Repositorio
-
-[https://github.com/a1nthon1y/muni_union](https://github.com/a1nthon1y/muni_union)
+No implementado: PISP, consultas en línea RENIEC/SUNARP, webhooks, colas, ESB y API keys por integrador.

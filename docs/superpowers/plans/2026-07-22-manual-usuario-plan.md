@@ -27,15 +27,15 @@
 - Consumes: flujos visibles del frontend y validaciones confirmadas del backend.
 - Produces: guía operativa lista para personal municipal.
 
-- [ ] **Step 1: Reemplazar el contenido con una estructura orientada a tareas**
+- [x] **Step 1: Reemplazar el contenido con una estructura orientada a tareas**
 
 Incluir: acceso, navegación, consulta de actas, registro manual, digitalización, personas, trámites, importación masiva, resultados de importación, errores frecuentes, seguridad y soporte.
 
-- [ ] **Step 2: Documentar importación masiva con reglas verificadas**
+- [x] **Step 2: Documentar importación masiva con reglas verificadas**
 
-Especificar `.xlsx`/`.xls`, ZIP opcional, relación `nombre_archivo_pdf`/`carpeta_ruta`, `fecha_acta`, sexo `M`/`F`, comportamiento de `OK`, `OMITIDO`, `OMITIDO_DOC`, `ERROR`, límite de 30.000 filas y espera de hasta 10 minutos.
+Especificar `.xlsx`/`.xls`, ZIP opcional, relación `nombre_archivo_pdf`/`carpeta_ruta`, `fecha_acta`, sexo `M`/`F`, comportamiento de `OK`, `OMITIDO`, `OMITIDO_DOC`, `ERROR`, límite de 30.000 filas y timeout del cliente de 1.000.000 ms (aprox. 16 min 40 s).
 
-- [ ] **Step 3: Revisar precisión**
+- [x] **Step 3: Revisar precisión**
 
 Verificar que no se mencione CSV, límite de 25 MB para digitalización, auto-fusión segura de ciudadanos sin DNI ni afirmaciones de rendimiento no demostradas.
 
@@ -48,15 +48,15 @@ Verificar que no se mencione CSV, límite de 25 MB para digitalización, auto-fu
 - Consumes: la estructura y el texto final de `MANUAL_USUARIO.md`.
 - Produces: manual HTML coherente y apto para Guardar como PDF.
 
-- [ ] **Step 1: Actualizar índice y secciones**
+- [x] **Step 1: Actualizar índice y secciones**
 
 Replicar el contenido operativo del Markdown y conservar anclas navegables.
 
-- [ ] **Step 2: Incorporar estilos de impresión**
+- [x] **Step 2: Incorporar estilos de impresión**
 
 Usar `@page` A4, encabezado y pie institucionales, bloques de advertencia legibles en escala de grises y evitar cortar pasos numerados o tablas entre páginas.
 
-- [ ] **Step 3: Verificar impresión**
+- [x] **Step 3: Verificar impresión**
 
 Abrir el HTML en navegador, usar vista previa de impresión y comprobar que el índice, encabezados, avisos y listas se imprimen completos.
 
@@ -70,11 +70,11 @@ Abrir el HTML en navegador, usar vista previa de impresión y comprobar que el �
 - Consumes: ambas versiones actualizadas.
 - Produces: manual consistente listo para revisión municipal.
 
-- [ ] **Step 1: Comparar secciones clave**
+- [x] **Step 1: Comparar secciones clave**
 
 Confirmar que ambos documentos incluyan los mismos límites, extensiones aceptadas, estados de importación y advertencias.
 
-- [ ] **Step 2: Revisar lenguaje**
+- [x] **Step 2: Revisar lenguaje**
 
 Eliminar jerga técnica no necesaria y asegurar que cada instrucción indique dónde hacer clic y qué resultado esperar.
 
