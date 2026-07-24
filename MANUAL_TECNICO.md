@@ -1,7 +1,7 @@
 # MANUAL TÉCNICO
 ## Sistema de Registro Civil
 
-**Municipalidad Distrital de La Unión — Piura, Perú**
+**Municipalidad Distrital de La Unión Leticia — Tarma, Perú**
 
 > **CONFIDENCIAL — USO INTERNO MUNICIPAL**
 > Este documento contiene arquitectura, direcciones de red y credenciales operativas. Su distribución se limita al personal autorizado por la Municipalidad.
@@ -12,7 +12,7 @@
 |---|---|
 | Documento | Manual Técnico del Sistema de Registro Civil |
 | Código documental | No proporcionado por la entidad |
-| Entidad | Municipalidad Distrital de La Unión |
+| Entidad | Municipalidad Distrital de La Unión Leticia |
 | Versión del manual | `1.0.0` |
 | Fecha de edición | 23 de julio de 2026 |
 | Estado | Versión final |
@@ -96,7 +96,7 @@ Este manual está dirigido a:
 
 ### 1.1. Propósito del documento
 
-El presente Manual Técnico centraliza la información necesaria para comprender, administrar, desplegar, integrar, mantener y recuperar el Sistema de Registro Civil de la Municipalidad Distrital de La Unión.
+El presente Manual Técnico centraliza la información necesaria para comprender, administrar, desplegar, integrar, mantener y recuperar el Sistema de Registro Civil de la Municipalidad Distrital de La Unión Leticia.
 
 Sus objetivos son:
 

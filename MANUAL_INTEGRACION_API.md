@@ -1,6 +1,6 @@
 # Manual de Integración API — OBSOLETO
 
-**Municipalidad Distrital de La Unión — Piura, Perú**
+**Municipalidad Distrital de La Unión Leticia — Tarma, Perú**
 
 > Este documento dejó de ser una referencia vigente el 23 de julio de 2026.
 

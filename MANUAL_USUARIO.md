@@ -1,7 +1,7 @@
 # MANUAL DE USUARIO
 ## Sistema de Registro Civil
 
-**Municipalidad Distrital de La Unión — Piura, Perú**
+**Municipalidad Distrital de La Unión Leticia — Tarma, Perú**
 
 > **USO INTERNO MUNICIPAL**
 > Este documento describe tareas visibles en la aplicación. No contiene credenciales ni instrucciones de servidores.
@@ -54,7 +54,7 @@ El contenedor limita automáticamente el ancho, conserva la proporción y evita 
 
 ### 1.1. Propósito del manual y público objetivo
 
-Este manual orienta al personal autorizado en el uso funcional del Sistema de Registro Civil de la Municipalidad Distrital de La Unión. Explica el acceso, la navegación, el registro y consulta de información, la atención de solicitudes, los reportes y las funciones administrativas.
+Este manual orienta al personal autorizado en el uso funcional del Sistema de Registro Civil de la Municipalidad Distrital de La Unión Leticia. Explica el acceso, la navegación, el registro y consulta de información, la atención de solicitudes, los reportes y las funciones administrativas.
 
 | Perfil | Uso principal |
 |---|---|
