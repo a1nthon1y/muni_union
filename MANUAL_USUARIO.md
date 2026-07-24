@@ -11,7 +11,7 @@
 | Campo | Valor |
 |---|---|
 | Documento | Manual de Usuario del Sistema de Registro Civil |
-| Versión | `1.5.0` |
+| Versión | `1.0.0` |
 | Fecha | 23 de julio de 2026 |
 | Estado | Borrador estructurado — pendiente de capturas reales y aprobación institucional |
 | Audiencia | ADMIN, REGISTRADOR y personal de ventanilla con cuenta REGISTRADOR |
@@ -768,4 +768,4 @@ Para red, certificado, backup, API o servidores, el personal técnico consulta e
 
 ---
 
-**Fin del Manual de Usuario — versión 1.5.0**
+**Fin del Manual de Usuario — versión 1.0.0**

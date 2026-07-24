@@ -13,7 +13,7 @@
 | Documento | Manual Técnico del Sistema de Registro Civil |
 | Código documental | No proporcionado por la entidad |
 | Entidad | Municipalidad Distrital de La Unión |
-| Versión del manual | `1.4.0` |
+| Versión del manual | `1.0.0` |
 | Fecha de edición | 23 de julio de 2026 |
 | Estado | Borrador técnico completo — pendiente de aprobación institucional |
 | Propietario del documento | No informado por la entidad |
@@ -25,8 +25,7 @@
 
 | Versión | Fecha | Descripción | Responsable |
 |---|---|---|---|
-| `1.3.0` | Julio de 2026 | Documentación operativa de la producción inicial | Equipo del proyecto |
-| `1.4.0` | 23/07/2026 | Adecuación a la estructura técnica institucional | Equipo del proyecto |
+| `1.0.0` | 23/07/2026 | Emisión inicial del Manual Técnico institucional | Equipo del proyecto |
 
 ### Lectores autorizados
 
