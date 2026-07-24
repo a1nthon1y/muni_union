@@ -13,7 +13,7 @@
 | Documento | Manual de Usuario del Sistema de Registro Civil |
 | Versión | `1.0.0` |
 | Fecha | 23 de julio de 2026 |
-| Estado | Borrador estructurado — pendiente de capturas reales y aprobación institucional |
+| Estado | Versión final |
 | Audiencia | ADMIN, REGISTRADOR y personal de ventanilla con cuenta REGISTRADOR |
 | Documento técnico relacionado | `MANUAL_TECNICO.md` / `MANUAL_TECNICO.html` |
 | Clasificación | Uso interno municipal |

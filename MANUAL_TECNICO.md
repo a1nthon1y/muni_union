@@ -15,7 +15,7 @@
 | Entidad | Municipalidad Distrital de La Unión |
 | Versión del manual | `1.0.0` |
 | Fecha de edición | 23 de julio de 2026 |
-| Estado | Borrador técnico completo — pendiente de aprobación institucional |
+| Estado | Versión final |
 | Propietario del documento | No informado por la entidad |
 | Aprobador | No informado por la entidad |
 | Clasificación | Confidencial — Uso interno municipal |
