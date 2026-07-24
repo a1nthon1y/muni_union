@@ -99,8 +99,11 @@ export function UsuarioSheet({
     const watchNombres = form.watch("nombres");
     const watchApellidos = form.watch("apellidos");
 
-    // Efecto para sincronizar el username si el usuario NO lo ha tocado manualmente
+    // Solo sugerir username al crear. Al editar se conserva exactamente el
+    // username almacenado (incluidos sufijos por homónimos o ajustes manuales).
     useEffect(() => {
+        if (usuario) return;
+
         if (!isUsernameTouched && watchNombres && watchApellidos) {
             const inicial = limpiar(watchNombres)[0];
             const primerApellido = limpiar(watchApellidos.split(" ")[0]);
@@ -109,7 +112,7 @@ export function UsuarioSheet({
                 form.setValue("username", `${inicial}${primerApellido}`);
             }
         }
-    }, [watchNombres, watchApellidos, isUsernameTouched, form]);
+    }, [usuario, watchNombres, watchApellidos, isUsernameTouched, form]);
 
     useEffect(() => {
         if (open) {
