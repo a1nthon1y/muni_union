@@ -7,7 +7,7 @@ import { construirFiltrosActas } from "./actas-filtros.js";
 // Columnas del titular (sin prefijo — compatibilidad con frontend existente)
 const TITULAR_COLS = `
     p.nombres, p.apellido_paterno, p.apellido_materno,
-    p.dni, p.sexo, p.fecha_nacimiento, p.telefono, p.direccion
+    p.dni, p.sexo, p.fecha_nacimiento, p.fecha_fallecimiento, p.telefono, p.direccion
 `;
 
 // Columnas del cónyuge con prefijo p2_ (solo para matrimonios)
@@ -18,6 +18,7 @@ const CONYUGE_COLS = `
     p2.dni              AS p2_dni,
     p2.sexo             AS p2_sexo,
     p2.fecha_nacimiento AS p2_fecha_nacimiento,
+    p2.fecha_fallecimiento AS p2_fecha_fallecimiento,
     p2.telefono         AS p2_telefono
 `;
 

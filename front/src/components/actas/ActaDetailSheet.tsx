@@ -123,6 +123,15 @@ export function ActaDetailSheet({ isOpen, onClose, acta, onEdit }: ActaDetailShe
                                         {dateUtils.formatDisplayDate(acta.fecha_nacimiento)}
                                     </p>
                                 </div>
+                                {acta.fecha_fallecimiento && (
+                                    <div>
+                                        <p className="text-xs text-muted-foreground font-medium mb-0.5">Fecha de Fallecimiento</p>
+                                        <p className="text-sm text-foreground/70 flex items-center gap-1.5">
+                                            <Cross className="h-3.5 w-3.5 text-muted-foreground" />
+                                            {dateUtils.formatDisplayDate(acta.fecha_fallecimiento)}
+                                        </p>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
@@ -175,6 +184,15 @@ export function ActaDetailSheet({ isOpen, onClose, acta, onEdit }: ActaDetailShe
                                         <p className="text-xs text-muted-foreground font-medium mb-0.5">Fecha de Nacimiento</p>
                                         <p className="text-sm text-foreground/70">{dateUtils.formatDisplayDate(acta.p2_fecha_nacimiento)}</p>
                                     </div>
+                                    {acta.p2_fecha_fallecimiento && (
+                                        <div className="col-span-2 mt-1">
+                                            <p className="text-xs text-muted-foreground font-medium mb-0.5">Fecha de Fallecimiento</p>
+                                            <p className="text-sm text-foreground/70 flex items-center gap-1.5">
+                                                <Cross className="h-3.5 w-3.5 text-muted-foreground" />
+                                                {dateUtils.formatDisplayDate(acta.p2_fecha_fallecimiento)}
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>

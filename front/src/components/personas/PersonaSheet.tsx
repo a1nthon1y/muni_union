@@ -43,6 +43,7 @@ const personaSchema = z.object({
     apellido_materno: z.string().min(2, "Apellido Materno es obligatorio"),
     sexo: z.string().min(1, "Seleccione sexo"),
     fecha_nacimiento: z.string().optional().or(z.literal("")),
+    fecha_fallecimiento: z.string().optional().or(z.literal("")),
     telefono: z.string().max(9, "Max 9 dígitos").optional().or(z.literal("")),
     direccion: z.string().optional().or(z.literal("")),
     observaciones: z.string().optional().or(z.literal("")),
@@ -90,6 +91,7 @@ export function PersonaSheet({
             apellido_materno: "",
             sexo: 'M',
             fecha_nacimiento: "",
+            fecha_fallecimiento: "",
             telefono: "",
             direccion: "",
             observaciones: "",
@@ -107,6 +109,7 @@ export function PersonaSheet({
                     apellido_materno: persona.apellido_materno || "",
                     sexo: (persona.sexo as any) || 'M',
                     fecha_nacimiento: dateUtils.formatInputDate(persona.fecha_nacimiento),
+                    fecha_fallecimiento: dateUtils.formatInputDate(persona.fecha_fallecimiento),
                     telefono: persona.telefono || "",
                     direccion: persona.direccion || "",
                     observaciones: persona.observaciones || "",
@@ -120,6 +123,7 @@ export function PersonaSheet({
                     apellido_materno: "",
                     sexo: 'M',
                     fecha_nacimiento: "",
+                    fecha_fallecimiento: "",
                     telefono: "",
                     direccion: "",
                     observaciones: "",
@@ -139,6 +143,7 @@ export function PersonaSheet({
                 apellido_materno: values.apellido_materno.toUpperCase(),
                 sexo: values.sexo as 'M' | 'F',
                 fecha_nacimiento: values.fecha_nacimiento || undefined,
+                fecha_fallecimiento: values.fecha_fallecimiento || undefined,
                 telefono: values.telefono || undefined,
                 direccion: values.direccion?.toUpperCase() || undefined,
                 observaciones: values.observaciones || undefined,
@@ -337,26 +342,47 @@ export function PersonaSheet({
                                 />
                             </div>
 
-                            <FormField
-                                control={form.control}
-                                name="telefono"
-                                render={({ field }) => (
-                                    <FormItem className="max-w-[200px]">
-                                        <FormLabel className="std-label flex items-center gap-2">
-                                            <Phone className="h-3 w-3 text-primary" /> Teléfono
-                                        </FormLabel>
-                                        <FormControl>
-                                            <Input
-                                                {...field}
-                                                placeholder="999..."
-                                                maxLength={9}
-                                                className="std-input h-10 font-semibold"
-                                            />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
+                            <div className="grid grid-cols-2 gap-4">
+                                <FormField
+                                    control={form.control}
+                                    name="fecha_fallecimiento"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel className="std-label flex items-center gap-2">
+                                                <Calendar className="h-3 w-3 text-primary" /> F. Fallecimiento
+                                            </FormLabel>
+                                            <FormControl>
+                                                <Input
+                                                    {...field}
+                                                    type="date"
+                                                    className="std-input h-10 font-semibold"
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="telefono"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel className="std-label flex items-center gap-2">
+                                                <Phone className="h-3 w-3 text-primary" /> Teléfono
+                                            </FormLabel>
+                                            <FormControl>
+                                                <Input
+                                                    {...field}
+                                                    placeholder="999..."
+                                                    maxLength={9}
+                                                    className="std-input h-10 font-semibold"
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
 
                             <FormField
                                 control={form.control}

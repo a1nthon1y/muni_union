@@ -7,6 +7,7 @@ export interface Persona {
     apellido_materno: string;
     sexo: 'M' | 'F';
     fecha_nacimiento?: string; // Opcional
+    fecha_fallecimiento?: string; // Opcional
     telefono?: string;
     direccion?: string;
     observaciones?: string;
@@ -20,9 +21,10 @@ export interface PersonaInput {
     nombres: string;
     apellido_paterno: string;
     apellido_materno: string;
-    sexo?: 'M' | 'F';
-    fecha_nacimiento?: string;
-    telefono?: string;
+    sexo?: 'M' | 'F' | null;
+    fecha_nacimiento?: string | null;
+    fecha_fallecimiento?: string | null;
+    telefono?: string | null;
     direccion?: string;
     observaciones?: string;
 }

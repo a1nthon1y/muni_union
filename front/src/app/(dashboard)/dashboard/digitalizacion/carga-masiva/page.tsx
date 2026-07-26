@@ -242,7 +242,7 @@ export default function CargaMasivaPage() {
                                 <span className="text-[9px] text-slate-500">Segundo apellido del titular.</span>
                             </li>
                             <li className="flex flex-col">
-                                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">dni / tipo_documento / sexo / fecha_nacimiento</span>
+                                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">dni / tipo_documento / sexo / fecha_nacimiento / fecha_fallecimiento</span>
                                 <span className="text-[9px] text-slate-500">Datos adicionales. tipo_documento: DNI, CARNET EXTR., PASAPORTE, etc.</span>
                             </li>
                         </ul>
@@ -257,7 +257,7 @@ export default function CargaMasivaPage() {
                                 <span className="text-[9px] text-slate-500">Obligatorios para actas de MATRIMONIO. Se busca o crea automáticamente.</span>
                             </li>
                             <li className="flex flex-col">
-                                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">conyuge_dni / conyuge_sexo / conyuge_fecha_nacimiento</span>
+                                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">conyuge_dni / conyuge_sexo / conyuge_fecha_nacimiento / conyuge_fecha_fallecimiento</span>
                                 <span className="text-[9px] text-slate-500">Datos opcionales del cónyuge.</span>
                             </li>
                         </ul>

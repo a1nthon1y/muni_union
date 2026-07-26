@@ -21,6 +21,7 @@ export interface Acta {
     dni?: string;
     sexo?: "M" | "F";
     fecha_nacimiento?: string;
+    fecha_fallecimiento?: string;
     telefono?: string;
     direccion?: string;
     // Datos del cónyuge (persona_secundaria — solo MATRIMONIO)
@@ -30,6 +31,7 @@ export interface Acta {
     p2_dni?: string;
     p2_sexo?: "M" | "F";
     p2_fecha_nacimiento?: string;
+    p2_fecha_fallecimiento?: string;
     p2_telefono?: string;
     // Documento digital
     tiene_documento?: boolean;
