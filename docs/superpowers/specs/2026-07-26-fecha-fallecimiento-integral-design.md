@@ -79,22 +79,17 @@ La conversión de fechas utilizará una función estable que no dependa de la zo
 
 Al modificar tipo, libro, número o modo de un acta previamente detectada se invalidará inmediatamente `actaEncontrada`. La búsqueda posterior podrá volver a identificarla. El envío comprobará que el acta retenida todavía coincide con el identificador construido antes de decidir entre crear y actualizar.
 
-## 6. Pruebas
+## 6. Pruebas y build
 
-Se añadirán pruebas para:
+Se añadirán únicamente pruebas dirigidas a los comportamientos críticos:
 
-- migración idempotente;
-- creación con y sin fecha de fallecimiento;
 - actualización, conservación por omisión y eliminación con `null`;
 - rechazo de formato inválido y cronología imposible;
 - importación de titular encontrado por DNI;
-- importación de titular y cónyuge nuevos o existentes;
 - columnas y valores de Excel de Personas y Actas;
-- validación de formularios;
-- invalidación de una acta detectada cuando cambia su identidad;
-- renderizado condicional en listado, detalle e impresión.
+- invalidación de una acta detectada cuando cambia su identidad.
 
-También se ejecutarán build y pruebas completas de Frontend y Backend. Los errores de lint preexistentes se distinguirán de cualquier error nuevo en los archivos modificados.
+No se ampliará la batería con pruebas redundantes de renderizado ni se ejecutarán builds intermedios. Al terminar todos los cambios se ejecutará una sola vez el build de Frontend y Backend, además de las pruebas dirigidas anteriores. Los errores de lint preexistentes se distinguirán de cualquier error nuevo en los archivos modificados.
 
 ## 7. Documentación
 
