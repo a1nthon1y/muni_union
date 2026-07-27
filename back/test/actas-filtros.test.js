@@ -24,3 +24,29 @@ test("el filtro libro compara exactamente el segmento L del código", () => {
     assert.deepEqual(params, ["L2"]);
     assert.deepEqual(clausulas, ["split_part(a.numero_acta, '-', 2) = $1"]);
 });
+
+test("cada palabra del ciudadano se busca de forma independiente", () => {
+    const { clausulas, params } = construirFiltrosActas({
+        q: "  QUISPE   RAMOS juan ",
+    });
+
+    assert.deepEqual(params, ["%QUISPE%", "%RAMOS%", "%juan%"]);
+    assert.equal(clausulas.length, 3);
+    assert.match(clausulas[0], /p\.apellido_paterno/);
+    assert.match(clausulas[0], /p2\.apellido_paterno/);
+});
+
+test("persona_id incluye titular y cónyuge por ID exacto", () => {
+    const { clausulas, params } = construirFiltrosActas({ persona_id: "42" });
+
+    assert.deepEqual(params, [42]);
+    assert.deepEqual(clausulas, [
+        "(a.persona_principal_id = $1 OR a.persona_secundaria_id = $1)",
+    ]);
+});
+
+test("persona_id inválido no agrega un filtro", () => {
+    const { clausulas, params } = construirFiltrosActas({ persona_id: "abc" });
+
+    assert.deepEqual({ clausulas, params }, { clausulas: [], params: [] });
+});

@@ -4,18 +4,33 @@ const agregarParametro = (params, value) => {
 };
 
 export const construirFiltrosActas = (filtros = {}) => {
-    const { q, tipo, anio, dni, numero, libro, fecha_desde, fecha_hasta } = filtros;
+    const {
+        q, tipo, anio, dni, numero, libro,
+        fecha_desde, fecha_hasta, persona_id,
+    } = filtros;
     const clausulas = [];
     const params = [];
 
-    if (q?.trim()) {
-        const placeholder = agregarParametro(params, `%${q.trim()}%`);
+    const terminos = q?.trim().split(/\s+/).filter(Boolean) ?? [];
+    for (const termino of terminos) {
+        const placeholder = agregarParametro(params, `%${termino}%`);
         clausulas.push(`(
-            (p.apellido_paterno  || ' ' || p.apellido_materno  || ' ' || p.nombres) ILIKE ${placeholder}
-            OR (p2.apellido_paterno || ' ' || p2.apellido_materno || ' ' || p2.nombres) ILIKE ${placeholder}
-            OR p.dni ILIKE ${placeholder}
-            OR p2.dni ILIKE ${placeholder}
+            concat_ws(' ', p.apellido_paterno, p.apellido_materno, p.nombres) ILIKE ${placeholder}
+            OR concat_ws(' ', p2.apellido_paterno, p2.apellido_materno, p2.nombres) ILIKE ${placeholder}
+            OR COALESCE(p.dni, '') ILIKE ${placeholder}
+            OR COALESCE(p2.dni, '') ILIKE ${placeholder}
         )`);
+    }
+
+    const personaIdTexto = persona_id?.toString().trim();
+    if (personaIdTexto && /^\d+$/.test(personaIdTexto)) {
+        const personaId = Number.parseInt(personaIdTexto, 10);
+        if (personaId > 0) {
+            const placeholder = agregarParametro(params, personaId);
+            clausulas.push(
+                `(a.persona_principal_id = ${placeholder} OR a.persona_secundaria_id = ${placeholder})`,
+            );
+        }
     }
 
     if (tipo?.trim()) {
