@@ -643,7 +643,7 @@ muni_union/
 │   │   ├── config/          Configuración de BD, logger y Swagger
 │   │   ├── controllers/     Adaptación HTTP y coordinación
 │   │   ├── middlewares/     Auth, roles, permisos, auditoría, uploads y errores
-│   │   ├── migrations/      Scripts SQL 000–006
+│   │   ├── migrations/      Scripts SQL 000–008
 │   │   ├── routes/          Endpoints y validación
 │   │   ├── services/        Reglas de negocio y consultas SQL
 │   │   ├── utils/           Utilidades compartidas
@@ -993,6 +993,7 @@ La secuencia oficial es:
 6. `005_seed_data.sql`
 7. `006_configuracion_sistema.sql`
 8. `007_identidad_visual.sql`
+9. `008_fecha_fallecimiento.sql`
 
 Preparar el repositorio:
 
@@ -1008,17 +1009,17 @@ Aplicar como `app_user` mediante socket local:
 ```bash
 # [VM23]
 export PGPASSWORD='muniunion2026_prod'
-for archivo in /opt/muni_union/back/src/migrations/00{0..7}_*.sql; do
+for archivo in /opt/muni_union/back/src/migrations/00{0..8}_*.sql; do
   psql -U app_user -d registro_muni_union -v ON_ERROR_STOP=1 -f "$archivo"
 done
 unset PGPASSWORD
 ```
 
-El patrón `00{0..7}_*.sql` debe resolver exactamente ocho archivos. Revisar la lista antes de ejecutar:
+El patrón `00{0..8}_*.sql` debe resolver exactamente nueve archivos. Revisar la lista antes de ejecutar:
 
 ```bash
 # [VM23]
-ls -1 /opt/muni_union/back/src/migrations/00{0..7}_*.sql
+ls -1 /opt/muni_union/back/src/migrations/00{0..8}_*.sql
 ```
 
 ##### Alternativa destructiva `init_db.sh limpia`
@@ -1524,14 +1525,16 @@ La contraseña bootstrap del ejemplo debe sustituirse después del primer ingres
 
 | Método y ruta | Acceso | Entrada | Respuesta | Errores |
 |---|---|---|---|---|
-| `POST /` | A | `nombres`, `apellido_paterno`, `apellido_materno`; `tipo_documento_id?`/`tipo_documento?`, `dni?`, `sexo?`, `fecha_nacimiento?`, `telefono?`, `direccion?`, `observaciones?` | 201 persona | 400, 401, 500 |
+| `POST /` | A | `nombres`, `apellido_paterno`, `apellido_materno`; `tipo_documento_id?`/`tipo_documento?`, `dni?`, `sexo?`, `fecha_nacimiento?`, `fecha_fallecimiento?`, `telefono?`, `direccion?`, `observaciones?` | 201 persona | 400, 401, 500 |
 | `GET /` | A | **`termino`**, `page=1`, `limit=10`; sin máximo validado | 200 `{ data, total, pagination }` | 401, 500 |
 | `GET /tipos-documento` | A | — | 200 catálogo | 401, 500 |
 | `GET /buscar-duplicados` | A | `nombres`, `apellido_paterno`, `apellido_materno` | 200 coincidencias | 400, 401, 500 |
 | `GET /:id` | A | Path `id` | 200 persona | 401, 404, 500 |
-| `PUT /:id` | P:`personas_modificar` | `nombres`, `apellido_paterno`, `apellido_materno`; `tipo_documento_id?`/`tipo_documento?`, `dni?`, `sexo?`, `fecha_nacimiento?`, `telefono?`, `direccion?`, `observaciones?` | 200 persona | 400, 401, 403, 404, 500 |
+| `PUT /:id` | P:`personas_modificar` | `nombres`, `apellido_paterno`, `apellido_materno`; `tipo_documento_id?`/`tipo_documento?`, `dni?`, `sexo?`, `fecha_nacimiento?`, `fecha_fallecimiento?`, `telefono?`, `direccion?`, `observaciones?`; `fecha_fallecimiento: null` elimina el valor | 200 persona | 400, 401, 403, 404, 500 |
 | `PATCH /:id/reactivar` | ADMIN | Path `id` | 200 persona reactivada | 401, 403, 404, 500 |
 | `DELETE /:id` | P:`personas_eliminar` | Path `id` | 200 mensaje; soft delete | 401, 403, 404, 500 |
+
+`fecha_fallecimiento` es opcional en altas, digitalización e importación. Cuando se informa junto con `fecha_nacimiento`, no puede ser anterior. En actualizaciones, omitir el campo conserva el valor y enviar `null` lo elimina. La importación conserva las fechas existentes cuando la celda está vacía y actualiza también a personas identificadas por DNI.
 
 #### Actas — `/api/actas`
 
@@ -1583,6 +1586,8 @@ El campo `archivo` admite PDF, JPEG o PNG hasta 20 MB.
 | `GET /export/auditoria` | ADMIN | `fechaInicio`, `fechaFin`, `usuario`, `tabla`, `operacion` | 200 archivo XLSX | 401, 403, 500 |
 
 Las exportaciones elevan internamente el límite hasta 100 000 registros.
+
+Los Excel de Personas y Actas incluyen fecha de nacimiento y fecha de fallecimiento. En Actas se exportan los datos del titular y, para matrimonios, también los del cónyuge. Las fechas se formatean desde `YYYY-MM-DD` sin conversión de zona horaria.
 
 #### Auditoría — `/api/auditoria`
 
@@ -1873,6 +1878,7 @@ La clasificación no equivale a una declaración legal de cumplimiento.
 | `apellido_materno` | VARCHAR(100) | No | — | Identificación | DP |
 | `sexo` | CHAR(1) | Sí | CHECK `M/F` | Sexo registrado | DP/DS |
 | `fecha_nacimiento` | DATE | Sí | — | Nacimiento | DP/DS |
+| `fecha_fallecimiento` | DATE | Sí | — | Fallecimiento; dato opcional | DP/DS |
 | `telefono` | VARCHAR(20) | Sí | — | Contacto | DP |
 | `direccion` | TEXT | Sí | — | Domicilio | DP |
 | `observaciones` | TEXT | Sí | — | Nota interna | DP/DS |
@@ -2013,12 +2019,13 @@ Soft delete se aplica a usuarios, personas, actas, documentos, solicitudes y det
 | 6 | `005_seed_data.sql` | Catálogos y administrador bootstrap |
 | 7 | `006_configuracion_sistema.sql` | Tabla y claves de identidad visual para instalaciones nuevas |
 | 8 | `007_identidad_visual.sql` | Retiro idempotente del valor heredado e incorporación de ambos logos |
+| 9 | `008_fecha_fallecimiento.sql` | Incorpora idempotentemente la fecha de fallecimiento opcional |
 
 Los scripts utilizan `IF NOT EXISTS`, `ON CONFLICT` o `ADD COLUMN IF NOT EXISTS` en la mayoría de operaciones. La reejecución no reemplaza configuraciones ni seeds existentes. La secuencia canónica documentada usa `psql -v ON_ERROR_STOP=1`. Antes de aplicarla sobre una base con datos debe generarse y validarse un backup. `init_db.sh limpia` es destructivo, no genera backup y actualmente invoca `psql` sin `ON_ERROR_STOP`.
 
 #### Diferencias de instalación limpia
 
-`deploy/db/instalacion_limpia.sql` es un consolidado alternativo y destructivo cuando se ejecuta mediante `init_db.sh limpia`. No es equivalente a `000–007`:
+`deploy/db/instalacion_limpia.sql` es un consolidado alternativo y destructivo cuando se ejecuta mediante `init_db.sh limpia`. No es equivalente a `000–008`:
 
 - crea `configuracion_sistema` con las dos claves de identidad visual;
 - contiene un conjunto de índices más reducido que `002`;
@@ -2421,6 +2428,7 @@ MIGRACIONES=(
   back/src/migrations/005_seed_data.sql
   back/src/migrations/006_configuracion_sistema.sql
   back/src/migrations/007_identidad_visual.sql
+  back/src/migrations/008_fecha_fallecimiento.sql
 )
 read -rsp "DB_PASSWORD app_user: " PGPASSWORD
 echo

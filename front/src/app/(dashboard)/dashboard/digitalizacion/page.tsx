@@ -49,6 +49,14 @@ import { documentosService } from "@/services/documentos.service";
 import { Persona } from "@/types/persona";
 import { Acta } from "@/types/acta";
 import { dateUtils } from "@/utils/dateUtils";
+import {
+    actaCoincideConIdentidad,
+    construirNumeroActa,
+} from "@/lib/digitalizacion-acta";
+import {
+    MENSAJE_ORDEN_FECHAS,
+    validarOrdenFechas,
+} from "@/lib/persona-fechas";
 
 const formSchema = z.object({
     // Persona principal
@@ -88,7 +96,30 @@ const formSchema = z.object({
 .refine((data) => {
     if (data.tipo_acta !== "MATRIMONIO") return true;
     return !!(data.conyuge_nombres?.trim() && data.conyuge_apellido_paterno?.trim() && data.conyuge_apellido_materno?.trim());
-}, { message: "Los datos del cónyuge son obligatorios para matrimonios", path: ["conyuge_nombres"] });
+}, { message: "Los datos del cónyuge son obligatorios para matrimonios", path: ["conyuge_nombres"] })
+.superRefine((data, ctx) => {
+    if (!validarOrdenFechas(data.fecha_nacimiento, data.fecha_fallecimiento)) {
+        ctx.addIssue({
+            code: "custom",
+            message: MENSAJE_ORDEN_FECHAS,
+            path: ["fecha_fallecimiento"],
+        });
+    }
+
+    if (
+        data.tipo_acta === "MATRIMONIO"
+        && !validarOrdenFechas(
+            data.conyuge_fecha_nacimiento,
+            data.conyuge_fecha_fallecimiento,
+        )
+    ) {
+        ctx.addIssue({
+            code: "custom",
+            message: MENSAJE_ORDEN_FECHAS,
+            path: ["conyuge_fecha_fallecimiento"],
+        });
+    }
+});
 
 type FormValues = z.infer<typeof formSchema>;
 
@@ -379,7 +410,7 @@ export default function DigitalizacionPage() {
                     apellido_materno: values.apellido_materno,
                     sexo: values.sexo,
                     fecha_nacimiento: values.fecha_nacimiento,
-                    fecha_fallecimiento: values.fecha_fallecimiento,
+                    fecha_fallecimiento: values.fecha_fallecimiento || null,
                     telefono: values.telefono,
                     observaciones: values.persona_observaciones
                 });
@@ -392,7 +423,7 @@ export default function DigitalizacionPage() {
                     apellido_materno: values.apellido_materno,
                     sexo: values.sexo,
                     fecha_nacimiento: values.fecha_nacimiento,
-                    fecha_fallecimiento: values.fecha_fallecimiento,
+                    fecha_fallecimiento: values.fecha_fallecimiento || undefined,
                     telefono: values.telefono,
                     observaciones: values.persona_observaciones
                 });
@@ -410,7 +441,7 @@ export default function DigitalizacionPage() {
                         apellido_materno: values.conyuge_apellido_materno!,
                         sexo: values.conyuge_sexo,
                         fecha_nacimiento: values.conyuge_fecha_nacimiento,
-                        fecha_fallecimiento: values.conyuge_fecha_fallecimiento,
+                        fecha_fallecimiento: values.conyuge_fecha_fallecimiento || null,
                     });
                 } else {
                     const newConyuge = await personasService.create({
@@ -421,28 +452,34 @@ export default function DigitalizacionPage() {
                         apellido_materno: values.conyuge_apellido_materno!,
                         sexo: values.conyuge_sexo,
                         fecha_nacimiento: values.conyuge_fecha_nacimiento,
-                        fecha_fallecimiento: values.conyuge_fecha_fallecimiento,
+                        fecha_fallecimiento: values.conyuge_fecha_fallecimiento || undefined,
                     });
                     personaSecundariaId = newConyuge.id;
                 }
             }
 
             // 3. Crear o Actualizar Acta
-            const getPrefix = (tipo: string) => {
-                switch (tipo) {
-                    case 'NACIMIENTO': return 'NAC';
-                    case 'MATRIMONIO': return 'MAT';
-                    case 'DEFUNCION': return 'DEF';
-                    default: return 'ACT';
-                }
-            };
-            const fullNumeroActa = values.modo === "CUI"
-                ? values.numero_acta.trim().toUpperCase()
-                : `${getPrefix(values.tipo_acta)}-L${values.libro}-${values.numero_acta}`.toUpperCase();
+            const fullNumeroActa = construirNumeroActa({
+                modo: values.modo,
+                tipoActa: values.tipo_acta,
+                libro: values.libro,
+                numeroActa: values.numero_acta,
+            });
+            const actaVigente = actaCoincideConIdentidad(
+                actaEncontrada,
+                fullNumeroActa,
+                values.anio,
+                {
+                    principalId: personaId as number,
+                    secundariaId: personaSecundariaId ?? null,
+                },
+            )
+                ? actaEncontrada
+                : null;
 
             let currentActaId: number;
-            if (actaEncontrada) {
-                const updatedActa = await actasService.update(actaEncontrada.id, {
+            if (actaVigente) {
+                const updatedActa = await actasService.update(actaVigente.id, {
                     tipo_acta: values.tipo_acta,
                     numero_acta: fullNumeroActa,
                     anio: values.anio,
@@ -474,7 +511,7 @@ export default function DigitalizacionPage() {
                     toast.warning("Datos guardados, pero falló la subida del archivo.");
                 }
             } else {
-                toast.success(actaEncontrada ? "Acta actualizada con éxito." : "Nueva acta registrada con éxito.");
+                toast.success(actaVigente ? "Acta actualizada con éxito." : "Nueva acta registrada con éxito.");
             }
 
             resetAll();
@@ -562,7 +599,14 @@ export default function DigitalizacionPage() {
                                                 <FormItem>
                                                     <FormLabel className="std-label">N° Documento</FormLabel>
                                                     <FormControl>
-                                                        <Input {...field} maxLength={15} placeholder="Número..."
+                                                        <Input
+                                                            {...field}
+                                                            onChange={(event) => {
+                                                                setActaEncontrada(null);
+                                                                field.onChange(event);
+                                                            }}
+                                                            maxLength={15}
+                                                            placeholder="Número..."
                                                             className="std-input h-9 text-sm font-semibold tracking-widest" />
                                                     </FormControl>
                                                     <FormMessage />
@@ -709,7 +753,14 @@ export default function DigitalizacionPage() {
                                             <FormItem>
                                                 <FormLabel className="std-label">N° Documento Cónyuge</FormLabel>
                                                 <FormControl>
-                                                    <Input {...field} maxLength={15} placeholder="Número de documento..."
+                                                    <Input
+                                                        {...field}
+                                                        onChange={(event) => {
+                                                            setActaEncontrada(null);
+                                                            field.onChange(event);
+                                                        }}
+                                                        maxLength={15}
+                                                        placeholder="Número de documento..."
                                                         className={cn(
                                                             "std-input h-9 text-sm font-semibold tracking-widest",
                                                             personaSecundariaEncontrada && "border-purple-300 dark:border-purple-700"
@@ -813,12 +864,18 @@ export default function DigitalizacionPage() {
                                     <div className="flex p-1 bg-muted/60 rounded-xl w-fit">
                                         <Button type="button" variant={modoValue === 'CLASICO' ? 'default' : 'ghost'} size="sm"
                                             className={cn("rounded-lg h-7 text-[9px] font-black uppercase tracking-widest px-3.5", modoValue === 'CLASICO' && "bg-primary shadow-sm")}
-                                            onClick={() => form.setValue("modo", "CLASICO")}>
+                                            onClick={() => {
+                                                setActaEncontrada(null);
+                                                form.setValue("modo", "CLASICO");
+                                            }}>
                                             Libro Clásico
                                         </Button>
                                         <Button type="button" variant={modoValue === 'CUI' ? 'default' : 'ghost'} size="sm"
                                             className={cn("rounded-lg h-7 text-[9px] font-black uppercase tracking-widest px-3.5", modoValue === 'CUI' && "bg-primary shadow-sm")}
-                                            onClick={() => form.setValue("modo", "CUI")}>
+                                            onClick={() => {
+                                                setActaEncontrada(null);
+                                                form.setValue("modo", "CUI");
+                                            }}>
                                             RENIEC (CUI)
                                         </Button>
                                     </div>
@@ -828,7 +885,13 @@ export default function DigitalizacionPage() {
                                         <FormField control={form.control} name="tipo_acta" render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel className="std-label">Tipo de Acta</FormLabel>
-                                                <Select onValueChange={field.onChange} value={field.value}>
+                                                <Select
+                                                    onValueChange={(value) => {
+                                                        setActaEncontrada(null);
+                                                        field.onChange(value);
+                                                    }}
+                                                    value={field.value}
+                                                >
                                                     <FormControl>
                                                         <SelectTrigger className={cn("std-input h-9 font-bold text-xs", !!actaEncontrada && "border-rose-400 bg-rose-50/50 dark:bg-rose-950/20")}>
                                                             <SelectValue />
@@ -862,7 +925,13 @@ export default function DigitalizacionPage() {
                                                     <FormItem>
                                                         <FormLabel className="std-label">Libro N°</FormLabel>
                                                         <FormControl>
-                                                            <Input {...field} placeholder="N°"
+                                                            <Input
+                                                                {...field}
+                                                                onChange={(event) => {
+                                                                    setActaEncontrada(null);
+                                                                    field.onChange(event);
+                                                                }}
+                                                                placeholder="N°"
                                                                 className={cn("std-input h-9 font-bold text-center text-sm", !!actaEncontrada && "border-rose-400 bg-rose-50/50 dark:bg-rose-950/20")} />
                                                         </FormControl>
                                                         <FormMessage />
@@ -900,6 +969,7 @@ export default function DigitalizacionPage() {
                                                                 !!actaEncontrada && "border-rose-400 bg-rose-50/50 dark:bg-rose-950/20"
                                                             )}
                                                             onChange={(e) => {
+                                                                setActaEncontrada(null);
                                                                 field.onChange(e.target.value.toUpperCase());
                                                                 setEsSugerencia(false);
                                                             }}

@@ -1,5 +1,6 @@
 import * as personasService from "../services/personas.service.js";
 import { registrarAccion } from "../services/auditoria.service.js";
+import { FechaPersonaValidationError } from "../services/persona-fechas.service.js";
 
 export const crearPersona = async (req, res) => {
     try {
@@ -17,6 +18,9 @@ export const crearPersona = async (req, res) => {
 
         res.status(201).json(persona);
     } catch (error) {
+        if (error instanceof FechaPersonaValidationError) {
+            return res.status(400).json({ message: error.message });
+        }
         res.status(500).json({ message: error.message });
     }
 };
@@ -57,6 +61,9 @@ export const actualizarPersona = async (req, res) => {
 
         res.json(persona);
     } catch (error) {
+        if (error instanceof FechaPersonaValidationError) {
+            return res.status(400).json({ message: error.message });
+        }
         res.status(500).json({ message: error.message });
     }
 };

@@ -1325,11 +1325,15 @@ ciudadano</h4>
 <li>Ingrese DNI si corresponde.</li>
 <li>Complete nombres y apellidos.</li>
 <li>Seleccione y verifique el sexo, que es obligatorio. Complete fecha
-de nacimiento, teléfono u observaciones cuando correspondan.</li>
+de nacimiento, fecha de fallecimiento, teléfono u observaciones cuando
+correspondan. La fecha de fallecimiento es opcional.</li>
 <li>Revise las coincidencias mostradas por el sistema.</li>
 </ol>
 <p>Para una persona sin documento use <strong>SIN
 DOCUMENTO</strong>.</p>
+<p>Si registra ambas fechas, la fecha de fallecimiento no puede ser
+anterior a la fecha de nacimiento. Deje <strong>F.
+Fallecimiento</strong> vacía cuando no corresponda.</p>
 <blockquote>
 <p>Una coincidencia por nombre no demuestra que sea la misma persona.
 Revise fecha, acta física y demás datos. No fusione registros por
@@ -1544,6 +1548,8 @@ anular, reactivar o eliminar</h4>
 </tr>
 </tbody>
 </table>
+<p>La ficha y la impresión del acta muestran la fecha de fallecimiento
+del titular o cónyuge únicamente cuando está registrada.</p>
 <p>Para anular, el motivo es obligatorio. Si aparece
 <code>Debe indicar el motivo de anulación</code>, complete el campo.</p>
 <blockquote>
@@ -1616,16 +1622,21 @@ Ciudadanos, resultado filtrado y botón para limpiar.</figcaption>
 <li>Seleccione tipo de documento; use <strong>SIN DOCUMENTO</strong> si
 corresponde.</li>
 <li>Seleccione y verifique el sexo, que es obligatorio.</li>
-<li>Complete los demás datos disponibles.</li>
+<li>Complete fecha de nacimiento y, solo si corresponde, <strong>F.
+Fallecimiento</strong>.</li>
 <li>Revise y guarde.</li>
 </ol>
 <h4 id="433-editar-eliminar-y-exportar">4.3.3. Editar, eliminar y
 exportar</h4>
 <ul>
-<li>Editar requiere <code>personas_modificar</code>.</li>
+<li>Editar requiere <code>personas_modificar</code>. Desde
+<strong>Editar Ciudadano</strong> puede registrar, corregir o borrar
+<strong>F. Fallecimiento</strong>. Para borrarla, deje el campo vacío y
+guarde.</li>
 <li>Eliminar requiere <code>personas_eliminar</code> y puede rechazarse
 si la persona tiene actas.</li>
-<li><strong>EXPORTAR</strong> genera Excel del resultado filtrado.</li>
+<li><strong>EXPORTAR</strong> genera Excel del resultado filtrado con
+fecha de nacimiento y fecha de fallecimiento.</li>
 </ul>
 <p>No elimine una persona para resolver un duplicado sin verificar antes
 sus actas vinculadas.</p>
@@ -1789,7 +1800,8 @@ archivo</strong>.</li>
 <p>Campos relevantes opcionales:</p>
 <ul>
 <li><code>dni</code>, <code>tipo_documento</code>, <code>sexo</code>,
-<code>fecha_nacimiento</code>, <code>telefono</code>;</li>
+<code>fecha_nacimiento</code>, <code>fecha_fallecimiento</code>,
+<code>telefono</code>;</li>
 <li><code>persona_observaciones</code>,
 <code>acta_observaciones</code>;</li>
 <li><code>nombre_archivo_pdf</code>, <code>carpeta_ruta</code>;</li>
@@ -1798,6 +1810,11 @@ archivo</strong>.</li>
 <code>conyuge_apellido_materno</code> obligatorios, y demás campos
 <code>conyuge_*</code> cuando existan.</li>
 </ul>
+<p><code>fecha_fallecimiento</code> y
+<code>conyuge_fecha_fallecimiento</code> son opcionales. Si se informan,
+deben contener una fecha real y no pueden ser anteriores a la fecha de
+nacimiento correspondiente. Una celda vacía no borra una fecha ya
+registrada.</p>
 <p><code>sexo</code>, si se proporciona, acepta solo <code>M</code> o
 <code>F</code>. Si queda vacío, la versión actual asigna <code>M</code>.
 <strong>No inicie nuevas cargas históricas hasta que Sistemas confirme
@@ -2023,13 +2040,14 @@ Exportación de información a los formatos permitidos</h3>
 <td>Actas</td>
 <td>EXPORTAR</td>
 <td>Excel <code>.xlsx</code></td>
-<td>Actas con filtros activos</td>
+<td>Actas con filtros activos y fechas de nacimiento/fallecimiento del
+titular; en matrimonios, también del cónyuge</td>
 </tr>
 <tr>
 <td>Personas</td>
 <td>EXPORTAR</td>
 <td>Excel <code>.xlsx</code></td>
-<td>Ciudadanos filtrados</td>
+<td>Ciudadanos filtrados con fechas de nacimiento y fallecimiento</td>
 </tr>
 <tr>
 <td>Solicitudes</td>

@@ -45,7 +45,7 @@ muni_union/
 │       ├── config/
 │       ├── controllers/
 │       ├── middlewares/
-│       ├── migrations/   # 000_schema.sql a 007_identidad_visual.sql
+│       ├── migrations/   # 000_schema.sql a 008_fecha_fallecimiento.sql
 │       ├── routes/
 │       └── services/
 ├── front/                 # Aplicación Next.js
@@ -77,7 +77,7 @@ Configure `back/.env` para el entorno local. No copie secretos de producción ni
 Aplique las migraciones en orden:
 
 ```bash
-for archivo in back/src/migrations/00{0..7}_*.sql; do
+for archivo in back/src/migrations/00{0..8}_*.sql; do
   psql -U postgres -d muni_union -v ON_ERROR_STOP=1 -f "$archivo"
 done
 ```

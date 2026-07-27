@@ -46,6 +46,11 @@ const options = {
                         apellido_materno: { type: "string",  example: "LOPEZ" },
                         sexo:             { type: "string",  enum: ["M", "F"] },
                         fecha_nacimiento: { type: "string",  format: "date" },
+                        fecha_fallecimiento: {
+                            type: "string",
+                            format: "date",
+                            nullable: true,
+                        },
                         telefono:         { type: "string" },
                         direccion:        { type: "string" },
                     },

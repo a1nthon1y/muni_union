@@ -3,6 +3,7 @@
 import { Acta } from "@/types/acta";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { dateUtils } from "@/utils/dateUtils";
 
 interface ActaPrintViewProps {
     acta: Acta;
@@ -64,9 +65,18 @@ export function ActaPrintView({ acta }: ActaPrintViewProps) {
                             <div className="border-b border-slate-100 pb-2">
                                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Fecha de Nacimiento</p>
                                 <p className="text-base font-black text-slate-900">
-                                    {acta.fecha_nacimiento ? format(new Date(acta.fecha_nacimiento), "dd 'de' MMMM 'de' yyyy", { locale: es }) : '—'}
+                                    {dateUtils.formatDisplayDate(acta.fecha_nacimiento)}
                                 </p>
                             </div>
+
+                            {acta.fecha_fallecimiento && (
+                                <div className="border-b border-slate-100 pb-2">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Fecha de Fallecimiento</p>
+                                    <p className="text-base font-black text-slate-900">
+                                        {dateUtils.formatDisplayDate(acta.fecha_fallecimiento)}
+                                    </p>
+                                </div>
+                            )}
 
                             <div className="border-b border-slate-100 pb-2">
                                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Lugar de Procedencia</p>
@@ -101,7 +111,15 @@ export function ActaPrintView({ acta }: ActaPrintViewProps) {
                                     <div className="border-b border-slate-100 pb-2">
                                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Fecha de Nacimiento</p>
                                         <p className="text-base font-black text-slate-900">
-                                            {format(new Date(acta.p2_fecha_nacimiento), "dd 'de' MMMM 'de' yyyy", { locale: es })}
+                                            {dateUtils.formatDisplayDate(acta.p2_fecha_nacimiento)}
+                                        </p>
+                                    </div>
+                                )}
+                                {acta.p2_fecha_fallecimiento && (
+                                    <div className="border-b border-slate-100 pb-2">
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Fecha de Fallecimiento</p>
+                                        <p className="text-base font-black text-slate-900">
+                                            {dateUtils.formatDisplayDate(acta.p2_fecha_fallecimiento)}
                                         </p>
                                     </div>
                                 )}

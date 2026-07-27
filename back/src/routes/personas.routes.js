@@ -152,6 +152,10 @@ const personaRules = [
     body("fecha_nacimiento")
         .optional({ nullable: true })
         .isDate({ format: "YYYY-MM-DD" }).withMessage("Fecha inválida, use YYYY-MM-DD"),
+    body("fecha_fallecimiento")
+        .optional({ nullable: true })
+        .isDate({ format: "YYYY-MM-DD", strictMode: true })
+        .withMessage("Fecha de fallecimiento inválida, use YYYY-MM-DD"),
 ];
 
 const router = Router();

@@ -77,6 +77,7 @@ CREATE TABLE IF NOT EXISTS personas (
     apellido_materno  VARCHAR(100) NOT NULL,
     sexo              CHAR(1)      CHECK (sexo IN ('M', 'F')),
     fecha_nacimiento  DATE,
+    fecha_fallecimiento DATE,
     telefono          VARCHAR(20),
     direccion         TEXT,
     observaciones     TEXT,

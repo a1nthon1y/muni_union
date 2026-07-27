@@ -1,4 +1,5 @@
 import { pool } from "../config/db.js";
+import { resolverFechasPersona } from "./persona-fechas.service.js";
 
 const PERSONA_COLS = `
     p.id, p.dni, p.tipo_documento_id,
@@ -9,10 +10,10 @@ const PERSONA_COLS = `
 `;
 
 // Resuelve tipo_documento_id: acepta el id numérico directo O el nombre de texto
-const resolverTipoDocIdFromDatos = async (datos) => {
+const resolverTipoDocIdFromDatos = async (datos, db = pool) => {
     if (datos.tipo_documento_id) return parseInt(datos.tipo_documento_id);
     if (datos.tipo_documento) {
-        const { rows } = await pool.query(
+        const { rows } = await db.query(
             "SELECT id FROM tipos_documento WHERE UPPER(nombre) = UPPER($1) LIMIT 1",
             [datos.tipo_documento]
         );
@@ -21,16 +22,17 @@ const resolverTipoDocIdFromDatos = async (datos) => {
     return 1; // Default: DNI
 };
 
-export const crearPersona = async (datos, usuario_id) => {
+export const crearPersona = async (datos, usuario_id, db = pool) => {
     const {
         dni,
         nombres, apellido_paterno, apellido_materno,
-        sexo, fecha_nacimiento, fecha_fallecimiento, telefono, direccion, observaciones,
+        sexo, telefono, direccion, observaciones,
     } = datos;
 
-    const tipo_documento_id = await resolverTipoDocIdFromDatos(datos);
+    const tipo_documento_id = await resolverTipoDocIdFromDatos(datos, db);
+    const { fecha_nacimiento, fecha_fallecimiento } = resolverFechasPersona(null, datos);
 
-    const { rows } = await pool.query(
+    const { rows } = await db.query(
         `INSERT INTO personas
            (dni, tipo_documento_id, nombres, apellido_paterno, apellido_materno,
             sexo, fecha_nacimiento, fecha_fallecimiento, telefono, direccion, observaciones, usuario_registro)
@@ -48,7 +50,7 @@ export const crearPersona = async (datos, usuario_id) => {
         ]
     );
 
-    return obtenerPersonaPorId(rows[0].id);
+    return obtenerPersonaPorId(rows[0].id, db);
 };
 
 export const listarPersonas = async (filtros = {}) => {
@@ -96,8 +98,8 @@ export const listarPersonas = async (filtros = {}) => {
     };
 };
 
-export const obtenerPersonaPorId = async (id) => {
-    const { rows } = await pool.query(
+export const obtenerPersonaPorId = async (id, db = pool) => {
+    const { rows } = await db.query(
         `SELECT ${PERSONA_COLS}
          FROM personas p
          JOIN tipos_documento td ON td.id = p.tipo_documento_id
@@ -107,19 +109,23 @@ export const obtenerPersonaPorId = async (id) => {
     return rows[0];
 };
 
-export const actualizarPersona = async (id, datos) => {
+export const actualizarPersona = async (id, datos, db = pool) => {
     const {
         dni,
         nombres, apellido_paterno, apellido_materno,
-        sexo, fecha_nacimiento, fecha_fallecimiento, telefono, direccion, observaciones,
+        sexo, telefono, direccion, observaciones,
     } = datos;
+
+    const actual = await obtenerPersonaPorId(id, db);
+    if (!actual) return null;
 
     // Acepta tipo_documento_id numérico O tipo_documento nombre de texto
     const tipo_documento_id = datos.tipo_documento_id || datos.tipo_documento
-        ? await resolverTipoDocIdFromDatos(datos)
+        ? await resolverTipoDocIdFromDatos(datos, db)
         : null;
+    const { fecha_nacimiento, fecha_fallecimiento } = resolverFechasPersona(actual, datos);
 
-    const { rowCount } = await pool.query(
+    const { rowCount } = await db.query(
         `UPDATE personas SET
             dni               = COALESCE($1, dni),
             tipo_documento_id = COALESCE($2, tipo_documento_id),
@@ -127,8 +133,8 @@ export const actualizarPersona = async (id, datos) => {
             apellido_paterno  = COALESCE($4, apellido_paterno),
             apellido_materno  = COALESCE($5, apellido_materno),
             sexo              = COALESCE($6, sexo),
-            fecha_nacimiento  = COALESCE($7, fecha_nacimiento),
-            fecha_fallecimiento = COALESCE($8, fecha_fallecimiento),
+            fecha_nacimiento  = $7,
+            fecha_fallecimiento = $8,
             telefono          = COALESCE($9, telefono),
             direccion         = COALESCE($10, direccion),
             observaciones     = COALESCE($11, observaciones)
@@ -136,14 +142,14 @@ export const actualizarPersona = async (id, datos) => {
         [
             dni || null, tipo_documento_id || null,
             nombres, apellido_paterno, apellido_materno,
-            sexo || null, fecha_nacimiento || null, fecha_fallecimiento || null,
+            sexo || null, fecha_nacimiento, fecha_fallecimiento,
             telefono || null, direccion || null, observaciones || null,
             id,
         ]
     );
 
     if (rowCount === 0) return null;
-    return obtenerPersonaPorId(id);
+    return obtenerPersonaPorId(id, db);
 };
 
 export const buscarPersonaPorNombres = async (nombres, apellido_paterno, apellido_materno) => {

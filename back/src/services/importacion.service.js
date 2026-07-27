@@ -2,6 +2,10 @@ import { pool } from "../config/db.js";
 import fs from "fs";
 import crypto from "crypto";
 import logger from "../config/logger.js";
+import {
+    normalizarFechaPersona,
+    resolverFechasPersona,
+} from "./persona-fechas.service.js";
 
 const TIPOS_ACTA_VALIDOS = new Set(["NACIMIENTO", "MATRIMONIO", "DEFUNCION"]);
 
@@ -31,6 +35,26 @@ const normalizarFecha = (valor) => {
     }
 
     return null;
+};
+
+const normalizarFechaImportada = (valor, campo) => {
+    if (valor === null || valor === undefined || valor === "") return null;
+
+    const normalizada = normalizarFecha(valor);
+    if (!normalizada) {
+        throw new Error(`${campo} inválida: "${valor}". Use formato AAAA-MM-DD.`);
+    }
+
+    try {
+        return normalizarFechaPersona(
+            normalizada,
+            campo.includes("fallecimiento")
+                ? "fecha_fallecimiento"
+                : "fecha_nacimiento",
+        );
+    } catch {
+        throw new Error(`${campo} inválida: "${valor}". Use una fecha real en formato AAAA-MM-DD.`);
+    }
 };
 
 // Carga el catálogo tipos_documento una sola vez por lote
@@ -67,13 +91,19 @@ const resolverTipoDocId = (tipoDocTexto, tiposMap) => {
 // Subir en múltiples lotes si se supera (el sistema omite duplicados automáticamente).
 const MAX_FILAS = 30000;
 
-export const importarActasMasivo = async (filas, archivosMap, soloNombreMap, usuario_id) => {
+export const importarActasMasivo = async (
+    filas,
+    archivosMap,
+    soloNombreMap,
+    usuario_id,
+    db = pool,
+) => {
     if (filas.length > MAX_FILAS) {
         throw new Error(`El archivo supera el límite de ${MAX_FILAS} filas por lote. Divídalo en archivos más pequeños y súbalos por separado — los duplicados se omiten automáticamente.`);
     }
 
     const resultados = [];
-    const client = await pool.connect();
+    const client = await db.connect();
 
     // Cargar catálogo una sola vez
     const tiposDocMap = await cargarTiposDocumento(client);
@@ -112,8 +142,14 @@ export const importarActasMasivo = async (filas, archivosMap, soloNombreMap, usu
             }
 
             // ── Normalizar fechas ─────────────────────────────────────────────
-            const fechaNacimiento = normalizarFecha(fila.fecha_nacimiento);
-            const fechaFallecimiento = normalizarFecha(fila.fecha_fallecimiento);
+            const fechaNacimiento = normalizarFechaImportada(
+                fila.fecha_nacimiento,
+                "fecha_nacimiento",
+            );
+            const fechaFallecimiento = normalizarFechaImportada(
+                fila.fecha_fallecimiento,
+                "fecha_fallecimiento",
+            );
             const fechaActa = normalizarFecha(fila.fecha_acta);
             if (!fechaActa) throw new Error(`fecha_acta inválida: "${fila.fecha_acta}". Use formato AAAA-MM-DD`);
 
@@ -129,14 +165,22 @@ export const importarActasMasivo = async (filas, archivosMap, soloNombreMap, usu
             // ── 1. Buscar o crear persona principal ───────────────────────────
             const dniNuevo     = fila.dni?.trim() || null;
             const tipoDocId    = resolverTipoDocId(fila.tipo_documento, tiposDocMap);
+            let personaEncontrada = null;
 
             // 1a. Buscar por DNI (coincidencia exacta — la más confiable)
             if (dniNuevo) {
                 const r = await client.query(
-                    "SELECT id, dni, tipo_documento_id FROM personas WHERE dni = $1 AND fecha_eliminacion IS NULL LIMIT 1",
+                    `SELECT id, dni, tipo_documento_id,
+                            fecha_nacimiento, fecha_fallecimiento
+                     FROM personas
+                     WHERE dni = $1 AND fecha_eliminacion IS NULL
+                     LIMIT 1`,
                     [dniNuevo]
                 );
-                if (r.rows.length > 0) personaId = r.rows[0].id;
+                if (r.rows.length > 0) {
+                    personaEncontrada = r.rows[0];
+                    personaId = personaEncontrada.id;
+                }
             }
 
             // 1b. Buscar por nombre completo (solo si no encontró por DNI)
@@ -154,7 +198,9 @@ export const importarActasMasivo = async (filas, archivosMap, soloNombreMap, usu
                 if (fechaNacimiento) params.push(fechaNacimiento);
 
                 const r = await client.query(
-                    `SELECT id, dni, tipo_documento_id FROM personas
+                    `SELECT id, dni, tipo_documento_id,
+                            fecha_nacimiento, fecha_fallecimiento
+                     FROM personas
                      WHERE UPPER(nombres)          = $1
                        AND UPPER(apellido_paterno) = $2
                        AND UPPER(apellido_materno) = $3
@@ -176,28 +222,45 @@ export const importarActasMasivo = async (filas, archivosMap, soloNombreMap, usu
                         );
                         // personaId sigue null → se creará abajo
                     } else {
+                        personaEncontrada = encontrada;
                         personaId = encontrada.id;
-
-                        // ── Actualizar DNI y fechas si la fila los trae
-                        await client.query(
-                            `UPDATE personas SET
-                                dni                 = COALESCE($1, dni),
-                                tipo_documento_id   = CASE WHEN $1 IS NOT NULL THEN $2 ELSE tipo_documento_id END,
-                                fecha_fallecimiento = COALESCE($3, fecha_fallecimiento),
-                                fecha_nacimiento    = COALESCE($4, fecha_nacimiento)
-                             WHERE id = $5`,
-                            [dniNuevo, tipoDocId, fechaFallecimiento, fechaNacimiento, personaId]
-                        );
-                        logger.info(
-                            { fila: rowNum, personaId, dniNuevo, fechaFallecimiento },
-                            "Datos actualizados (DNI, fechas) para persona existente"
-                        );
                     }
                 }
             }
 
+            if (personaId && personaEncontrada) {
+                const cambiosFechas = {};
+                if (fechaNacimiento) cambiosFechas.fecha_nacimiento = fechaNacimiento;
+                if (fechaFallecimiento) cambiosFechas.fecha_fallecimiento = fechaFallecimiento;
+                const fechas = resolverFechasPersona(personaEncontrada, cambiosFechas);
+
+                await client.query(
+                    `UPDATE personas SET
+                        dni                 = COALESCE($1, dni),
+                        tipo_documento_id   = CASE WHEN $1 IS NOT NULL THEN $2 ELSE tipo_documento_id END,
+                        fecha_fallecimiento = $3,
+                        fecha_nacimiento    = $4
+                     WHERE id = $5`,
+                    [
+                        dniNuevo,
+                        tipoDocId,
+                        fechas.fecha_fallecimiento,
+                        fechas.fecha_nacimiento,
+                        personaId,
+                    ]
+                );
+                logger.info(
+                    { fila: rowNum, personaId, dniNuevo, fechaFallecimiento },
+                    "Datos actualizados (DNI, fechas) para persona existente"
+                );
+            }
+
             // 1c. Crear persona nueva (no encontrada, o homonimia detectada)
             if (!personaId) {
+                const fechasNuevaPersona = resolverFechasPersona(null, {
+                    fecha_nacimiento: fechaNacimiento,
+                    fecha_fallecimiento: fechaFallecimiento,
+                });
                 const r = await client.query(
                     `INSERT INTO personas
                        (dni, tipo_documento_id, nombres, apellido_paterno, apellido_materno,
@@ -211,8 +274,8 @@ export const importarActasMasivo = async (filas, archivosMap, soloNombreMap, usu
                         fila.apellido_paterno.trim().toUpperCase(),
                         fila.apellido_materno.trim().toUpperCase(),
                         fila.sexo?.trim().substring(0, 1).toUpperCase() || "M",
-                        fechaNacimiento,
-                        fechaFallecimiento,
+                        fechasNuevaPersona.fecha_nacimiento,
+                        fechasNuevaPersona.fecha_fallecimiento,
                         fila.telefono?.trim() || null,
                         fila.persona_observaciones?.trim() || null,
                         usuario_id,
@@ -223,6 +286,7 @@ export const importarActasMasivo = async (filas, archivosMap, soloNombreMap, usu
 
             // ── 2. Persona secundaria para MATRIMONIO ─────────────────────────
             let personaSecundariaId = null;
+            let personaSecundariaEncontrada = null;
             if (tipoActa === "MATRIMONIO") {
                 const cn = fila.conyuge_nombres?.trim();
                 const cp = fila.conyuge_apellido_paterno?.trim();
@@ -232,30 +296,51 @@ export const importarActasMasivo = async (filas, archivosMap, soloNombreMap, usu
                     // Buscar por DNI del cónyuge
                     if (fila.conyuge_dni?.trim()) {
                         const r = await client.query(
-                            "SELECT id FROM personas WHERE dni = $1 AND fecha_eliminacion IS NULL LIMIT 1",
+                            `SELECT id, fecha_nacimiento, fecha_fallecimiento
+                             FROM personas
+                             WHERE dni = $1 AND fecha_eliminacion IS NULL
+                             LIMIT 1`,
                             [fila.conyuge_dni.trim()]
                         );
-                        if (r.rows.length > 0) personaSecundariaId = r.rows[0].id;
+                        if (r.rows.length > 0) {
+                            personaSecundariaEncontrada = r.rows[0];
+                            personaSecundariaId = personaSecundariaEncontrada.id;
+                        }
                     }
 
                     // Buscar por nombre
                     if (!personaSecundariaId) {
                         const r = await client.query(
-                            `SELECT id FROM personas
+                            `SELECT id, fecha_nacimiento, fecha_fallecimiento
+                             FROM personas
                              WHERE UPPER(nombres) = UPPER($1)
                                AND UPPER(apellido_paterno) = UPPER($2)
                                AND UPPER(apellido_materno) = UPPER($3)
                                AND fecha_eliminacion IS NULL LIMIT 1`,
                             [cn, cp, cm]
                         );
-                        if (r.rows.length > 0) personaSecundariaId = r.rows[0].id;
+                        if (r.rows.length > 0) {
+                            personaSecundariaEncontrada = r.rows[0];
+                            personaSecundariaId = personaSecundariaEncontrada.id;
+                        }
                     }
+
+                    const conyugeFallecimiento = normalizarFechaImportada(
+                        fila.conyuge_fecha_fallecimiento,
+                        "conyuge_fecha_fallecimiento",
+                    );
+                    const conyugeNacimiento = normalizarFechaImportada(
+                        fila.conyuge_fecha_nacimiento,
+                        "conyuge_fecha_nacimiento",
+                    );
 
                     // Crear cónyuge si no existe
                     if (!personaSecundariaId) {
                         const tipoDocConyugeId = resolverTipoDocId(fila.conyuge_tipo_documento, tiposDocMap);
-                        const conyugeFallecimiento = normalizarFecha(fila.conyuge_fecha_fallecimiento);
-                        const conyugeNacimiento = normalizarFecha(fila.conyuge_fecha_nacimiento);
+                        const fechasConyuge = resolverFechasPersona(null, {
+                            fecha_nacimiento: conyugeNacimiento,
+                            fecha_fallecimiento: conyugeFallecimiento,
+                        });
 
                         const r = await client.query(
                             `INSERT INTO personas
@@ -268,8 +353,8 @@ export const importarActasMasivo = async (filas, archivosMap, soloNombreMap, usu
                                 tipoDocConyugeId,
                                 cn.toUpperCase(), cp.toUpperCase(), cm.toUpperCase(),
                                 fila.conyuge_sexo?.trim().substring(0, 1).toUpperCase() || "F",
-                                conyugeNacimiento,
-                                conyugeFallecimiento,
+                                fechasConyuge.fecha_nacimiento,
+                                fechasConyuge.fecha_fallecimiento,
                                 usuario_id,
                             ]
                         );
@@ -277,17 +362,28 @@ export const importarActasMasivo = async (filas, archivosMap, soloNombreMap, usu
                     } else {
                         // ── Actualizar DNI y fechas del cónyuge si la fila los trae y ya existía
                         const tipoDocConyugeId = resolverTipoDocId(fila.conyuge_tipo_documento, tiposDocMap);
-                        const conyugeFallecimiento = normalizarFecha(fila.conyuge_fecha_fallecimiento);
-                        const conyugeNacimiento = normalizarFecha(fila.conyuge_fecha_nacimiento);
-                        
+                        const cambiosFechas = {};
+                        if (conyugeNacimiento) cambiosFechas.fecha_nacimiento = conyugeNacimiento;
+                        if (conyugeFallecimiento) cambiosFechas.fecha_fallecimiento = conyugeFallecimiento;
+                        const fechasConyuge = resolverFechasPersona(
+                            personaSecundariaEncontrada,
+                            cambiosFechas,
+                        );
+
                         await client.query(
                             `UPDATE personas SET
                                 dni                 = COALESCE($1, dni),
                                 tipo_documento_id   = CASE WHEN $1 IS NOT NULL THEN $2 ELSE tipo_documento_id END,
-                                fecha_fallecimiento = COALESCE($3, fecha_fallecimiento),
-                                fecha_nacimiento    = COALESCE($4, fecha_nacimiento)
+                                fecha_fallecimiento = $3,
+                                fecha_nacimiento    = $4
                              WHERE id = $5`,
-                            [fila.conyuge_dni?.trim() || null, tipoDocConyugeId, conyugeFallecimiento, conyugeNacimiento, personaSecundariaId]
+                            [
+                                fila.conyuge_dni?.trim() || null,
+                                tipoDocConyugeId,
+                                fechasConyuge.fecha_fallecimiento,
+                                fechasConyuge.fecha_nacimiento,
+                                personaSecundariaId,
+                            ]
                         );
                     }
                 } else {

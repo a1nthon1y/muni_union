@@ -1806,7 +1806,7 @@ de directorios y organización del proyecto</h3>
 │   │   ├── config/          Configuración de BD, logger y Swagger
 │   │   ├── controllers/     Adaptación HTTP y coordinación
 │   │   ├── middlewares/     Auth, roles, permisos, auditoría, uploads y errores
-│   │   ├── migrations/      Scripts SQL 000–006
+│   │   ├── migrations/      Scripts SQL 000–008
 │   │   ├── routes/          Endpoints y validación
 │   │   ├── services/        Reglas de negocio y consultas SQL
 │   │   ├── utils/           Utilidades compartidas
@@ -2487,6 +2487,7 @@ Inicialización canónica del esquema</h4>
 <li><code>005_seed_data.sql</code></li>
 <li><code>006_configuracion_sistema.sql</code></li>
 <li><code>007_identidad_visual.sql</code></li>
+<li><code>008_fecha_fallecimiento.sql</code></li>
 </ol>
 <p>Preparar el repositorio:</p>
 <pre class="bash"><code># [VM23]
@@ -2496,14 +2497,14 @@ git clone https://github.com/a1nthon1y/muni_union.git /opt/muni_union</code></pr
 <p>Aplicar como <code>app_user</code> mediante socket local:</p>
 <pre class="bash"><code># [VM23]
 export PGPASSWORD=&#39;muniunion2026_prod&#39;
-for archivo in /opt/muni_union/back/src/migrations/00{0..7}_*.sql; do
+for archivo in /opt/muni_union/back/src/migrations/00{0..8}_*.sql; do
   psql -U app_user -d registro_muni_union -v ON_ERROR_STOP=1 -f &quot;$archivo&quot;
 done
 unset PGPASSWORD</code></pre>
-<p>El patrón <code>00{0..7}_*.sql</code> debe resolver exactamente ocho
+<p>El patrón <code>00{0..8}_*.sql</code> debe resolver exactamente nueve
 archivos. Revisar la lista antes de ejecutar:</p>
 <pre class="bash"><code># [VM23]
-ls -1 /opt/muni_union/back/src/migrations/00{0..7}_*.sql</code></pre>
+ls -1 /opt/muni_union/back/src/migrations/00{0..8}_*.sql</code></pre>
 <h5 id="alternativa-destructiva-init_dbsh-limpia">Alternativa
 destructiva <code>init_db.sh limpia</code></h5>
 <p><code>init_db.sh limpia</code> elimina la base completa, termina
@@ -3709,8 +3710,8 @@ máximo validado</td>
 <code>apellido_materno</code>;
 <code>tipo_documento_id?</code>/<code>tipo_documento?</code>,
 <code>dni?</code>, <code>sexo?</code>, <code>fecha_nacimiento?</code>,
-<code>telefono?</code>, <code>direccion?</code>,
-<code>observaciones?</code></td>
+<code>fecha_fallecimiento?</code>, <code>telefono?</code>,
+<code>direccion?</code>, <code>observaciones?</code></td>
 <td>201 persona</td>
 <td>400, 401, 500</td>
 </tr>
@@ -3751,8 +3752,9 @@ máximo validado</td>
 <code>apellido_materno</code>;
 <code>tipo_documento_id?</code>/<code>tipo_documento?</code>,
 <code>dni?</code>, <code>sexo?</code>, <code>fecha_nacimiento?</code>,
-<code>telefono?</code>, <code>direccion?</code>,
-<code>observaciones?</code></td>
+<code>fecha_fallecimiento?</code>, <code>telefono?</code>,
+<code>direccion?</code>, <code>observaciones?</code>;
+<code>fecha_fallecimiento: null</code> elimina el valor</td>
 <td>200 persona</td>
 <td>400, 401, 403, 404, 500</td>
 </tr>
@@ -3772,6 +3774,13 @@ máximo validado</td>
 </tr>
 </tbody>
 </table>
+<p><code>fecha_fallecimiento</code> es opcional en altas, digitalización
+e importación. Cuando se informa junto con
+<code>fecha_nacimiento</code>, no puede ser anterior. En
+actualizaciones, omitir el campo conserva el valor y enviar
+<code>null</code> lo elimina. La importación conserva las fechas
+existentes cuando la celda está vacía y actualiza también a personas
+identificadas por DNI.</p>
 <h4 id="actas--apiactas">Actas — <code>/api/actas</code></h4>
 <table>
 <thead>
@@ -4043,6 +4052,10 @@ sin máximo validado</td>
 </table>
 <p>Las exportaciones elevan internamente el límite hasta 100 000
 registros.</p>
+<p>Los Excel de Personas y Actas incluyen fecha de nacimiento y fecha de
+fallecimiento. En Actas se exportan los datos del titular y, para
+matrimonios, también los del cónyuge. Las fechas se formatean desde
+<code>YYYY-MM-DD</code> sin conversión de zona horaria.</p>
 <h4 id="auditoría--apiauditoria">Auditoría —
 <code>/api/auditoria</code></h4>
 <table>
@@ -4864,6 +4877,14 @@ cumplimiento.</p>
 <td>DP/DS</td>
 </tr>
 <tr>
+<td><code>fecha_fallecimiento</code></td>
+<td>DATE</td>
+<td>Sí</td>
+<td>—</td>
+<td>Fallecimiento; dato opcional</td>
+<td>DP/DS</td>
+</tr>
+<tr>
 <td><code>telefono</code></td>
 <td>VARCHAR(20)</td>
 <td>Sí</td>
@@ -5595,6 +5616,11 @@ Scripts de inicialización y protección de datos personales</h3>
 <td>Retiro idempotente del valor heredado e incorporación de ambos
 logos</td>
 </tr>
+<tr>
+<td style="text-align: right;">9</td>
+<td><code>008_fecha_fallecimiento.sql</code></td>
+<td>Incorpora idempotentemente la fecha de fallecimiento opcional</td>
+</tr>
 </tbody>
 </table>
 <p>Los scripts utilizan <code>IF NOT EXISTS</code>,
@@ -5610,7 +5636,7 @@ limpia</h4>
 <p><code>deploy/db/instalacion_limpia.sql</code> es un consolidado
 alternativo y destructivo cuando se ejecuta mediante
 <code>init_db.sh limpia</code>. No es equivalente a
-<code>000–007</code>:</p>
+<code>000–008</code>:</p>
 <ul>
 <li>crea <code>configuracion_sistema</code> con las dos claves de
 identidad visual;</li>
@@ -6154,6 +6180,7 @@ MIGRACIONES=(
   back/src/migrations/005_seed_data.sql
   back/src/migrations/006_configuracion_sistema.sql
   back/src/migrations/007_identidad_visual.sql
+  back/src/migrations/008_fecha_fallecimiento.sql
 )
 read -rsp &quot;DB_PASSWORD app_user: &quot; PGPASSWORD
 echo

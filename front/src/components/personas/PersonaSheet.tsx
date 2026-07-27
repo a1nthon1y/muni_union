@@ -34,6 +34,10 @@ import { Loader2, Save, UserPlus, Fingerprint, MapPin, Calendar, Phone } from "l
 import { Persona, PersonaInput } from "@/types/persona";
 import { personasService } from "@/services/personas.service";
 import { dateUtils } from "@/utils/dateUtils";
+import {
+    MENSAJE_ORDEN_FECHAS,
+    validarOrdenFechas,
+} from "@/lib/persona-fechas";
 
 const personaSchema = z.object({
     tipo_documento: z.string().min(1, "Seleccione tipo"),
@@ -47,6 +51,14 @@ const personaSchema = z.object({
     telefono: z.string().max(9, "Max 9 dígitos").optional().or(z.literal("")),
     direccion: z.string().optional().or(z.literal("")),
     observaciones: z.string().optional().or(z.literal("")),
+}).superRefine((data, ctx) => {
+    if (!validarOrdenFechas(data.fecha_nacimiento, data.fecha_fallecimiento)) {
+        ctx.addIssue({
+            code: "custom",
+            message: MENSAJE_ORDEN_FECHAS,
+            path: ["fecha_fallecimiento"],
+        });
+    }
 });
 
 type PersonaFormValues = z.infer<typeof personaSchema>;
@@ -143,7 +155,9 @@ export function PersonaSheet({
                 apellido_materno: values.apellido_materno.toUpperCase(),
                 sexo: values.sexo as 'M' | 'F',
                 fecha_nacimiento: values.fecha_nacimiento || undefined,
-                fecha_fallecimiento: values.fecha_fallecimiento || undefined,
+                fecha_fallecimiento: persona
+                    ? values.fecha_fallecimiento || null
+                    : values.fecha_fallecimiento || undefined,
                 telefono: values.telefono || undefined,
                 direccion: values.direccion?.toUpperCase() || undefined,
                 observaciones: values.observaciones || undefined,

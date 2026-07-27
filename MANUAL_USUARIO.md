@@ -245,10 +245,12 @@ La **Consola de Digitalización** registra de forma conjunta ciudadano, acta y a
 1. Seleccione el tipo de documento.
 2. Ingrese DNI si corresponde.
 3. Complete nombres y apellidos.
-4. Seleccione y verifique el sexo, que es obligatorio. Complete fecha de nacimiento, teléfono u observaciones cuando correspondan.
+4. Seleccione y verifique el sexo, que es obligatorio. Complete fecha de nacimiento, fecha de fallecimiento, teléfono u observaciones cuando correspondan. La fecha de fallecimiento es opcional.
 5. Revise las coincidencias mostradas por el sistema.
 
 Para una persona sin documento use **SIN DOCUMENTO**.
+
+Si registra ambas fechas, la fecha de fallecimiento no puede ser anterior a la fecha de nacimiento. Deje **F. Fallecimiento** vacía cuando no corresponda.
 
 > Una coincidencia por nombre no demuestra que sea la misma persona. Revise fecha, acta física y demás datos. No fusione registros por suposición.
 
@@ -347,6 +349,8 @@ Abra el menú **⋮** de la fila:
 | Reactivar | Solo ADMIN | Estado activo |
 | Eliminar | Permiso `actas_eliminar` | Eliminación lógica |
 
+La ficha y la impresión del acta muestran la fecha de fallecimiento del titular o cónyuge únicamente cuando está registrada.
+
 Para anular, el motivo es obligatorio. Si aparece `Debe indicar el motivo de anulación`, complete el campo.
 
 > Reemplazar o eliminar un documento puede borrar el archivo físico anterior. Confirme acta y archivo antes de aceptar.
@@ -394,14 +398,14 @@ El campo **Buscar por DNI o Nombres...** consulta mientras escribe.
 2. Complete nombres y apellidos obligatorios.
 3. Seleccione tipo de documento; use **SIN DOCUMENTO** si corresponde.
 4. Seleccione y verifique el sexo, que es obligatorio.
-5. Complete los demás datos disponibles.
+5. Complete fecha de nacimiento y, solo si corresponde, **F. Fallecimiento**.
 6. Revise y guarde.
 
 #### 4.3.3. Editar, eliminar y exportar
 
-- Editar requiere `personas_modificar`.
+- Editar requiere `personas_modificar`. Desde **Editar Ciudadano** puede registrar, corregir o borrar **F. Fallecimiento**. Para borrarla, deje el campo vacío y guarde.
 - Eliminar requiere `personas_eliminar` y puede rechazarse si la persona tiene actas.
-- **EXPORTAR** genera Excel del resultado filtrado.
+- **EXPORTAR** genera Excel del resultado filtrado con fecha de nacimiento y fecha de fallecimiento.
 
 No elimine una persona para resolver un duplicado sin verificar antes sus actas vinculadas.
 
@@ -506,10 +510,12 @@ Campos obligatorios por fila:
 
 Campos relevantes opcionales:
 
-- `dni`, `tipo_documento`, `sexo`, `fecha_nacimiento`, `telefono`;
+- `dni`, `tipo_documento`, `sexo`, `fecha_nacimiento`, `fecha_fallecimiento`, `telefono`;
 - `persona_observaciones`, `acta_observaciones`;
 - `nombre_archivo_pdf`, `carpeta_ruta`;
 - en matrimonio: `conyuge_nombres`, `conyuge_apellido_paterno`, `conyuge_apellido_materno` obligatorios, y demás campos `conyuge_*` cuando existan.
+
+`fecha_fallecimiento` y `conyuge_fecha_fallecimiento` son opcionales. Si se informan, deben contener una fecha real y no pueden ser anteriores a la fecha de nacimiento correspondiente. Una celda vacía no borra una fecha ya registrada.
 
 `sexo`, si se proporciona, acepta solo `M` o `F`. Si queda vacío, la versión actual asigna `M`. **No inicie nuevas cargas históricas hasta que Sistemas confirme la corrección de esta regla.**
 
@@ -624,8 +630,8 @@ Cuando utiliza varios filtros, el sistema exige que el registro cumpla todos al 
 
 | Módulo | Acción | Formato disponible | Contenido |
 |---|---|---|---|
-| Actas | EXPORTAR | Excel `.xlsx` | Actas con filtros activos |
-| Personas | EXPORTAR | Excel `.xlsx` | Ciudadanos filtrados |
+| Actas | EXPORTAR | Excel `.xlsx` | Actas con filtros activos y fechas de nacimiento/fallecimiento del titular; en matrimonios, también del cónyuge |
+| Personas | EXPORTAR | Excel `.xlsx` | Ciudadanos filtrados con fechas de nacimiento y fallecimiento |
 | Solicitudes | EXPORTAR | Excel `.xlsx` | Trámites filtrados |
 | Auditoría | EXPORTAR | Excel `.xlsx` | Bitácora filtrada; solo ADMIN |
 | Carga masiva | GENERAR REPORTE EXCEL | Excel `.xlsx` | Resultado del lote |

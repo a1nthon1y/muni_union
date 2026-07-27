@@ -68,7 +68,7 @@ ssh deploy@172.16.3.23 "
   for f in /tmp/000_schema.sql /tmp/001_refresh_tokens.sql /tmp/002_indexes.sql \
            /tmp/003_usuario_permisos.sql /tmp/004_usuario_permisos_modificar.sql \
            /tmp/005_seed_data.sql /tmp/006_configuracion_sistema.sql \
-           /tmp/007_identidad_visual.sql; do
+           /tmp/007_identidad_visual.sql /tmp/008_fecha_fallecimiento.sql; do
     [ -f \"\$f\" ] && psql -h 172.16.3.23 -U app_user -d registro_muni_union \
       -v ON_ERROR_STOP=1 -f \"\$f\"
   done
