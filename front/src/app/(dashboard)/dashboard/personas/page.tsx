@@ -4,10 +4,11 @@ import { useState } from "react";
 import { usePersonas } from "@/hooks/usePersonas";
 import { PersonasTable } from "@/components/personas/PersonasTable";
 import { PersonaSheet } from "@/components/personas/PersonaSheet";
+import { PersonaDetailSheet } from "@/components/personas/PersonaDetailSheet";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Persona } from "@/types/persona";
+import { Persona, PersonaInput } from "@/types/persona";
 import { Search, UserPlus, Download, Users, Loader2, RefreshCw } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
@@ -29,6 +30,8 @@ export default function PersonasPage() {
 
     const [isSheetOpen, setIsSheetOpen] = useState(false);
     const [selectedPersona, setSelectedPersona] = useState<Persona | null>(null);
+    const [detailPersona, setDetailPersona] = useState<Persona | null>(null);
+    const [isDetailOpen, setIsDetailOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [personaToDelete, setPersonaToDelete] = useState<number | null>(null);
     const [isExporting, setIsExporting] = useState(false);
@@ -40,7 +43,7 @@ export default function PersonasPage() {
             await reportesService.exportPersonas({ termino });
             await new Promise(resolve => setTimeout(resolve, 1500));
             toast.success("Descarga lista", { id: toastId });
-        } catch (error) {
+        } catch {
             toast.error("Error al generar el reporte", { id: toastId });
         } finally {
             setIsExporting(false);
@@ -58,6 +61,11 @@ export default function PersonasPage() {
         setIsSheetOpen(true);
     };
 
+    const handleView = (persona: Persona) => {
+        setDetailPersona(persona);
+        setIsDetailOpen(true);
+    };
+
     const handleDelete = (id: number) => {
         setPersonaToDelete(id);
         setIsDeleteDialogOpen(true);
@@ -68,15 +76,18 @@ export default function PersonasPage() {
             try {
                 await deletePersona(personaToDelete);
                 setPersonaToDelete(null);
-            } catch (error: any) {
-                toast.error(error.message || "No se pudo eliminar el ciudadano", {
+            } catch (error: unknown) {
+                const message = error instanceof Error
+                    ? error.message
+                    : "No se pudo eliminar el ciudadano";
+                toast.error(message, {
                     duration: 6000
                 });
             }
         }
     };
 
-    const handleSubmit = async (data: any) => {
+    const handleSubmit = async (data: PersonaInput) => {
         if (selectedPersona) {
             return await updatePersona(selectedPersona.id, data);
         } else {
@@ -150,13 +161,21 @@ export default function PersonasPage() {
             <PersonasTable
                 personas={personas}
                 isLoading={isLoading}
-                onSearch={setTermino}
-                onNew={handleNew}
+                onView={handleView}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
                 onReactivate={reactivatePersona}
                 pagination={pagination}
                 onPageChange={setPage}
+            />
+
+            <PersonaDetailSheet
+                isOpen={isDetailOpen}
+                onClose={() => {
+                    setIsDetailOpen(false);
+                    setDetailPersona(null);
+                }}
+                persona={detailPersona}
             />
 
             <PersonaSheet

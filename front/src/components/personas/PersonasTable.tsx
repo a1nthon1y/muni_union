@@ -3,11 +3,9 @@
 import {
     Edit2,
     Trash2,
-    Search,
-    UserPlus,
     MoreHorizontal,
     Phone,
-    Calendar
+    Eye
 } from "lucide-react";
 import { dateUtils } from "@/utils/dateUtils";
 import {
@@ -19,7 +17,6 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Persona } from "@/types/persona";
 import { Badge } from "@/components/ui/badge";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -35,11 +32,10 @@ import { Pagination } from "@/components/shared/Pagination";
 
 interface PersonasTableProps {
     personas: Persona[];
+    onView: (persona: Persona) => void;
     onEdit: (persona: Persona) => void;
     onDelete: (id: number) => void;
     onReactivate: (id: number) => void;
-    onSearch: (value: string) => void;
-    onNew: () => void;
     isLoading: boolean;
     pagination: {
         total: number;
@@ -52,10 +48,9 @@ interface PersonasTableProps {
 
 export function PersonasTable({
     personas,
+    onView,
     onEdit,
     onDelete,
-    onSearch,
-    onNew,
     isLoading,
     pagination,
     onPageChange
@@ -153,12 +148,19 @@ export function PersonasTable({
                                     <TableCell className="std-table-cell text-right">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-muted rounded-full">
+                                                <Button
+                                                    aria-label="Opciones de ciudadano"
+                                                    variant="ghost"
+                                                    className="h-8 w-8 p-0 hover:bg-muted rounded-full"
+                                                >
                                                     <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
                                                 </Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end" className="w-52 rounded-xl shadow-xl border-border p-1">
                                                 <DropdownMenuLabel className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 px-2 py-2">Opciones</DropdownMenuLabel>
+                                                <DropdownMenuItem onClick={() => onView(persona)} className="cursor-pointer font-medium gap-2 py-2.5 rounded-lg text-xs">
+                                                    <Eye className="icon-std" /> Ver detalles
+                                                </DropdownMenuItem>
                                                 {canModificar && (
                                                     <DropdownMenuItem onClick={() => onEdit(persona)} className="cursor-pointer font-medium gap-2 py-2.5 rounded-lg text-xs">
                                                         <Edit2 className="icon-std" /> Editar Ciudadano
