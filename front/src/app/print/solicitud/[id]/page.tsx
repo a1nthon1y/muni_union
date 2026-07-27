@@ -77,26 +77,25 @@ export default function SolicitudPrintPage() {
     }
 
     return (
-        <div className="min-h-screen bg-white text-black p-0 print:p-0 relative flex justify-center !bg-white !text-black shadow-none border-none">
-            {/* Control flotante para imprimir de nuevo si es necesario, oculto en print */}
-            <div className="fixed top-8 right-8 print:hidden z-50 flex flex-col items-end gap-3">
-                <p className="max-w-[220px] text-right text-[10px] font-bold uppercase tracking-widest text-slate-400">
+        <div className="relative flex min-h-screen justify-center border-none bg-white! p-0 text-black! shadow-none">
+            <div className="fixed top-8 right-8 z-50 flex flex-col items-end gap-3 print:hidden">
+                <p className="max-w-55 text-right text-[10px] font-bold uppercase tracking-widest text-slate-400">
                     Revise el documento. Luego imprima con el botón o Ctrl+P.
                 </p>
                 <div className="flex gap-3">
-                <Button
-                    variant="outline"
-                    onClick={() => window.close()}
-                    className="bg-white border-slate-200 text-slate-600 hover:bg-slate-50 shadow-xl rounded-full px-6 h-12 font-black uppercase tracking-widest text-[10px]"
-                >
-                    CERRAR
-                </Button>
-                <Button
-                    onClick={() => window.print()}
-                    className="bg-slate-900 text-white hover:bg-slate-800 shadow-xl rounded-full px-6 h-12 font-black uppercase tracking-widest text-[10px] flex gap-3"
-                >
-                    <Printer size={16} /> IMPRIMIR
-                </Button>
+                    <Button
+                        variant="outline"
+                        onClick={() => window.close()}
+                        className="h-12 rounded-full border-slate-200 bg-white px-6 text-[10px] font-black uppercase tracking-widest text-slate-600 shadow-xl hover:bg-slate-50"
+                    >
+                        CERRAR
+                    </Button>
+                    <Button
+                        onClick={() => window.print()}
+                        className="flex h-12 gap-3 rounded-full bg-slate-900 px-6 text-[10px] font-black uppercase tracking-widest text-white shadow-xl hover:bg-slate-800"
+                    >
+                        <Printer size={16} /> IMPRIMIR
+                    </Button>
                 </div>
             </div>
 

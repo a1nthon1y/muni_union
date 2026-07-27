@@ -232,11 +232,11 @@ export default function VerificarPage() {
                     style={{ background: "linear-gradient(160deg, #0c1f3a 0%, #0f2744 55%, #1a3a5c 100%)" }}>
 
                     {/* Blobs decorativos */}
-                    <div className="absolute -bottom-28 -right-28 w-[420px] h-[420px] rounded-full"
+                    <div className="absolute -bottom-28 -right-28 size-105 rounded-full"
                         style={{ background: "radial-gradient(circle, rgba(30,80,140,0.55) 0%, transparent 70%)" }} />
-                    <div className="absolute -top-20 -left-20 w-[320px] h-[320px] rounded-full"
+                    <div className="absolute -top-20 -left-20 size-80 rounded-full"
                         style={{ background: "radial-gradient(circle, rgba(20,60,110,0.5) 0%, transparent 70%)" }} />
-                    <div className="absolute top-16 right-8 w-[160px] h-[160px] rounded-full"
+                    <div className="absolute top-16 right-8 size-40 rounded-full"
                         style={{ background: "radial-gradient(circle, rgba(40,100,180,0.2) 0%, transparent 70%)" }} />
 
                     {/* Puntos flotantes */}
