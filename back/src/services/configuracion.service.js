@@ -1,5 +1,4 @@
-import { pool } from "../config/db.js";
-import { access } from "node:fs/promises";
+import { access, stat } from "node:fs/promises";
 import {
     guardarLogoAtomico,
     LOGOS,
@@ -17,34 +16,42 @@ const existe = async (ruta) => {
     }
 };
 
+const fechaModificacionArchivo = async (ruta) => {
+    try {
+        const info = await stat(ruta);
+        return info.mtime.toISOString();
+    } catch {
+        return null;
+    }
+};
+
+const armarEstadoLogos = async ({ archivoExiste, baseDir }) => {
+    const entradas = await Promise.all(
+        Object.entries(LOGOS).map(async ([tipo, logo]) => {
+            const rutaFisica = obtenerRutaLogo(tipo, baseDir);
+            const personalizado = await archivoExiste(rutaFisica);
+            return [tipo, {
+                tipo,
+                nombre: logo.filename,
+                ruta: logo.rutaPublica,
+                personalizado,
+                fecha_modificacion: personalizado
+                    ? await fechaModificacionArchivo(rutaFisica)
+                    : null,
+            }];
+        }),
+    );
+    return Object.fromEntries(entradas);
+};
+
 export const crearConfiguracionLogosService = ({
-    db = pool,
     guardarLogo = guardarLogoAtomico,
     archivoExiste = existe,
     baseDir = LOGOS_DIR,
 } = {}) => {
-    const obtenerConfiguracionLogos = async () => {
-        const { rows } = await db.query(
-            `SELECT clave, valor, fecha_modificacion
-             FROM configuracion_sistema
-             WHERE clave IN ('logo_principal', 'logo_blanco')`,
-        );
-        const porClave = new Map(rows.map((row) => [row.clave, row]));
-
-        const entradas = await Promise.all(
-            Object.entries(LOGOS).map(async ([tipo, logo]) => {
-                const row = porClave.get(logo.clave);
-                return [tipo, {
-                    tipo,
-                    nombre: logo.filename,
-                    ruta: logo.rutaPublica,
-                    personalizado: await archivoExiste(obtenerRutaLogo(tipo, baseDir)),
-                    fecha_modificacion: row?.fecha_modificacion || null,
-                }];
-            }),
-        );
-        return Object.fromEntries(entradas);
-    };
+    const obtenerConfiguracionLogos = async () => (
+        armarEstadoLogos({ archivoExiste, baseDir })
+    );
 
     const actualizarLogo = async ({ tipo, file }) => {
         const logo = LOGOS[tipo];
@@ -55,7 +62,7 @@ export const crearConfiguracionLogosService = ({
             throw new LogoValidationError(`Seleccione el archivo ${logo.filename}.`);
         }
 
-        await guardarLogo({
+        const ruta = await guardarLogo({
             tipo,
             originalname: file.originalname,
             mimetype: file.mimetype,
@@ -63,27 +70,12 @@ export const crearConfiguracionLogosService = ({
             baseDir,
         });
 
-        const { rows } = await db.query(
-            `INSERT INTO configuracion_sistema (clave, valor, descripcion, fecha_modificacion)
-             VALUES ($1, $2, $3, NOW())
-             ON CONFLICT (clave) DO UPDATE
-               SET valor = EXCLUDED.valor,
-                   descripcion = EXCLUDED.descripcion,
-                   fecha_modificacion = NOW()
-             RETURNING fecha_modificacion`,
-            [
-                logo.clave,
-                logo.rutaPublica,
-                `Ruta canónica del ${tipo === "principal" ? "logo principal" : "logo blanco"} institucional.`,
-            ],
-        );
-
         return {
             tipo,
             nombre: logo.filename,
             ruta: logo.rutaPublica,
             personalizado: true,
-            fecha_modificacion: rows[0]?.fecha_modificacion || null,
+            fecha_modificacion: await fechaModificacionArchivo(ruta),
         };
     };
 

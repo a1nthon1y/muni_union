@@ -8,7 +8,9 @@ const upload = multer({
         files: 1,
     },
     fileFilter: (_req, file, callback) => {
-        if (file.mimetype !== "image/svg+xml") {
+        const nombreSvg = file.originalname?.toLowerCase().endsWith(".svg");
+        const tipoSvg = !file.mimetype || file.mimetype === "image/svg+xml";
+        if (!nombreSvg || !tipoSvg) {
             return callback(
                 new LogoValidationError("Solo se acepta un archivo SVG."),
                 false,

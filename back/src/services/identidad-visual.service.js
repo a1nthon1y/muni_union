@@ -58,7 +58,7 @@ export const validarLogoSvg = ({
     if (originalname !== logo.filename) {
         throw new LogoValidationError(`El archivo debe llamarse exactamente ${logo.filename}.`);
     }
-    if (mimetype !== "image/svg+xml") {
+    if (mimetype && mimetype !== "image/svg+xml") {
         throw new LogoValidationError("Solo se acepta un archivo SVG con tipo image/svg+xml.");
     }
     if (!Buffer.isBuffer(buffer) || buffer.length === 0) {

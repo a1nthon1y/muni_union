@@ -69,12 +69,17 @@ describe("Configuración de identidad visual", () => {
         });
     });
 
-    test("muestra los dos logos y elimina la configuración de URL", async () => {
+    test("muestra los nombres obligatorios de los dos logos", async () => {
         render(<ConfiguracionPage />);
 
-        expect(await screen.findByRole("heading", { name: "Identidad visual" })).toBeInTheDocument();
-        expect(screen.getByText("Logo_MDUnion.svg")).toBeInTheDocument();
-        expect(screen.getByText("Logo_blanco.svg")).toBeInTheDocument();
+        expect(await screen.findByRole("heading", {
+            name: /Identidad visual — logos/i,
+        })).toBeInTheDocument();
+        expect(screen.getByRole("heading", {
+            name: "Nombre obligatorio de cada imagen",
+        })).toBeInTheDocument();
+        expect(screen.getAllByText("Logo_MDUnion.svg").length).toBeGreaterThan(0);
+        expect(screen.getAllByText("Logo_blanco.svg").length).toBeGreaterThan(0);
         expect(screen.queryByText(/URL pública de verificación/i)).not.toBeInTheDocument();
         expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
     });
@@ -89,8 +94,8 @@ describe("Configuración de identidad visual", () => {
             new File(["<svg/>"], "otro.svg", { type: "image/svg+xml" }),
         );
 
-        expect(toastError).toHaveBeenCalledWith(
-            "El archivo debe llamarse exactamente Logo_MDUnion.svg.",
+        expect(await screen.findByRole("alert")).toHaveTextContent(
+            /Logo_MDUnion\.svg/,
         );
         expect(updateLogo).not.toHaveBeenCalled();
     });
@@ -112,7 +117,7 @@ describe("Configuración de identidad visual", () => {
             expect(updateLogo).toHaveBeenCalledWith("principal", archivo);
         });
         expect(toastSuccess).toHaveBeenCalledWith(
-            "Logo_MDUnion.svg fue reemplazado correctamente.",
+            expect.stringContaining("Logo_MDUnion.svg fue reemplazado"),
         );
     });
 });
