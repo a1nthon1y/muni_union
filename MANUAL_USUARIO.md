@@ -87,7 +87,7 @@ El sistema permite:
 - Cuenta personal activa. No se deben compartir cuentas.
 - Lector de PDF y aplicación compatible con Excel (`.xlsx`) para documentos y reportes.
 
-Si el navegador muestra una advertencia de certificado o la página no abre, **no cambie configuraciones técnicas**. Registre el mensaje y comuníquese con Sistemas.
+Al abrir la URL interna, el navegador puede mostrar una advertencia de seguridad antes del login. El procedimiento para continuar se encuentra en la sección 2.1.
 
 ---
 
@@ -100,6 +100,25 @@ Desde un equipo conectado a la red municipal, abra:
 `https://172.16.3.21/login`
 
 El portal público de consulta es independiente del acceso interno y se describe en 5.3.
+
+#### 2.1.1. Saltar la advertencia del navegador
+
+La advertencia aparece porque el navegador no reconoce automáticamente el certificado utilizado en la red privada municipal. Para ingresar:
+
+1. Confirme que el equipo esté conectado a la red municipal.
+2. Mire la barra de direcciones y compruebe que muestre `https://172.16.3.21`.
+3. Pulse **Configuración avanzada** o **Avanzado**. El nombre depende del navegador.
+4. Busque la opción **Continuar a 172.16.3.21** o un texto equivalente que incluya esa misma dirección.
+5. Pulse **Continuar a 172.16.3.21**.
+6. Espere hasta que aparezca la pantalla **Iniciar Sesión**.
+
+**Resultado esperado:** se muestran los campos **Nombre de Usuario**, **Contraseña** y el botón **Ingresar**.
+
+> Si la barra de direcciones muestra una dirección diferente de `https://172.16.3.21`, no pulse **Continuar**.
+
+La advertencia puede aparecer nuevamente al usar otro navegador, otro equipo o una sesión nueva. En ese caso repita estos pasos y vuelva a comprobar la dirección.
+
+> **Captura pendiente — Figura 2.1-A.** Advertencia del navegador con las opciones **Avanzado** y **Continuar a 172.16.3.21** identificadas.
 
 ### 2.2. Interfaz de inicio de sesión y campos requeridos
 
@@ -285,16 +304,33 @@ El archivo es obligatorio para este flujo.
 
 #### 4.2.1. Buscar y filtrar
 
-Puede combinar:
+Los filtros reducen la lista a medida que se escriben o seleccionan. No es necesario llenar todos. Puede usar uno solo o combinar varios.
 
-- DNI o nombres;
-- número/código de acta;
-- libro;
-- año;
-- tipo de acta;
-- fecha desde/hasta.
+| Filtro visible | Qué debe ingresar | Ejemplo y resultado |
+|---|---|---|
+| **Buscar por DNI o Nombres...** | DNI completo, nombre o apellido de la persona | `12345678` muestra actas relacionadas con ese DNI; `QUISPE` muestra coincidencias por nombre |
+| **Código o folio** | Código completo, folio numérico o CUI | `NAC-L32-15`, `15` o el CUI registrado |
+| **Libro** | Solo el número del libro | `32` busca actas cuyo código pertenece al libro 32 |
+| **Año** | Año de cuatro dígitos | `2024` limita el resultado a ese año |
+| **Tipo** | TODOS, NACIMIENTO, MATRIMONIO o DEFUNCION | Seleccione **TODOS** para no limitar por tipo |
+| **Desde / Hasta** | Fecha inicial y final | Use ambas fechas para revisar un periodo |
+
+Procedimiento recomendado:
+
+1. Antes de escribir, mire si ya existe algún filtro activo.
+2. Ingrese primero el dato más específico, por ejemplo DNI, código, folio o CUI.
+3. Espere a que la lista se actualice.
+4. Si aparecen demasiados resultados, agregue tipo, año o fechas.
+5. Antes de exportar, confirme que la lista visible corresponda a lo solicitado.
+6. Para comenzar otra búsqueda, pulse el botón con **flechas circulares**. Todos los campos deben quedar vacíos y **Tipo** debe volver a **TODOS**.
+
+> **Importante para búsquedas por CUI:** no mantenga un valor en **Libro** si el registro CUI no tiene libro. Si conoce el CUI y no aparece, limpie todos los filtros, escriba únicamente el CUI en **Código o folio** y espere la actualización.
+
+**Ejemplo de combinación:** para revisar nacimientos del libro 32 del año 2024, escriba `32` en **Libro**, `2024` en **Año** y seleccione **NACIMIENTO** en **Tipo**.
 
 Para soporte o exportación, anote todos los filtros activos.
+
+> **Captura pendiente — Figura 4.4-A.** Filtros de Actas identificados, ejemplo de búsqueda y botón de flechas circulares para limpiar.
 
 #### 4.2.2. Modificar, anular, reactivar o eliminar
 
@@ -338,9 +374,19 @@ Mensajes de exportación: `Generando Excel de actas...`, `Descarga lista` o `Err
 
 #### 4.3.1. Buscar antes de crear
 
-1. Busque por DNI.
-2. Busque también por nombres y apellidos.
-3. Revise coincidencias e historial antes de registrar.
+El campo **Buscar por DNI o Nombres...** consulta mientras escribe.
+
+1. Para una persona con DNI, escriba los 8 dígitos completos.
+2. Espere la actualización de la lista.
+3. Si no conoce el DNI, borre el contenido y escriba un nombre o apellido.
+4. Revise todas las coincidencias antes de registrar una nueva persona.
+5. Para limpiar la búsqueda, pulse el botón con **flechas circulares**. La lista general debe aparecer nuevamente.
+
+**Resultado esperado:** la tabla muestra solo las personas que coinciden con el texto ingresado.
+
+> **Revise antes de crear:** una búsqueda sin resultados no es suficiente si el nombre está incompleto. Pruebe DNI, primer apellido y nombres para evitar duplicados.
+
+> **Captura pendiente — Figura 4.7-A.** Buscador de Ciudadanos, resultado filtrado y botón para limpiar.
 
 #### 4.3.2. Registrar
 
@@ -406,7 +452,24 @@ El documento impreso puede contener DNI completo. Debe entregarse únicamente al
 
 #### 4.4.4. Filtros y exportación
 
-Puede filtrar por estado, texto y fechas. **EXPORTAR** utiliza los filtros activos.
+Los filtros se aplican al listado y también al archivo generado por **EXPORTAR**.
+
+| Filtro visible | Uso |
+|---|---|
+| **Buscar por N° Trámite, DNI o apellidos...** | Escriba el número de solicitud, DNI del solicitante o uno de sus apellidos |
+| **Desde** | Fecha inicial del periodo |
+| **Hasta** | Fecha final del periodo |
+| **Estado** | TODOS, PENDIENTE, ATENDIDO o ANULADO |
+
+1. Para encontrar un trámite concreto, escriba primero su número.
+2. Si busca varias solicitudes, seleccione las fechas y el estado.
+3. Espere la actualización de la tabla después de cada cambio.
+4. Revise la lista antes de pulsar **EXPORTAR**.
+5. Para retirar todos los filtros, pulse el botón con **flechas circulares**. El texto y las fechas deben quedar vacíos, y el estado debe volver a **TODOS**.
+
+**Ejemplo:** para revisar trámites pendientes de una semana, seleccione la fecha inicial en **Desde**, la fecha final en **Hasta** y **PENDIENTE** en **Estado**.
+
+> **Captura pendiente — Figura 4.10-A.** Filtros de Solicitudes combinados y botón para limpiar.
 
 > **Captura pendiente — Figura 4.10.** Listado de Trámites y Certificados con filtros.  
 
@@ -457,23 +520,68 @@ Campos relevantes opcionales:
 1. Seleccione el Excel.
 2. Seleccione el ZIP si corresponde.
 3. Pulse **INICIAR CARGA** una sola vez.
-4. Espere; el cliente admite hasta aproximadamente 16 minutos y 40 segundos.
-5. No cierre la pestaña ni repita la carga mientras procesa.
+4. Cuando aparezca la barra de progreso, no vuelva a pulsar el botón.
+5. Mientras suben los archivos puede mostrarse `Sincronizando archivos con el sistema central...`.
+6. Cuando la carga llega a 100 %, puede mostrarse `Procesando registros de acta, por favor espere.`.
+7. Mantenga abierta la pestaña. El cliente admite hasta aproximadamente 16 minutos y 40 segundos.
+8. No actualice la página, no cierre el navegador y no inicie otra carga mientras procesa.
 
-#### 4.5.3. Interpretar resultados
+> Llegar a **100 %** solo confirma que los archivos terminaron de enviarse. La importación todavía puede estar procesando las filas.
 
-| Estado | Significado | Acción |
+#### 4.5.3. Confirmar que la importación terminó
+
+La importación se considera terminada únicamente cuando desaparece la barra de progreso y aparece el resumen con estos cinco contadores:
+
+- **TOTAL FILAS**;
+- **ACTAS NUEVAS**;
+- **YA EXISTÍAN**;
+- **DOCS VINCULADOS**;
+- **ERRORES**.
+
+Puede aparecer uno de estos resultados:
+
+| Resultado visible | Significado | Acción inmediata |
 |---|---|---|
-| `OK` | Persona/acta procesada | Verifique muestra de registros |
-| `OMITIDO` | Acta ya existente | No duplicar; revisar mensaje |
-| `OMITIDO_DOC` | Acta existente sin documento; archivo vinculado | Verificar documento |
-| `ERROR` | Fila rechazada | Corregir esa fila y reintentar solo lo necesario |
+| `Importación completada` y cero errores | El lote terminó sin filas rechazadas | Revise una muestra y genere el reporte |
+| Mensaje de documentos vinculados | Se asociaron documentos a actas que ya existían sin PDF | Abra esas actas y compruebe el documento |
+| Mensaje con cantidad de errores | El lote terminó parcialmente | No cargue todo nuevamente; revise las filas indicadas |
 
-Después puede usar **GENERAR REPORTE EXCEL** y **IR AL REGISTRO DE ACTAS**.
+> **Operación terminada:** el resumen final ya está visible. En este punto puede usar **GENERAR REPORTE EXCEL** o **IR AL REGISTRO DE ACTAS**.
 
-> Conserve el original y el reporte. Para reintentar, cree otro Excel únicamente con filas `ERROR` corregidas. Las filas sin DNI requieren revisión humana y no deben cargarse hasta corregir la regla automática de coincidencia.
+#### 4.5.4. Interpretar el estado de cada fila
 
-#### 4.5.4. Datos para soporte de importación
+| Estado | Qué ocurrió | Qué debe hacer | ¿Debe reintentar? |
+|---|---|---|---|
+| `OK` | La persona y el acta fueron procesadas correctamente | Busque una muestra en Registro de Actas | No |
+| `OMITIDO` | El acta ya existía y no se creó otra | Lea el mensaje y busque el acta existente | No |
+| `OMITIDO_DOC` | El acta ya existía sin documento y se vinculó el archivo disponible | Abra el acta y compruebe **Ver/Descargar documento** | No, salvo que la verificación muestre un problema |
+| `ERROR` | La fila fue rechazada antes de completarse | Anote el número de fila, lea el mensaje y corrija el Excel | Sí, pero solo esa fila corregida |
+
+Después:
+
+1. Pulse **GENERAR REPORTE EXCEL**.
+2. Abra el reporte y ubique la columna **ESTADO**.
+3. Revise **DETALLE/ERROR** para cada fila `ERROR`.
+4. Pulse **IR AL REGISTRO DE ACTAS** y compruebe una muestra de filas `OK` y todas las filas `OMITIDO_DOC`.
+5. Si debe reintentar, cree otro Excel únicamente con filas `ERROR` corregidas.
+
+> No vuelva a cargar el archivo completo. Las filas `OK`, `OMITIDO` y `OMITIDO_DOC` ya fueron atendidas y repetirlas dificulta la revisión.
+
+Las filas sin DNI requieren revisión humana y no deben cargarse hasta corregir la regla automática de coincidencia.
+
+#### 4.5.5. Si la conexión se interrumpe
+
+1. No pulse **INICIAR CARGA** nuevamente.
+2. Si la barra continúa avanzando, espere a que aparezca el resumen.
+3. Si aparece un error o la página deja de responder, conserve el Excel, ZIP y hora de inicio.
+4. Abra **Actas → Registro de Actas**.
+5. Limpie los filtros anteriores.
+6. Busque varias filas del lote por código, folio, CUI o persona.
+7. Prepare un nuevo Excel solo con filas confirmadas como no procesadas o con estado `ERROR`.
+
+> **Revise antes de repetir:** una interrupción del navegador no demuestra que el servidor haya detenido la importación.
+
+#### 4.5.6. Datos que deben conservarse
 
 - nombre del Excel y ZIP;
 - total de filas;
@@ -488,6 +596,10 @@ No envíe el archivo completo por canales no autorizados: contiene datos persona
 
 > **Captura pendiente — Figura 4.15.** Resumen real del resultado del lote con estados `OK`, `OMITIDO`, `OMITIDO_DOC` y `ERROR`.
 
+> **Captura pendiente — Figura 4.15-A.** Importación completada sin errores, con los cinco contadores del resumen.
+
+> **Captura pendiente — Figura 4.15-B.** Importación parcial con errores y detalle de las filas rechazadas.
+
 ---
 
 ## 5. Generación de Reportes y Consultas
@@ -498,6 +610,13 @@ No envíe el archivo completo por canales no autorizados: contiene datos persona
 2. Complete únicamente los filtros que correspondan a la consulta.
 3. Revise que el listado visible represente el universo que desea exportar.
 4. Anote los filtros cuando el reporte sea parte de una atención o incidencia.
+
+Cuando utiliza varios filtros, el sistema exige que el registro cumpla todos al mismo tiempo. Por ejemplo, una solicitud debe coincidir con el texto, las fechas y el estado seleccionados. Si una información que conoce no aparece:
+
+1. pulse el botón con **flechas circulares**;
+2. confirme que los campos quedaron vacíos;
+3. realice primero una búsqueda con un solo dato;
+4. agregue otros filtros únicamente para reducir los resultados.
 
 > **Captura pendiente — Figura 5.1.** Ejemplo real de filtros aplicados en Registro de Actas antes de la exportación.
 
@@ -567,6 +686,15 @@ Una respuesta válida confirma el registro en el sistema; no reemplaza la revisi
 
 **Rol:** ADMIN
 
+Buscar usuario:
+
+1. En **Buscar por DNI, usuario o nombres...**, escriba uno de esos datos.
+2. Espere la actualización del listado.
+3. Verifique que la fila corresponda a la cuenta correcta antes de abrir **⋮**.
+4. Para mostrar nuevamente todas las cuentas, pulse el botón con **flechas circulares**.
+
+El buscador solo cambia la lista visible. No activa, desactiva ni modifica cuentas.
+
 Crear usuario:
 
 1. Pulse **NUEVO USUARIO**.
@@ -584,6 +712,8 @@ Acciones del menú **⋮**:
 No desactive ni elimine la cuenta propia durante una sesión administrativa.
 
 > **Captura pendiente — Figura 6.1.** Panel de Gestión de Usuarios de una sesión ADMIN.  
+
+> **Captura pendiente — Figura 6.1-A.** Buscador de Usuarios con una coincidencia y botón para limpiar.
 
 > **Captura pendiente — Figura 6.2.** Formulario **NUEVO USUARIO**, sin contraseñas visibles.
 
@@ -618,11 +748,26 @@ ADMIN puede reactivar actas y gestionar usuarios, auditoría, backup, configurac
 
 **Pantalla:** Bitácora de Auditoría
 
-Permite filtrar por usuario, fechas, módulo y operación; revisar quién hizo qué y exportar resultados.
+Permite filtrar por usuario, fechas y módulo; revisar quién hizo qué y exportar resultados.
+
+| Filtro visible | Uso |
+|---|---|
+| **Usuario...** | Escriba el usuario que realizó la acción |
+| Primera fecha | Inicio del periodo |
+| Segunda fecha | Fin del periodo |
+| **Módulo** | TODOS, ACTAS, USUARIOS, PERSONAS o SOLICITUDES |
+
+1. Escriba el usuario o seleccione el periodo y módulo.
+2. Espere la actualización de la tabla.
+3. Revise **Total: {cantidad} registros** para conocer el resultado.
+4. Pulse **EXPORTAR** solo después de comprobar los filtros.
+5. Para restablecer la bitácora, pulse el botón con **flechas circulares**.
 
 La bitácora puede contener IP y datos operativos. No debe compartirse fuera del personal autorizado.
 
 > **Captura pendiente — Figura 6.5.** Bitácora de Auditoría con filtros y botón **EXPORTAR**.
+
+> **Captura pendiente — Figura 6.5-A.** Filtros de Auditoría identificados y total resultante.
 
 #### 6.3.2. Descargar backup
 
@@ -702,9 +847,39 @@ Si el archivo tiene otro nombre, formato o tamaño, la pantalla lo rechaza y con
 | Ciudadano no verifica | Número, URL o servicio | Revise el número impreso y reporte URL/hora |
 | Backup no descarga | Permiso o servicio | No intente restaurar; contacte al área técnica |
 
-Si la conexión se pierde durante un guardado, primero consulte el listado correspondiente. Repetir la operación sin verificar puede producir duplicados.
+#### 7.2.1. Si falla al guardar
+
+1. No pulse **Guardar** o **Registrar** repetidamente.
+2. Espere unos segundos.
+3. Regrese al listado correspondiente: Personas, Actas o Solicitudes.
+4. Busque el registro con DNI, código, folio, CUI o número de trámite.
+5. Si el registro aparece, la operación terminó y no debe repetirla.
+6. Repita el registro únicamente cuando confirmó que no existe.
+
+#### 7.2.2. Si falla una importación
+
+1. No inicie otro lote.
+2. Revise si la barra sigue avanzando o si apareció el resumen final.
+3. Si no hay resumen, abra Registro de Actas y revise una muestra del lote.
+4. Reintente únicamente filas `ERROR` o filas confirmadas como no procesadas.
+
+#### 7.2.3. Si falla una exportación
+
+1. Espere hasta que desaparezca el mensaje de generación.
+2. Revise la carpeta **Descargas** del equipo.
+3. Si el archivo no existe, conserve los mismos filtros y reintente una sola vez.
+
+#### 7.2.4. Si la sesión vuelve al login
+
+1. Inicie sesión nuevamente.
+2. Abra el módulo donde estaba trabajando.
+3. Busque el registro antes de repetir la última acción.
+
+Repetir una operación sin verificar puede producir duplicados o dificultar la revisión.
 
 > **Captura pendiente — Figura 7.3.** Mensaje real de pérdida de conexión o error de carga.  
+
+> **Captura pendiente — Figura 7.3-A.** Consulta del listado para confirmar si una operación interrumpida terminó.
 
 > **Captura pendiente — Figura 7.4.** Mensaje real de acceso denegado para un perfil sin permiso.
 

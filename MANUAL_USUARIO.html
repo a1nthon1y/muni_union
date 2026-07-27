@@ -1036,9 +1036,9 @@ formularios extensos se recomienda 1920 × 1080.</li>
 <li>Lector de PDF y aplicación compatible con Excel (<code>.xlsx</code>)
 para documentos y reportes.</li>
 </ul>
-<p>Si el navegador muestra una advertencia de certificado o la página no
-abre, <strong>no cambie configuraciones técnicas</strong>. Registre el
-mensaje y comuníquese con Sistemas.</p>
+<p>Al abrir la URL interna, el navegador puede mostrar una advertencia
+de seguridad antes del login. El procedimiento para continuar se
+encuentra en la sección 2.1.</p>
 <hr />
 <h2 id="2-acceso-y-autenticación-al-sistema">2. Acceso y Autenticación
 al Sistema</h2>
@@ -1048,6 +1048,40 @@ de acceso a la plataforma</h3>
 <p><code>https://172.16.3.21/login</code></p>
 <p>El portal público de consulta es independiente del acceso interno y
 se describe en 5.3.</p>
+<h4 id="211-saltar-la-advertencia-del-navegador">2.1.1. Saltar la
+advertencia del navegador</h4>
+<p>La advertencia aparece porque el navegador no reconoce
+automáticamente el certificado utilizado en la red privada municipal.
+Para ingresar:</p>
+<ol type="1">
+<li>Confirme que el equipo esté conectado a la red municipal.</li>
+<li>Mire la barra de direcciones y compruebe que muestre
+<code>https://172.16.3.21</code>.</li>
+<li>Pulse <strong>Configuración avanzada</strong> o
+<strong>Avanzado</strong>. El nombre depende del navegador.</li>
+<li>Busque la opción <strong>Continuar a 172.16.3.21</strong> o un texto
+equivalente que incluya esa misma dirección.</li>
+<li>Pulse <strong>Continuar a 172.16.3.21</strong>.</li>
+<li>Espere hasta que aparezca la pantalla <strong>Iniciar
+Sesión</strong>.</li>
+</ol>
+<p><strong>Resultado esperado:</strong> se muestran los campos
+<strong>Nombre de Usuario</strong>, <strong>Contraseña</strong> y el
+botón <strong>Ingresar</strong>.</p>
+<blockquote>
+<p>Si la barra de direcciones muestra una dirección diferente de
+<code>https://172.16.3.21</code>, no pulse
+<strong>Continuar</strong>.</p>
+</blockquote>
+<p>La advertencia puede aparecer nuevamente al usar otro navegador, otro
+equipo o una sesión nueva. En ese caso repita estos pasos y vuelva a
+comprobar la dirección.</p>
+<figure class="manual-capture" id="figura-2-1a">
+  <div class="capture-slot">Imagen pendiente<br><code>docs/manual-usuario/capturas/figura-2-1a.png</code></div><img src="docs/manual-usuario/capturas/figura-2-1a.png" alt="Figura 2.1-A" loading="lazy" onload="this.hidden=false;this.previousElementSibling.hidden=true" onerror="this.hidden=true;this.previousElementSibling.hidden=false">
+  <figcaption><strong>Figura 2.1-A.</strong> Advertencia del
+navegador con las opciones <strong>Avanzado</strong> y <strong>Continuar
+a 172.16.3.21</strong> identificadas.</figcaption>
+</figure>
 <h3 id="22-interfaz-de-inicio-de-sesión-y-campos-requeridos">2.2.
 Interfaz de inicio de sesión y campos requeridos</h3>
 <p><strong>Roles:</strong> ADMIN y REGISTRADOR.</p>
@@ -1382,16 +1416,80 @@ Actas: búsqueda, filtrado y descarga</h3>
 <p><strong>Menú:</strong> Actas</p>
 <p><strong>Pantalla:</strong> Registro de Actas</p>
 <h4 id="421-buscar-y-filtrar">4.2.1. Buscar y filtrar</h4>
-<p>Puede combinar:</p>
-<ul>
-<li>DNI o nombres;</li>
-<li>número/código de acta;</li>
-<li>libro;</li>
-<li>año;</li>
-<li>tipo de acta;</li>
-<li>fecha desde/hasta.</li>
-</ul>
+<p>Los filtros reducen la lista a medida que se escriben o seleccionan.
+No es necesario llenar todos. Puede usar uno solo o combinar varios.</p>
+<table>
+<thead>
+<tr>
+<th>Filtro visible</th>
+<th>Qué debe ingresar</th>
+<th>Ejemplo y resultado</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Buscar por DNI o Nombres...</strong></td>
+<td>DNI completo, nombre o apellido de la persona</td>
+<td><code>12345678</code> muestra actas relacionadas con ese DNI;
+<code>QUISPE</code> muestra coincidencias por nombre</td>
+</tr>
+<tr>
+<td><strong>Código o folio</strong></td>
+<td>Código completo, folio numérico o CUI</td>
+<td><code>NAC-L32-15</code>, <code>15</code> o el CUI registrado</td>
+</tr>
+<tr>
+<td><strong>Libro</strong></td>
+<td>Solo el número del libro</td>
+<td><code>32</code> busca actas cuyo código pertenece al libro 32</td>
+</tr>
+<tr>
+<td><strong>Año</strong></td>
+<td>Año de cuatro dígitos</td>
+<td><code>2024</code> limita el resultado a ese año</td>
+</tr>
+<tr>
+<td><strong>Tipo</strong></td>
+<td>TODOS, NACIMIENTO, MATRIMONIO o DEFUNCION</td>
+<td>Seleccione <strong>TODOS</strong> para no limitar por tipo</td>
+</tr>
+<tr>
+<td><strong>Desde / Hasta</strong></td>
+<td>Fecha inicial y final</td>
+<td>Use ambas fechas para revisar un periodo</td>
+</tr>
+</tbody>
+</table>
+<p>Procedimiento recomendado:</p>
+<ol type="1">
+<li>Antes de escribir, mire si ya existe algún filtro activo.</li>
+<li>Ingrese primero el dato más específico, por ejemplo DNI, código,
+folio o CUI.</li>
+<li>Espere a que la lista se actualice.</li>
+<li>Si aparecen demasiados resultados, agregue tipo, año o fechas.</li>
+<li>Antes de exportar, confirme que la lista visible corresponda a lo
+solicitado.</li>
+<li>Para comenzar otra búsqueda, pulse el botón con <strong>flechas
+circulares</strong>. Todos los campos deben quedar vacíos y
+<strong>Tipo</strong> debe volver a <strong>TODOS</strong>.</li>
+</ol>
+<blockquote>
+<p><strong>Importante para búsquedas por CUI:</strong> no mantenga un
+valor en <strong>Libro</strong> si el registro CUI no tiene libro. Si
+conoce el CUI y no aparece, limpie todos los filtros, escriba únicamente
+el CUI en <strong>Código o folio</strong> y espere la actualización.</p>
+</blockquote>
+<p><strong>Ejemplo de combinación:</strong> para revisar nacimientos del
+libro 32 del año 2024, escriba <code>32</code> en
+<strong>Libro</strong>, <code>2024</code> en <strong>Año</strong> y
+seleccione <strong>NACIMIENTO</strong> en <strong>Tipo</strong>.</p>
 <p>Para soporte o exportación, anote todos los filtros activos.</p>
+<figure class="manual-capture" id="figura-4-4a">
+  <div class="capture-slot">Imagen pendiente<br><code>docs/manual-usuario/capturas/figura-4-4a.png</code></div><img src="docs/manual-usuario/capturas/figura-4-4a.png" alt="Figura 4.4-A" loading="lazy" onload="this.hidden=false;this.previousElementSibling.hidden=true" onerror="this.hidden=true;this.previousElementSibling.hidden=false">
+  <figcaption><strong>Figura 4.4-A.</strong> Filtros de Actas
+identificados, ejemplo de búsqueda y botón de flechas circulares para
+limpiar.</figcaption>
+</figure>
 <h4 id="422-modificar-anular-reactivar-o-eliminar">4.2.2. Modificar,
 anular, reactivar o eliminar</h4>
 <p>Abra el menú <strong>⋮</strong> de la fila:</p>
@@ -1487,11 +1585,30 @@ Módulo de Personas: registro, búsqueda y mantenimiento</h3>
 <p><strong>Menú:</strong> Personas</p>
 <p><strong>Pantalla:</strong> Ciudadanos</p>
 <h4 id="431-buscar-antes-de-crear">4.3.1. Buscar antes de crear</h4>
+<p>El campo <strong>Buscar por DNI o Nombres...</strong> consulta
+mientras escribe.</p>
 <ol type="1">
-<li>Busque por DNI.</li>
-<li>Busque también por nombres y apellidos.</li>
-<li>Revise coincidencias e historial antes de registrar.</li>
+<li>Para una persona con DNI, escriba los 8 dígitos completos.</li>
+<li>Espere la actualización de la lista.</li>
+<li>Si no conoce el DNI, borre el contenido y escriba un nombre o
+apellido.</li>
+<li>Revise todas las coincidencias antes de registrar una nueva
+persona.</li>
+<li>Para limpiar la búsqueda, pulse el botón con <strong>flechas
+circulares</strong>. La lista general debe aparecer nuevamente.</li>
 </ol>
+<p><strong>Resultado esperado:</strong> la tabla muestra solo las
+personas que coinciden con el texto ingresado.</p>
+<blockquote>
+<p><strong>Revise antes de crear:</strong> una búsqueda sin resultados
+no es suficiente si el nombre está incompleto. Pruebe DNI, primer
+apellido y nombres para evitar duplicados.</p>
+</blockquote>
+<figure class="manual-capture" id="figura-4-7a">
+  <div class="capture-slot">Imagen pendiente<br><code>docs/manual-usuario/capturas/figura-4-7a.png</code></div><img src="docs/manual-usuario/capturas/figura-4-7a.png" alt="Figura 4.7-A" loading="lazy" onload="this.hidden=false;this.previousElementSibling.hidden=true" onerror="this.hidden=true;this.previousElementSibling.hidden=false">
+  <figcaption><strong>Figura 4.7-A.</strong> Buscador de
+Ciudadanos, resultado filtrado y botón para limpiar.</figcaption>
+</figure>
 <h4 id="432-registrar">4.3.2. Registrar</h4>
 <ol type="1">
 <li>Pulse <strong>REGISTRAR CIUDADANO</strong>.</li>
@@ -1572,8 +1689,53 @@ verificación. Revise antes de entregar:</p>
 <p>El documento impreso puede contener DNI completo. Debe entregarse
 únicamente al destinatario autorizado.</p>
 <h4 id="444-filtros-y-exportación">4.4.4. Filtros y exportación</h4>
-<p>Puede filtrar por estado, texto y fechas. <strong>EXPORTAR</strong>
-utiliza los filtros activos.</p>
+<p>Los filtros se aplican al listado y también al archivo generado por
+<strong>EXPORTAR</strong>.</p>
+<table>
+<thead>
+<tr>
+<th>Filtro visible</th>
+<th>Uso</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Buscar por N° Trámite, DNI o apellidos...</strong></td>
+<td>Escriba el número de solicitud, DNI del solicitante o uno de sus
+apellidos</td>
+</tr>
+<tr>
+<td><strong>Desde</strong></td>
+<td>Fecha inicial del periodo</td>
+</tr>
+<tr>
+<td><strong>Hasta</strong></td>
+<td>Fecha final del periodo</td>
+</tr>
+<tr>
+<td><strong>Estado</strong></td>
+<td>TODOS, PENDIENTE, ATENDIDO o ANULADO</td>
+</tr>
+</tbody>
+</table>
+<ol type="1">
+<li>Para encontrar un trámite concreto, escriba primero su número.</li>
+<li>Si busca varias solicitudes, seleccione las fechas y el estado.</li>
+<li>Espere la actualización de la tabla después de cada cambio.</li>
+<li>Revise la lista antes de pulsar <strong>EXPORTAR</strong>.</li>
+<li>Para retirar todos los filtros, pulse el botón con <strong>flechas
+circulares</strong>. El texto y las fechas deben quedar vacíos, y el
+estado debe volver a <strong>TODOS</strong>.</li>
+</ol>
+<p><strong>Ejemplo:</strong> para revisar trámites pendientes de una
+semana, seleccione la fecha inicial en <strong>Desde</strong>, la fecha
+final en <strong>Hasta</strong> y <strong>PENDIENTE</strong> en
+<strong>Estado</strong>.</p>
+<figure class="manual-capture" id="figura-4-10a">
+  <div class="capture-slot">Imagen pendiente<br><code>docs/manual-usuario/capturas/figura-4-10a.png</code></div><img src="docs/manual-usuario/capturas/figura-4-10a.png" alt="Figura 4.10-A" loading="lazy" onload="this.hidden=false;this.previousElementSibling.hidden=true" onerror="this.hidden=true;this.previousElementSibling.hidden=false">
+  <figcaption><strong>Figura 4.10-A.</strong> Filtros de
+Solicitudes combinados y botón para limpiar.</figcaption>
+</figure>
 <figure class="manual-capture" id="figura-4-10">
   <div class="capture-slot">Imagen pendiente<br><code>docs/manual-usuario/capturas/figura-4-10.png</code></div><img src="docs/manual-usuario/capturas/figura-4-10.png" alt="Figura 4.10" loading="lazy" onload="this.hidden=false;this.previousElementSibling.hidden=true" onerror="this.hidden=true;this.previousElementSibling.hidden=false">
   <figcaption><strong>Figura 4.10.</strong> Listado de Trámites
@@ -1648,52 +1810,144 @@ para identificar la ruta interna.</p>
 <li>Seleccione el Excel.</li>
 <li>Seleccione el ZIP si corresponde.</li>
 <li>Pulse <strong>INICIAR CARGA</strong> una sola vez.</li>
-<li>Espere; el cliente admite hasta aproximadamente 16 minutos y 40
-segundos.</li>
-<li>No cierre la pestaña ni repita la carga mientras procesa.</li>
+<li>Cuando aparezca la barra de progreso, no vuelva a pulsar el
+botón.</li>
+<li>Mientras suben los archivos puede mostrarse
+<code>Sincronizando archivos con el sistema central...</code>.</li>
+<li>Cuando la carga llega a 100 %, puede mostrarse
+<code>Procesando registros de acta, por favor espere.</code>.</li>
+<li>Mantenga abierta la pestaña. El cliente admite hasta aproximadamente
+16 minutos y 40 segundos.</li>
+<li>No actualice la página, no cierre el navegador y no inicie otra
+carga mientras procesa.</li>
 </ol>
-<h4 id="453-interpretar-resultados">4.5.3. Interpretar resultados</h4>
+<blockquote>
+<p>Llegar a <strong>100 %</strong> solo confirma que los archivos
+terminaron de enviarse. La importación todavía puede estar procesando
+las filas.</p>
+</blockquote>
+<h4 id="453-confirmar-que-la-importación-terminó">4.5.3. Confirmar que
+la importación terminó</h4>
+<p>La importación se considera terminada únicamente cuando desaparece la
+barra de progreso y aparece el resumen con estos cinco contadores:</p>
+<ul>
+<li><strong>TOTAL FILAS</strong>;</li>
+<li><strong>ACTAS NUEVAS</strong>;</li>
+<li><strong>YA EXISTÍAN</strong>;</li>
+<li><strong>DOCS VINCULADOS</strong>;</li>
+<li><strong>ERRORES</strong>.</li>
+</ul>
+<p>Puede aparecer uno de estos resultados:</p>
+<table>
+<thead>
+<tr>
+<th>Resultado visible</th>
+<th>Significado</th>
+<th>Acción inmediata</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Importación completada</code> y cero errores</td>
+<td>El lote terminó sin filas rechazadas</td>
+<td>Revise una muestra y genere el reporte</td>
+</tr>
+<tr>
+<td>Mensaje de documentos vinculados</td>
+<td>Se asociaron documentos a actas que ya existían sin PDF</td>
+<td>Abra esas actas y compruebe el documento</td>
+</tr>
+<tr>
+<td>Mensaje con cantidad de errores</td>
+<td>El lote terminó parcialmente</td>
+<td>No cargue todo nuevamente; revise las filas indicadas</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Operación terminada:</strong> el resumen final ya está
+visible. En este punto puede usar <strong>GENERAR REPORTE EXCEL</strong>
+o <strong>IR AL REGISTRO DE ACTAS</strong>.</p>
+</blockquote>
+<h4 id="454-interpretar-el-estado-de-cada-fila">4.5.4. Interpretar el
+estado de cada fila</h4>
 <table>
 <thead>
 <tr>
 <th>Estado</th>
-<th>Significado</th>
-<th>Acción</th>
+<th>Qué ocurrió</th>
+<th>Qué debe hacer</th>
+<th>¿Debe reintentar?</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>OK</code></td>
-<td>Persona/acta procesada</td>
-<td>Verifique muestra de registros</td>
+<td>La persona y el acta fueron procesadas correctamente</td>
+<td>Busque una muestra en Registro de Actas</td>
+<td>No</td>
 </tr>
 <tr>
 <td><code>OMITIDO</code></td>
-<td>Acta ya existente</td>
-<td>No duplicar; revisar mensaje</td>
+<td>El acta ya existía y no se creó otra</td>
+<td>Lea el mensaje y busque el acta existente</td>
+<td>No</td>
 </tr>
 <tr>
 <td><code>OMITIDO_DOC</code></td>
-<td>Acta existente sin documento; archivo vinculado</td>
-<td>Verificar documento</td>
+<td>El acta ya existía sin documento y se vinculó el archivo
+disponible</td>
+<td>Abra el acta y compruebe <strong>Ver/Descargar
+documento</strong></td>
+<td>No, salvo que la verificación muestre un problema</td>
 </tr>
 <tr>
 <td><code>ERROR</code></td>
-<td>Fila rechazada</td>
-<td>Corregir esa fila y reintentar solo lo necesario</td>
+<td>La fila fue rechazada antes de completarse</td>
+<td>Anote el número de fila, lea el mensaje y corrija el Excel</td>
+<td>Sí, pero solo esa fila corregida</td>
 </tr>
 </tbody>
 </table>
-<p>Después puede usar <strong>GENERAR REPORTE EXCEL</strong> y
-<strong>IR AL REGISTRO DE ACTAS</strong>.</p>
+<p>Después:</p>
+<ol type="1">
+<li>Pulse <strong>GENERAR REPORTE EXCEL</strong>.</li>
+<li>Abra el reporte y ubique la columna <strong>ESTADO</strong>.</li>
+<li>Revise <strong>DETALLE/ERROR</strong> para cada fila
+<code>ERROR</code>.</li>
+<li>Pulse <strong>IR AL REGISTRO DE ACTAS</strong> y compruebe una
+muestra de filas <code>OK</code> y todas las filas
+<code>OMITIDO_DOC</code>.</li>
+<li>Si debe reintentar, cree otro Excel únicamente con filas
+<code>ERROR</code> corregidas.</li>
+</ol>
 <blockquote>
-<p>Conserve el original y el reporte. Para reintentar, cree otro Excel
-únicamente con filas <code>ERROR</code> corregidas. Las filas sin DNI
-requieren revisión humana y no deben cargarse hasta corregir la regla
-automática de coincidencia.</p>
+<p>No vuelva a cargar el archivo completo. Las filas <code>OK</code>,
+<code>OMITIDO</code> y <code>OMITIDO_DOC</code> ya fueron atendidas y
+repetirlas dificulta la revisión.</p>
 </blockquote>
-<h4 id="454-datos-para-soporte-de-importación">4.5.4. Datos para soporte
-de importación</h4>
+<p>Las filas sin DNI requieren revisión humana y no deben cargarse hasta
+corregir la regla automática de coincidencia.</p>
+<h4 id="455-si-la-conexión-se-interrumpe">4.5.5. Si la conexión se
+interrumpe</h4>
+<ol type="1">
+<li>No pulse <strong>INICIAR CARGA</strong> nuevamente.</li>
+<li>Si la barra continúa avanzando, espere a que aparezca el
+resumen.</li>
+<li>Si aparece un error o la página deja de responder, conserve el
+Excel, ZIP y hora de inicio.</li>
+<li>Abra <strong>Actas → Registro de Actas</strong>.</li>
+<li>Limpie los filtros anteriores.</li>
+<li>Busque varias filas del lote por código, folio, CUI o persona.</li>
+<li>Prepare un nuevo Excel solo con filas confirmadas como no procesadas
+o con estado <code>ERROR</code>.</li>
+</ol>
+<blockquote>
+<p><strong>Revise antes de repetir:</strong> una interrupción del
+navegador no demuestra que el servidor haya detenido la importación.</p>
+</blockquote>
+<h4 id="456-datos-que-deben-conservarse">4.5.6. Datos que deben
+conservarse</h4>
 <ul>
 <li>nombre del Excel y ZIP;</li>
 <li>total de filas;</li>
@@ -1715,6 +1969,16 @@ Masiva con selección de Excel y ZIP opcional.</figcaption>
 resultado del lote con estados <code>OK</code>, <code>OMITIDO</code>,
 <code>OMITIDO_DOC</code> y <code>ERROR</code>.</figcaption>
 </figure>
+<figure class="manual-capture" id="figura-4-15a">
+  <div class="capture-slot">Imagen pendiente<br><code>docs/manual-usuario/capturas/figura-4-15a.png</code></div><img src="docs/manual-usuario/capturas/figura-4-15a.png" alt="Figura 4.15-A" loading="lazy" onload="this.hidden=false;this.previousElementSibling.hidden=true" onerror="this.hidden=true;this.previousElementSibling.hidden=false">
+  <figcaption><strong>Figura 4.15-A.</strong> Importación
+completada sin errores, con los cinco contadores del resumen.</figcaption>
+</figure>
+<figure class="manual-capture" id="figura-4-15b">
+  <div class="capture-slot">Imagen pendiente<br><code>docs/manual-usuario/capturas/figura-4-15b.png</code></div><img src="docs/manual-usuario/capturas/figura-4-15b.png" alt="Figura 4.15-B" loading="lazy" onload="this.hidden=false;this.previousElementSibling.hidden=true" onerror="this.hidden=true;this.previousElementSibling.hidden=false">
+  <figcaption><strong>Figura 4.15-B.</strong> Importación
+parcial con errores y detalle de las filas rechazadas.</figcaption>
+</figure>
 <hr />
 <h2 id="5-generación-de-reportes-y-consultas">5. Generación de Reportes
 y Consultas</h2>
@@ -1727,6 +1991,16 @@ Configuración de filtros para la emisión de reportes</h3>
 exportar.</li>
 <li>Anote los filtros cuando el reporte sea parte de una atención o
 incidencia.</li>
+</ol>
+<p>Cuando utiliza varios filtros, el sistema exige que el registro
+cumpla todos al mismo tiempo. Por ejemplo, una solicitud debe coincidir
+con el texto, las fechas y el estado seleccionados. Si una información
+que conoce no aparece:</p>
+<ol type="1">
+<li>pulse el botón con <strong>flechas circulares</strong>;</li>
+<li>confirme que los campos quedaron vacíos;</li>
+<li>realice primero una búsqueda con un solo dato;</li>
+<li>agregue otros filtros únicamente para reducir los resultados.</li>
 </ol>
 <figure class="manual-capture" id="figura-5-1">
   <div class="capture-slot">Imagen pendiente<br><code>docs/manual-usuario/capturas/figura-5-1.png</code></div><img src="docs/manual-usuario/capturas/figura-5-1.png" alt="Figura 5.1" loading="lazy" onload="this.hidden=false;this.previousElementSibling.hidden=true" onerror="this.hidden=true;this.previousElementSibling.hidden=false">
@@ -1869,6 +2143,18 @@ Permisos</h2>
 Panel de administración de usuarios institucionales</h3>
 <p><strong>Menú:</strong> Usuarios</p>
 <p><strong>Rol:</strong> ADMIN</p>
+<p>Buscar usuario:</p>
+<ol type="1">
+<li>En <strong>Buscar por DNI, usuario o nombres...</strong>, escriba
+uno de esos datos.</li>
+<li>Espere la actualización del listado.</li>
+<li>Verifique que la fila corresponda a la cuenta correcta antes de
+abrir <strong>⋮</strong>.</li>
+<li>Para mostrar nuevamente todas las cuentas, pulse el botón con
+<strong>flechas circulares</strong>.</li>
+</ol>
+<p>El buscador solo cambia la lista visible. No activa, desactiva ni
+modifica cuentas.</p>
 <p>Crear usuario:</p>
 <ol type="1">
 <li>Pulse <strong>NUEVO USUARIO</strong>.</li>
@@ -1892,6 +2178,11 @@ administrativa.</p>
   <div class="capture-slot">Imagen pendiente<br><code>docs/manual-usuario/capturas/figura-6-1.png</code></div><img src="docs/manual-usuario/capturas/figura-6-1.png" alt="Figura 6.1" loading="lazy" onload="this.hidden=false;this.previousElementSibling.hidden=true" onerror="this.hidden=true;this.previousElementSibling.hidden=false">
   <figcaption><strong>Figura 6.1.</strong> Panel de Gestión de
 Usuarios de una sesión ADMIN.</figcaption>
+</figure>
+<figure class="manual-capture" id="figura-6-1a">
+  <div class="capture-slot">Imagen pendiente<br><code>docs/manual-usuario/capturas/figura-6-1a.png</code></div><img src="docs/manual-usuario/capturas/figura-6-1a.png" alt="Figura 6.1-A" loading="lazy" onload="this.hidden=false;this.previousElementSibling.hidden=true" onerror="this.hidden=true;this.previousElementSibling.hidden=false">
+  <figcaption><strong>Figura 6.1-A.</strong> Buscador de
+Usuarios con una coincidencia y botón para limpiar.</figcaption>
 </figure>
 <figure class="manual-capture" id="figura-6-2">
   <div class="capture-slot">Imagen pendiente<br><code>docs/manual-usuario/capturas/figura-6-2.png</code></div><img src="docs/manual-usuario/capturas/figura-6-2.png" alt="Figura 6.2" loading="lazy" onload="this.hidden=false;this.previousElementSibling.hidden=true" onerror="this.hidden=true;this.previousElementSibling.hidden=false">
@@ -1951,14 +2242,55 @@ administrativas</h3>
 <h4 id="631-auditoría">6.3.1. Auditoría</h4>
 <p><strong>Menú:</strong> Auditoría</p>
 <p><strong>Pantalla:</strong> Bitácora de Auditoría</p>
-<p>Permite filtrar por usuario, fechas, módulo y operación; revisar
-quién hizo qué y exportar resultados.</p>
+<p>Permite filtrar por usuario, fechas y módulo; revisar quién hizo qué
+y exportar resultados.</p>
+<table>
+<thead>
+<tr>
+<th>Filtro visible</th>
+<th>Uso</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Usuario...</strong></td>
+<td>Escriba el usuario que realizó la acción</td>
+</tr>
+<tr>
+<td>Primera fecha</td>
+<td>Inicio del periodo</td>
+</tr>
+<tr>
+<td>Segunda fecha</td>
+<td>Fin del periodo</td>
+</tr>
+<tr>
+<td><strong>Módulo</strong></td>
+<td>TODOS, ACTAS, USUARIOS, PERSONAS o SOLICITUDES</td>
+</tr>
+</tbody>
+</table>
+<ol type="1">
+<li>Escriba el usuario o seleccione el periodo y módulo.</li>
+<li>Espere la actualización de la tabla.</li>
+<li>Revise <strong>Total: {cantidad} registros</strong> para conocer el
+resultado.</li>
+<li>Pulse <strong>EXPORTAR</strong> solo después de comprobar los
+filtros.</li>
+<li>Para restablecer la bitácora, pulse el botón con <strong>flechas
+circulares</strong>.</li>
+</ol>
 <p>La bitácora puede contener IP y datos operativos. No debe compartirse
 fuera del personal autorizado.</p>
 <figure class="manual-capture" id="figura-6-5">
   <div class="capture-slot">Imagen pendiente<br><code>docs/manual-usuario/capturas/figura-6-5.png</code></div><img src="docs/manual-usuario/capturas/figura-6-5.png" alt="Figura 6.5" loading="lazy" onload="this.hidden=false;this.previousElementSibling.hidden=true" onerror="this.hidden=true;this.previousElementSibling.hidden=false">
   <figcaption><strong>Figura 6.5.</strong> Bitácora de
 Auditoría con filtros y botón <strong>EXPORTAR</strong>.</figcaption>
+</figure>
+<figure class="manual-capture" id="figura-6-5a">
+  <div class="capture-slot">Imagen pendiente<br><code>docs/manual-usuario/capturas/figura-6-5a.png</code></div><img src="docs/manual-usuario/capturas/figura-6-5a.png" alt="Figura 6.5-A" loading="lazy" onload="this.hidden=false;this.previousElementSibling.hidden=true" onerror="this.hidden=true;this.previousElementSibling.hidden=false">
+  <figcaption><strong>Figura 6.5-A.</strong> Filtros de
+Auditoría identificados y total resultante.</figcaption>
 </figure>
 <h4 id="632-descargar-backup">6.3.2. Descargar backup</h4>
 <p><strong>Menú:</strong> Backup BD</p>
@@ -2144,13 +2476,56 @@ técnicas</td>
 </tr>
 </tbody>
 </table>
-<p>Si la conexión se pierde durante un guardado, primero consulte el
-listado correspondiente. Repetir la operación sin verificar puede
-producir duplicados.</p>
+<h4 id="721-si-falla-al-guardar">7.2.1. Si falla al guardar</h4>
+<ol type="1">
+<li>No pulse <strong>Guardar</strong> o <strong>Registrar</strong>
+repetidamente.</li>
+<li>Espere unos segundos.</li>
+<li>Regrese al listado correspondiente: Personas, Actas o
+Solicitudes.</li>
+<li>Busque el registro con DNI, código, folio, CUI o número de
+trámite.</li>
+<li>Si el registro aparece, la operación terminó y no debe
+repetirla.</li>
+<li>Repita el registro únicamente cuando confirmó que no existe.</li>
+</ol>
+<h4 id="722-si-falla-una-importación">7.2.2. Si falla una
+importación</h4>
+<ol type="1">
+<li>No inicie otro lote.</li>
+<li>Revise si la barra sigue avanzando o si apareció el resumen
+final.</li>
+<li>Si no hay resumen, abra Registro de Actas y revise una muestra del
+lote.</li>
+<li>Reintente únicamente filas <code>ERROR</code> o filas confirmadas
+como no procesadas.</li>
+</ol>
+<h4 id="723-si-falla-una-exportación">7.2.3. Si falla una
+exportación</h4>
+<ol type="1">
+<li>Espere hasta que desaparezca el mensaje de generación.</li>
+<li>Revise la carpeta <strong>Descargas</strong> del equipo.</li>
+<li>Si el archivo no existe, conserve los mismos filtros y reintente una
+sola vez.</li>
+</ol>
+<h4 id="724-si-la-sesión-vuelve-al-login">7.2.4. Si la sesión vuelve al
+login</h4>
+<ol type="1">
+<li>Inicie sesión nuevamente.</li>
+<li>Abra el módulo donde estaba trabajando.</li>
+<li>Busque el registro antes de repetir la última acción.</li>
+</ol>
+<p>Repetir una operación sin verificar puede producir duplicados o
+dificultar la revisión.</p>
 <figure class="manual-capture" id="figura-7-3">
   <div class="capture-slot">Imagen pendiente<br><code>docs/manual-usuario/capturas/figura-7-3.png</code></div><img src="docs/manual-usuario/capturas/figura-7-3.png" alt="Figura 7.3" loading="lazy" onload="this.hidden=false;this.previousElementSibling.hidden=true" onerror="this.hidden=true;this.previousElementSibling.hidden=false">
   <figcaption><strong>Figura 7.3.</strong> Mensaje real de
 pérdida de conexión o error de carga.</figcaption>
+</figure>
+<figure class="manual-capture" id="figura-7-3a">
+  <div class="capture-slot">Imagen pendiente<br><code>docs/manual-usuario/capturas/figura-7-3a.png</code></div><img src="docs/manual-usuario/capturas/figura-7-3a.png" alt="Figura 7.3-A" loading="lazy" onload="this.hidden=false;this.previousElementSibling.hidden=true" onerror="this.hidden=true;this.previousElementSibling.hidden=false">
+  <figcaption><strong>Figura 7.3-A.</strong> Consulta del
+listado para confirmar si una operación interrumpida terminó.</figcaption>
 </figure>
 <figure class="manual-capture" id="figura-7-4">
   <div class="capture-slot">Imagen pendiente<br><code>docs/manual-usuario/capturas/figura-7-4.png</code></div><img src="docs/manual-usuario/capturas/figura-7-4.png" alt="Figura 7.4" loading="lazy" onload="this.hidden=false;this.previousElementSibling.hidden=true" onerror="this.hidden=true;this.previousElementSibling.hidden=false">

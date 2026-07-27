@@ -47,13 +47,14 @@ def convertir_mermaid(contenido: str) -> str:
 def convertir_capturas(contenido: str) -> str:
     patron = re.compile(
         r"<blockquote>\s*<p><strong>Captura pendiente — Figura "
-        r"(\d+\.\d+)\.</strong>\s*(.*?)</p>\s*</blockquote>",
+        r"(\d+\.\d+(?:-[A-Z])?)\.</strong>\s*(.*?)</p>\s*</blockquote>",
         flags=re.DOTALL,
     )
 
     def reemplazar(match: re.Match[str]) -> str:
         numero = match.group(1)
-        slug = numero.replace(".", "-")
+        numero_base, _, sufijo = numero.partition("-")
+        slug = numero_base.replace(".", "-") + sufijo.lower()
         descripcion = match.group(2).strip()
         ruta = f"docs/manual-usuario/capturas/figura-{slug}.png"
         return (
