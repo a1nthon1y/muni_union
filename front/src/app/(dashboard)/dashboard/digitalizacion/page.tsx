@@ -55,6 +55,7 @@ import {
 } from "@/lib/digitalizacion-acta";
 import {
     MENSAJE_ORDEN_FECHAS,
+    normalizarFechaOpcional,
     validarOrdenFechas,
 } from "@/lib/persona-fechas";
 
@@ -409,8 +410,8 @@ export default function DigitalizacionPage() {
                     apellido_paterno: values.apellido_paterno,
                     apellido_materno: values.apellido_materno,
                     sexo: values.sexo,
-                    fecha_nacimiento: values.fecha_nacimiento,
-                    fecha_fallecimiento: values.fecha_fallecimiento || null,
+                    fecha_nacimiento: normalizarFechaOpcional(values.fecha_nacimiento),
+                    fecha_fallecimiento: normalizarFechaOpcional(values.fecha_fallecimiento),
                     telefono: values.telefono,
                     observaciones: values.persona_observaciones
                 });
@@ -422,8 +423,8 @@ export default function DigitalizacionPage() {
                     apellido_paterno: values.apellido_paterno,
                     apellido_materno: values.apellido_materno,
                     sexo: values.sexo,
-                    fecha_nacimiento: values.fecha_nacimiento,
-                    fecha_fallecimiento: values.fecha_fallecimiento || undefined,
+                    fecha_nacimiento: normalizarFechaOpcional(values.fecha_nacimiento),
+                    fecha_fallecimiento: normalizarFechaOpcional(values.fecha_fallecimiento),
                     telefono: values.telefono,
                     observaciones: values.persona_observaciones
                 });
@@ -440,8 +441,8 @@ export default function DigitalizacionPage() {
                         apellido_paterno: values.conyuge_apellido_paterno!,
                         apellido_materno: values.conyuge_apellido_materno!,
                         sexo: values.conyuge_sexo,
-                        fecha_nacimiento: values.conyuge_fecha_nacimiento,
-                        fecha_fallecimiento: values.conyuge_fecha_fallecimiento || null,
+                        fecha_nacimiento: normalizarFechaOpcional(values.conyuge_fecha_nacimiento),
+                        fecha_fallecimiento: normalizarFechaOpcional(values.conyuge_fecha_fallecimiento),
                     });
                 } else {
                     const newConyuge = await personasService.create({
@@ -451,8 +452,8 @@ export default function DigitalizacionPage() {
                         apellido_paterno: values.conyuge_apellido_paterno!,
                         apellido_materno: values.conyuge_apellido_materno!,
                         sexo: values.conyuge_sexo,
-                        fecha_nacimiento: values.conyuge_fecha_nacimiento,
-                        fecha_fallecimiento: values.conyuge_fecha_fallecimiento || undefined,
+                        fecha_nacimiento: normalizarFechaOpcional(values.conyuge_fecha_nacimiento),
+                        fecha_fallecimiento: normalizarFechaOpcional(values.conyuge_fecha_fallecimiento),
                     });
                     personaSecundariaId = newConyuge.id;
                 }

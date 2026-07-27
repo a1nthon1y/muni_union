@@ -3,9 +3,19 @@ import {
     actaCoincideConIdentidad,
     construirNumeroActa,
 } from "./digitalizacion-acta";
-import { validarOrdenFechas } from "./persona-fechas";
+import {
+    normalizarFechaOpcional,
+    validarOrdenFechas,
+} from "./persona-fechas";
 
 describe("fecha de fallecimiento opcional", () => {
+    test("normaliza fechas vacías como null para la API", () => {
+        expect(normalizarFechaOpcional("")).toBeNull();
+        expect(normalizarFechaOpcional("   ")).toBeNull();
+        expect(normalizarFechaOpcional(undefined)).toBeNull();
+        expect(normalizarFechaOpcional("2020-04-03")).toBe("2020-04-03");
+    });
+
     test("fallecimiento vacío es válido", () => {
         expect(validarOrdenFechas("1990-01-01", "")).toBe(true);
         expect(validarOrdenFechas("", "")).toBe(true);
