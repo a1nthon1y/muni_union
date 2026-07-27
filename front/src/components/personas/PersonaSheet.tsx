@@ -28,7 +28,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Save, UserPlus, Fingerprint, MapPin, Calendar, Phone } from "lucide-react";
 import { Persona, PersonaInput } from "@/types/persona";
@@ -36,8 +35,13 @@ import { personasService } from "@/services/personas.service";
 import { dateUtils } from "@/utils/dateUtils";
 import {
     MENSAJE_ORDEN_FECHAS,
+    normalizarFechaOpcional,
     validarOrdenFechas,
 } from "@/lib/persona-fechas";
+
+const sexoDesdePersona = (valor?: string | null): "M" | "F" => (
+    valor === "F" ? "F" : "M"
+);
 
 const personaSchema = z.object({
     tipo_documento: z.string().min(1, "Seleccione tipo"),
@@ -45,7 +49,7 @@ const personaSchema = z.object({
     nombres: z.string().min(2, "Nombres son obligatorios"),
     apellido_paterno: z.string().min(2, "Apellido Paterno es obligatorio"),
     apellido_materno: z.string().min(2, "Apellido Materno es obligatorio"),
-    sexo: z.string().min(1, "Seleccione sexo"),
+    sexo: z.enum(["M", "F"], { message: "Seleccione sexo" }),
     fecha_nacimiento: z.string().optional().or(z.literal("")),
     fecha_fallecimiento: z.string().optional().or(z.literal("")),
     telefono: z.string().max(9, "Max 9 dígitos").optional().or(z.literal("")),
@@ -67,7 +71,7 @@ interface PersonaSheetProps {
     isOpen: boolean;
     onClose: () => void;
     persona?: Persona | null;
-    onSubmit: (values: PersonaInput) => Promise<any>;
+    onSubmit: (values: PersonaInput) => Promise<Persona | null>;
 }
 
 export function PersonaSheet({
@@ -119,7 +123,7 @@ export function PersonaSheet({
                     nombres: persona.nombres || "",
                     apellido_paterno: persona.apellido_paterno || "",
                     apellido_materno: persona.apellido_materno || "",
-                    sexo: (persona.sexo as any) || 'M',
+                    sexo: sexoDesdePersona(persona.sexo),
                     fecha_nacimiento: dateUtils.formatInputDate(persona.fecha_nacimiento),
                     fecha_fallecimiento: dateUtils.formatInputDate(persona.fecha_fallecimiento),
                     telefono: persona.telefono || "",
@@ -153,11 +157,13 @@ export function PersonaSheet({
                 nombres: values.nombres.toUpperCase(),
                 apellido_paterno: values.apellido_paterno.toUpperCase(),
                 apellido_materno: values.apellido_materno.toUpperCase(),
-                sexo: values.sexo as 'M' | 'F',
-                fecha_nacimiento: values.fecha_nacimiento || undefined,
+                sexo: values.sexo,
+                fecha_nacimiento: persona
+                    ? normalizarFechaOpcional(values.fecha_nacimiento)
+                    : normalizarFechaOpcional(values.fecha_nacimiento) ?? undefined,
                 fecha_fallecimiento: persona
-                    ? values.fecha_fallecimiento || null
-                    : values.fecha_fallecimiento || undefined,
+                    ? normalizarFechaOpcional(values.fecha_fallecimiento)
+                    : normalizarFechaOpcional(values.fecha_fallecimiento) ?? undefined,
                 telefono: values.telefono || undefined,
                 direccion: values.direccion?.toUpperCase() || undefined,
                 observaciones: values.observaciones || undefined,
@@ -428,7 +434,7 @@ export function PersonaSheet({
                                             <Textarea
                                                 {...field}
                                                 placeholder="..."
-                                                className="std-input min-h-[80px]"
+                                                className="std-input min-h-20"
                                             />
                                         </FormControl>
                                         <FormMessage />
