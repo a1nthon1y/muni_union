@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { FileDigit, Plus } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { actasService, type ActasFilters } from "@/services/actas.service";
 import { ActasTable } from "@/components/actas/ActasTable";
 import { ActaEditSheet } from "@/components/actas/ActaEditSheet";
@@ -27,6 +27,12 @@ import { Upload, Loader2, CheckCircle2, Trash2 } from "lucide-react";
 
 export default function ActasPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const personaIdParam = Number.parseInt(searchParams.get("persona_id") || "", 10);
+    const actaIdParam = Number.parseInt(searchParams.get("acta_id") || "", 10);
+    const initialPersonaId = Number.isInteger(personaIdParam) && personaIdParam > 0
+        ? personaIdParam
+        : undefined;
     const [actas, setActas] = useState<Acta[]>([]);
     const [loading, setLoading] = useState(true);
     const [pagination, setPagination] = useState({
@@ -41,9 +47,11 @@ export default function ActasPage() {
         q: "",
         numero: "",
         libro: "",
+        persona_id: initialPersonaId,
         page: 1,
         limit: 10
     });
+    const openedActaId = useRef<number | null>(null);
 
     // Estado para la edición y detalles
     const [isEditOpen, setIsEditOpen] = useState(false);
@@ -76,12 +84,25 @@ export default function ActasPage() {
             const response = await actasService.getAll(filtros);
             setActas(response.data);
             setPagination(response.pagination);
-        } catch (error) {
+
+            if (
+                Number.isInteger(actaIdParam)
+                && actaIdParam > 0
+                && openedActaId.current !== actaIdParam
+            ) {
+                const actaSolicitada = response.data.find((acta) => acta.id === actaIdParam);
+                if (actaSolicitada) {
+                    openedActaId.current = actaIdParam;
+                    setSelectedActa(actaSolicitada);
+                    setIsDetailOpen(true);
+                }
+            }
+        } catch {
             toast.error("Error al cargar actas");
         } finally {
             setLoading(false);
         }
-    }, [filtros]);
+    }, [actaIdParam, filtros]);
 
     useEffect(() => {
         fetchActas();
@@ -123,7 +144,7 @@ export default function ActasPage() {
                     description: "El registro y su documento asociado han sido removidos."
                 });
                 fetchActas();
-            } catch (error) {
+            } catch {
                 toast.error("No se pudo eliminar el acta");
             } finally {
                 setActaToDelete(null);
@@ -151,7 +172,7 @@ export default function ActasPage() {
                 description: "El acta permanece en el sistema como registro anulado."
             });
             fetchActas();
-        } catch (error) {
+        } catch {
             toast.error("No se pudo anular el acta");
         } finally {
             setActaToAnular(null);
@@ -166,7 +187,7 @@ export default function ActasPage() {
             await actasService.reactivate(acta.id);
             toast.success("Acta reactivada correctamente");
             fetchActas();
-        } catch (error) {
+        } catch {
             toast.error("No se pudo reactivar el acta");
         }
     };
@@ -195,7 +216,7 @@ export default function ActasPage() {
                 { description: `Archivo vinculado al acta N° ${actaToUpload.numero_acta}` }
             );
             fetchActas();
-        } catch (error) {
+        } catch {
             toast.error("Error al subir el documento");
         } finally {
             setUploading(false);
@@ -220,7 +241,7 @@ export default function ActasPage() {
             }
             toast.success("Documento desvinculado correctamente");
             fetchActas();
-        } catch (error) {
+        } catch {
             toast.error("Error al eliminar el documento");
         } finally {
             setIsDelDocConfirmOpen(false);
