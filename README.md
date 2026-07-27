@@ -1,6 +1,6 @@
 # Sistema de Registro Civil — Municipalidad Distrital de La Unión
 
-Sistema web para gestionar personas, actas de nacimiento/matrimonio/defunción, documentos digitalizados, solicitudes de copias, reportes, usuarios, auditoría, backups y verificación pública.
+Sistema web para gestionar personas, actas de nacimiento/matrimonio/defunción, documentos digitalizados, solicitudes de copias, reportes, usuarios, auditoría, backups, identidad visual y verificación pública.
 
 ## Documentación oficial
 
@@ -15,7 +15,7 @@ Los antiguos manuales de Instalación e Integración API están obsoletos. Su co
 
 ## Arquitectura de producción
 
-El sistema es una aplicación web monolítica en capas distribuida en cuatro VMs Debian sobre Proxmox:
+El sistema es una aplicación web monolítica en capas distribuida en cuatro VMs Debian sobre una plataforma de virtualización con hipervisor tipo 1:
 
 | VM | IP | Función |
 |---|---|---|
@@ -45,7 +45,7 @@ muni_union/
 │       ├── config/
 │       ├── controllers/
 │       ├── middlewares/
-│       ├── migrations/   # 000_schema.sql a 006_configuracion_sistema.sql
+│       ├── migrations/   # 000_schema.sql a 007_identidad_visual.sql
 │       ├── routes/
 │       └── services/
 ├── front/                 # Aplicación Next.js
@@ -77,7 +77,7 @@ Configure `back/.env` para el entorno local. No copie secretos de producción ni
 Aplique las migraciones en orden:
 
 ```bash
-for archivo in back/src/migrations/00{0..6}_*.sql; do
+for archivo in back/src/migrations/00{0..7}_*.sql; do
   psql -U postgres -d muni_union -v ON_ERROR_STOP=1 -f "$archivo"
 done
 ```
@@ -95,7 +95,7 @@ cd front && npm install && npm run dev
 - Frontend local: `http://localhost:3000`.
 - Backend local: `http://localhost:4000`.
 - Health: `http://localhost:4000/api/health`.
-- Swagger: `http://localhost:4000/api/docs`, solo desarrollo y con cobertura parcial (13 de 56 operaciones).
+- Swagger: `http://localhost:4000/api/docs`, solo desarrollo y con cobertura parcial.
 
 ## Producción
 
@@ -103,13 +103,13 @@ No utilice el `docker-compose.yml` raíz ni las configuraciones legacy como guí
 
 - Manual Técnico, sección 5: requisitos, instalación y despliegue.
 - Manual Técnico, sección 6: seguridad digital.
-- Manual Técnico, sección 7: catálogo completo de 56 endpoints e interoperabilidad.
+- Manual Técnico, sección 7: catálogo de endpoints e interoperabilidad.
 - Manual Técnico, sección 9: backups, restauración, actualización y diagnóstico.
 
-Orden de encendido: `.24 → .23 → .22 → .21`. Apagado planificado: orden inverso.
+Orden de encendido: `172.16.3.24 → 172.16.3.23 → 172.16.3.22 → 172.16.3.21`. Apagado planificado: orden inverso.
 
 ## Estado de integraciones
 
 Implementado: API REST interna y verificación pública limitada.
 
-No implementado: PISP, consultas en línea RENIEC/SUNARP, webhooks, colas, ESB y API keys por integrador.
+No implementado: PIDE, consultas en línea RENIEC/SUNARP, webhooks, colas, ESB y API keys por integrador.

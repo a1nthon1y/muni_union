@@ -116,6 +116,25 @@ cat > /etc/nginx/sites-available/muni-union << NGINX_CONF
         location /uploads/ {
             proxy_pass http://backend;
         }
+
+        location = /Logo_MDUnion.svg {
+            proxy_intercept_errors on;
+            error_page 404 = @frontend_logo;
+            add_header Cache-Control "no-store, max-age=0" always;
+            proxy_pass http://backend;
+        }
+
+        location = /Logo_blanco.svg {
+            proxy_intercept_errors on;
+            error_page 404 = @frontend_logo;
+            add_header Cache-Control "no-store, max-age=0" always;
+            proxy_pass http://backend;
+        }
+
+        location @frontend_logo {
+            add_header Cache-Control "no-store, max-age=0" always;
+            proxy_pass http://frontend;
+        }
     }
 
     # ── PORTAL PÚBLICO (internet, solo verificación) ───────────
@@ -141,7 +160,26 @@ cat > /etc/nginx/sites-available/muni-union << NGINX_CONF
 
         location ~ ^/_next/ { proxy_pass http://frontend; }
 
-        location ~ ^/(favicon\.ico|Logo_MDUnion\.svg)$ {
+        location = /favicon.ico {
+            proxy_pass http://frontend;
+        }
+
+        location = /Logo_MDUnion.svg {
+            proxy_intercept_errors on;
+            error_page 404 = @frontend_logo;
+            add_header Cache-Control "no-store, max-age=0" always;
+            proxy_pass http://backend;
+        }
+
+        location = /Logo_blanco.svg {
+            proxy_intercept_errors on;
+            error_page 404 = @frontend_logo;
+            add_header Cache-Control "no-store, max-age=0" always;
+            proxy_pass http://backend;
+        }
+
+        location @frontend_logo {
+            add_header Cache-Control "no-store, max-age=0" always;
             proxy_pass http://frontend;
         }
 

@@ -15,8 +15,8 @@ RUN npm install --production
 # Copiar el resto del código
 COPY . .
 
-# Crear carpeta de uploads si no existe
-RUN mkdir -p uploads/documentos
+# Crear carpetas persistentes si no existen
+RUN mkdir -p uploads/documentos uploads/configuracion/logos
 
 # Exponer el puerto configurado
 EXPOSE 4000

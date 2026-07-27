@@ -1,6 +1,6 @@
 # 🚀 Guía de Despliegue en Producción
 ## Sistema de Registro Civil — Municipalidad Distrital La Unión
-### Arquitectura 4 VMs en Proxmox (Debian 12)
+### Arquitectura 4 VMs en una plataforma de virtualización con hipervisor tipo 1 (Debian 12)
 
 ---
 
@@ -18,10 +18,10 @@
 ## 📋 Orden de Instalación (¡respetar este orden!)
 
 ```
-1. VM Storage  (.24)  ← primero, no depende de nada
-2. VM PostgreSQL (.23) ← segundo, se conecta a Storage
-3. VM Backend  (.22)  ← tercero, se conecta a DB y Storage
-4. VM Frontend (.21)  ← último, se conecta a Backend
+1. VM Storage  (172.16.3.24)  ← primero, no depende de nada
+2. VM PostgreSQL (172.16.3.23) ← segundo, se conecta a Storage
+3. VM Backend  (172.16.3.22)  ← tercero, se conecta a DB y Storage
+4. VM Frontend (172.16.3.21)  ← último, se conecta a Backend
 ```
 
 ---
@@ -67,8 +67,10 @@ scp back/src/migrations/*.sql deploy@172.16.3.23:/tmp/
 ssh deploy@172.16.3.23 "
   for f in /tmp/000_schema.sql /tmp/001_refresh_tokens.sql /tmp/002_indexes.sql \
            /tmp/003_usuario_permisos.sql /tmp/004_usuario_permisos_modificar.sql \
-           /tmp/005_seed_data.sql; do
-    [ -f \"\$f\" ] && psql -h 172.16.3.23 -U app_user -d registro_muni_union -f \"\$f\"
+           /tmp/005_seed_data.sql /tmp/006_configuracion_sistema.sql \
+           /tmp/007_identidad_visual.sql; do
+    [ -f \"\$f\" ] && psql -h 172.16.3.23 -U app_user -d registro_muni_union \
+      -v ON_ERROR_STOP=1 -f \"\$f\"
   done
 "
 ```
@@ -128,7 +130,7 @@ ssh deploy@172.16.3.21 "nginx -t && systemctl status nginx"
 
 ### Health `/api/health` → 503 y logs: `pg_hba.conf rejects ... no encryption`
 
-PostgreSQL en `.23` solo acepta conexiones **SSL** (`hostssl` en `pg_hba.conf`). El backend debe tener **`DB_SSL=true`** en `/opt/muni_union/.env.backend`.
+PostgreSQL en `172.16.3.23` solo acepta conexiones **SSL** (`hostssl` en `pg_hba.conf`). El backend debe tener **`DB_SSL=true`** en `/opt/muni_union/.env.backend`.
 
 En la VM **172.16.3.22** (usuario `deploy`):
 
@@ -209,14 +211,14 @@ ssh deploy@172.16.3.21 "bash /opt/muni_union/deploy/health_check.sh"
 deploy/
 ├── 00_base_hardening.sh          ← Ejecutar en TODAS las VMs (primero)
 ├── storage/
-│   └── 01_setup_storage.sh       ← VM Storage (.24)
+│   └── 01_setup_storage.sh       ← VM Storage (172.16.3.24)
 ├── db/
-│   ├── 02_setup_postgresql.sh    ← VM PostgreSQL (.23)
+│   ├── 02_setup_postgresql.sh    ← VM PostgreSQL (172.16.3.23)
 │   └── restore_db.sh             ← Restaurar BD desde backup
 ├── backend/
-│   └── 03_setup_backend.sh       ← VM Backend (.22)
+│   └── 03_setup_backend.sh       ← VM Backend (172.16.3.22)
 ├── frontend/
-│   └── 04_setup_frontend.sh      ← VM Frontend (.21)
+│   └── 04_setup_frontend.sh      ← VM Frontend (172.16.3.21)
 ├── docker-compose.backend.yml    ← Docker del Backend
 ├── docker-compose.frontend.yml   ← Docker del Frontend
 ├── deploy.sh                     ← Script de actualización

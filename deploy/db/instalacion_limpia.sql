@@ -281,6 +281,21 @@ SELECT id, TRUE, TRUE, TRUE, TRUE, TRUE
 FROM usuarios WHERE username = 'aespinoza'
 ON CONFLICT (usuario_id) DO NOTHING;
 
+-- Identidad visual configurable
+CREATE TABLE IF NOT EXISTS configuracion_sistema (
+    clave              VARCHAR(100) PRIMARY KEY,
+    valor              TEXT         NOT NULL,
+    descripcion        TEXT,
+    fecha_registro     TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    fecha_modificacion TIMESTAMPTZ
+);
+
+INSERT INTO configuracion_sistema (clave, valor, descripcion)
+VALUES
+    ('logo_principal', '/Logo_MDUnion.svg', 'Ruta canónica del logo principal institucional.'),
+    ('logo_blanco', '/Logo_blanco.svg', 'Ruta canónica del logo blanco institucional.')
+ON CONFLICT (clave) DO NOTHING;
+
 -- ─────────────────────────────────────────────────────────────────
 -- VERIFICACIÓN FINAL
 -- ─────────────────────────────────────────────────────────────────

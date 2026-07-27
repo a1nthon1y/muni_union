@@ -19,6 +19,7 @@ import importacionRoutes from "./routes/importacion.routes.js";
 import verificarRoutes from "./routes/verificar.routes.js";
 import backupRoutes from "./routes/backup.routes.js";
 import configuracionRoutes from "./routes/configuracion.routes.js";
+import { serveLogo } from "./controllers/configuracion.controller.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
 import { auditMiddleware } from "./middlewares/auditMiddleware.js";
 const __filename = fileURLToPath(import.meta.url);
@@ -52,6 +53,10 @@ app.use(cors({
 app.use(cookieParser());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
+
+// Logos institucionales personalizados. Un 404 permite que Nginx use
+// como respaldo los SVG incluidos en el Frontend.
+app.get(["/Logo_MDUnion.svg", "/Logo_blanco.svg"], serveLogo);
 
 // Servir carpetas estáticas (Documentos subidos)
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));

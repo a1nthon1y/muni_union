@@ -1,34 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Solicitud } from "@/types/solicitud";
 import { format } from "date-fns";
-import { es } from "date-fns/locale";
-import { configuracionService } from "@/services/configuracion.service";
 
 interface SolicitudPrintViewProps {
     solicitud: Solicitud;
 }
 
-const DEFAULT_URL = "https://172.16.3.21";
-
 export function SolicitudPrintView({ solicitud }: SolicitudPrintViewProps) {
     const total = solicitud.detalles?.reduce((acc, curr) => acc + Number(curr.total), 0) || 0;
-    const [baseUrl, setBaseUrl] = useState(DEFAULT_URL);
-
-    useEffect(() => {
-        let mounted = true;
-        configuracionService.get()
-            .then((data) => {
-                if (mounted && data.url_verificacion_publica) {
-                    setBaseUrl(data.url_verificacion_publica.replace(/\/+$/, ""));
-                }
-            })
-            .catch(() => {
-                // Si falla, se mantiene la IP de producción actual.
-            });
-        return () => { mounted = false; };
-    }, []);
+    const baseUrl = typeof window === "undefined" ? "" : window.location.origin;
 
     return (
         <div className="print-container bg-white text-black p-0 font-serif leading-relaxed block overflow-visible">
@@ -41,6 +22,7 @@ export function SolicitudPrintView({ solicitud }: SolicitudPrintViewProps) {
 
                 {/* Header Compacto */}
                 <div className="flex flex-col items-center text-center space-y-1 border-b-2 border-slate-900 pb-3 mb-4">
+                    {/* eslint-disable-next-line @next/next/no-img-element -- debe consultar la ruta canónica sin optimización */}
                     <img src="/Logo_MDUnion.svg" alt="Logo" className="w-16 h-16 mb-1" />
                     <h1 className="text-xl font-black uppercase tracking-widest text-slate-900">Municipalidad Distrital de La Unión</h1>
                     <h2 className="text-[11px] font-black uppercase tracking-[0.4em] text-slate-500">Constancia de Trámite Municipal</h2>
@@ -52,7 +34,7 @@ export function SolicitudPrintView({ solicitud }: SolicitudPrintViewProps) {
                 {/* Introduction Compacta */}
                 <div className="mb-4 text-justify">
                     <p className="text-[11px] font-semibold text-slate-800 leading-normal uppercase">
-                        La Oficina de Registro Civil de la Municipalidad Distrital de la Unión, certifica que se ha recibido y procesado satisfactoriamente el trámite bajo la modalidad de <span className="font-black text-slate-900">"{solicitud.tipo_solicitud}"</span>, registrado en nuestro sistema oficial STDU con la siguiente información:
+                        La Oficina de Registro Civil de la Municipalidad Distrital de la Unión, certifica que se ha recibido y procesado satisfactoriamente el trámite bajo la modalidad de <span className="font-black text-slate-900">&quot;{solicitud.tipo_solicitud}&quot;</span>, registrado en nuestro sistema oficial STDU con la siguiente información:
                     </p>
                 </div>
 

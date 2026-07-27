@@ -1,22 +1,29 @@
 import api from "@/utils/api";
 
-export interface ConfiguracionSistema {
-    url_verificacion_publica: string;
-    descripcion?: string | null;
-    fecha_modificacion?: string | null;
-    ejemplo_verificacion: string;
+export type LogoTipo = "principal" | "blanco";
+
+export interface LogoConfig {
+    tipo: LogoTipo;
+    nombre: "Logo_MDUnion.svg" | "Logo_blanco.svg";
+    ruta: "/Logo_MDUnion.svg" | "/Logo_blanco.svg";
+    personalizado: boolean;
+    fecha_modificacion: string | null;
 }
 
 export const configuracionService = {
-    async get() {
-        const { data } = await api.get<ConfiguracionSistema>("/configuracion");
+    async getLogos() {
+        const { data } = await api.get<Record<LogoTipo, LogoConfig>>(
+            "/configuracion/logos",
+        );
         return data;
     },
 
-    async updateUrlVerificacion(url_verificacion_publica: string) {
-        const { data } = await api.put<ConfiguracionSistema & { message: string }>(
-            "/configuracion/url-verificacion",
-            { url_verificacion_publica }
+    async updateLogo(tipo: LogoTipo, file: File) {
+        const formData = new FormData();
+        formData.append("logo", file);
+        const { data } = await api.put<LogoConfig & { message: string }>(
+            `/configuracion/logos/${tipo}`,
+            formData,
         );
         return data;
     },

@@ -11,7 +11,7 @@
 ## Restricciones globales
 
 - Documentar solamente funcionalidades y controles verificables en el repositorio.
-- Identificar explícitamente como **No implementado actualmente**: PISP, consulta en línea a RENIEC/SUNARP, webhooks, colas, ESB, MFA, cifrado de campos personales y API keys por integrador.
+- Identificar explícitamente como **No implementado actualmente**: PIDE, consulta en línea a RENIEC/SUNARP, webhooks, colas, ESB, MFA, cifrado de campos personales y API keys por integrador.
 - No incluir líneas de código fuente; sí se permiten comandos operativos, rutas, variables, diagramas, tablas y ejemplos de peticiones.
 - Conservar la separación entre sistema interno municipal y portal público de verificación.
 - Incluir todas las credenciales y valores reales necesarios para configurar producción: aplicación, PostgreSQL, URLs, puertos, rutas y variables. No usar placeholders en la copia de entrega restringida.
@@ -40,7 +40,7 @@
 - [x] Sustituir el índice actual por los nueve capítulos y los 26 subapartados oficiales `1.1–9.2`, respetando literalmente la estructura institucional solicitada.
 - [x] Reservar la sección `5.2` para la guía completa de producción y la sección `7.1` para el catálogo completo de endpoints.
 - [x] Incorporar como lista cerrada los encabezados: `1.1`, `1.2`, `2.1–2.4`, `3.1–3.4`, `4.1–4.3`, `5.1–5.3`, `6.1–6.3`, `7.1–7.2`, `8.1–8.3` y `9.1–9.2`.
-- [x] Definir convenciones: “Producción”, “Red interna”, “Portal público”, “VM”, “API”, “NFS” y “PISP”.
+- [x] Definir convenciones: “Producción”, “Red interna”, “Portal público”, “VM”, “API”, “NFS” y “PIDE”.
 - [x] Validar que no existan secciones numeradas fuera de la estructura oficial.
 
 **Verificación:**
@@ -62,7 +62,7 @@ rg '^#{2,3} [1-9]\.[0-9]?\.? ' MANUAL_TECNICO.md
 - [x] Redactar `1.1 Propósito del documento`: operación, despliegue, mantenimiento, integración, seguridad y continuidad.
 - [x] Redactar `1.2 Alcance del software`: personas, actas, documentos digitales, solicitudes, usuarios, reportes, auditoría, backup, configuración y verificación pública.
 - [x] Identificar audiencias: administrador técnico, desarrollador, DBA, responsable de seguridad y proveedor autorizado.
-- [x] Definir exclusiones: no sustituye políticas municipales, no integra PISP/RENIEC/SUNARP y no constituye por sí solo cumplimiento legal.
+- [x] Definir exclusiones: no sustituye políticas municipales, no integra PIDE/RENIEC/SUNARP y no constituye por sí solo cumplimiento legal.
 - [x] Incorporar límites de exposición: aplicación completa en red interna; solo verificación ciudadana en Internet.
 
 **Criterio de aceptación:** un revisor puede determinar qué hace el sistema, para quién es el manual y qué no está implementado sin consultar otro documento.
@@ -191,9 +191,8 @@ rg '^#{2,3} [1-9]\.[0-9]?\.? ' MANUAL_TECNICO.md
 **Resultado:** procedimiento completo y autónomo para instalar producción.
 
 - [x] Definir requisitos mínimos y recomendados como recomendaciones de capacidad basadas en la arquitectura y en el incidente operativo confirmado:
-  - host Proxmox mínimo 16 GiB;
-  - recomendado 24–32 GiB si se ejecuta una VM Windows auxiliar;
-  - reserva mínima de 1.5–2 GiB para Proxmox;
+  - host de virtualización con hipervisor tipo 1: mínimo 16 GiB y recomendado 24–32 GiB;
+  - reserva mínima de 2 GiB para el hipervisor y sus servicios;
   - capacidad de CPU, disco y red por VM.
 - [x] Incorporar advertencia basada en operación real: sobreasignar 4 GiB a cinco VMs en un host de 8 GiB provoca OOM Killer y apagado de procesos KVM.
 - [x] Documentar direccionamiento, DNS, NTP, gateway, certificados, acceso al repositorio y llaves SSH.
@@ -205,12 +204,12 @@ rg '^#{2,3} [1-9]\.[0-9]?\.? ' MANUAL_TECNICO.md
   5. Backend;
   6. Frontend/Nginx;
   7. verificación.
-- [x] Identificar en cada comando el host donde debe ejecutarse: `[OPERADOR]`, `[PVE]`, `[VM21]`, `[VM22]`, `[VM23]` o `[VM24]`.
+- [x] Identificar en cada comando el host donde debe ejecutarse: `[OPERADOR]`, `[HV]`, `[VM21]`, `[VM22]`, `[VM23]` o `[VM24]`.
 - [x] Marcar `init_db.sh limpia` como destructivo y exigir respaldo/verificación previa.
 - [x] Definir `000_schema.sql` a `006_configuracion_sistema.sql` como secuencia canónica de instalación.
 - [x] No presentar `instalacion_limpia.sql` como equivalente completo mientras no incluya y verifique la migración `006`.
 - [x] Clasificar cada Docker Compose y configuración Nginx como producción vigente, desarrollo/local o legacy.
-- [x] Documentar orden de encendido `.24 → .23 → .22 → .21` y apagado inverso.
+- [x] Documentar orden de encendido `172.16.3.24 → 172.16.3.23 → 172.16.3.22 → 172.16.3.21` y apagado inverso.
 - [x] Añadir tabla completa de puertos y reglas de firewall.
 - [x] Añadir diccionario de variables:
   - `NODE_ENV`, `PORT`;
@@ -222,7 +221,7 @@ rg '^#{2,3} [1-9]\.[0-9]?\.? ' MANUAL_TECNICO.md
   - `NEXT_PUBLIC_API_URL`.
 - [x] Separar valores requeridos, secretos, valor de producción y procedimiento de generación.
 - [x] Incorporar en el Manual Técnico una matriz de credenciales reales para aplicación, PostgreSQL, sistema operativo, URLs y secretos JWT, obtenidas de la infraestructura y nunca inventadas. No duplicar los valores secretos en planes ni en el Manual de Usuario.
-- [x] Documentar Nginx real: 500 MB, upstream `.22:4000`, `/api/`, `/uploads/`, zona interna y portal público.
+- [x] Documentar Nginx real: 500 MB, upstream `172.16.3.22:4000`, `/api/`, `/uploads/`, zona interna y portal público.
 - [x] Añadir pruebas de aceptación con resultados esperados para health, BD, NFS, login, verificación y backup.
 - [ ] Probar la instalación desde una base vacía y verificar tablas, configuración inicial, usuario bootstrap, conexión TLS y health de la API.
 
@@ -288,7 +287,7 @@ rg '172\.16\.3\.(21|22|23|24)|DB_SSL|NEXT_PUBLIC_API_URL|AUDIT_RETENTION_DAYS' M
 - [x] Documentar códigos HTTP, paginación, rate limits, reintentos y errores.
 - [x] Limitar los reintentos automáticos a operaciones seguras; no recomendar reintentos genéricos de `POST` sin idempotencia.
 - [x] Documentar Swagger en su estado actual: `/api/docs` solo cuando `NODE_ENV !== production`.
-- [x] Indicar que PISP, RENIEC/SUNARP en línea, webhooks, colas y ESB no están implementados.
+- [x] Indicar que PIDE, RENIEC/SUNARP en línea, webhooks, colas y ESB no están implementados.
 - [x] Explicar integración entrante y saliente; marcar la integración saliente como no implementada actualmente.
 
 **Verificación:** comparar todos los montajes de `back/src/app.js` y todas las declaraciones de métodos en `back/src/routes/*.js`; ninguna combinación método+ruta puede quedar sin registrar.
@@ -364,7 +363,7 @@ rg '172\.16\.3\.(21|22|23|24)|DB_SSL|NEXT_PUBLIC_API_URL|AUDIT_RETENTION_DAYS' M
 - [x] Crear matriz síntoma/causa/verificación/solución/escalamiento.
 - [x] Incluir, como mínimo:
   - VM detenida por OOM Killer;
-  - falta de memoria/swap alta en Proxmox;
+  - falta de memoria/swap alta en una plataforma de virtualización con hipervisor tipo 1;
   - PostgreSQL sin SSL;
   - NFS no montado;
   - API/DB health degradado;

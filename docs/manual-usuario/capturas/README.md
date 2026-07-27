@@ -44,7 +44,7 @@ Coloque aquí las capturas en formato PNG. `MANUAL_USUARIO.html` las carga autom
 - `figura-6-4.png`: comparación de menús ADMIN y REGISTRADOR.
 - `figura-6-5.png`: Bitácora de Auditoría.
 - `figura-6-6.png`: Backup BD.
-- `figura-6-7.png`: Configuración de URL pública.
+- `figura-6-7.png`: Identidad visual, vista previa y reemplazo de logos.
 - `figura-7-1.png`: validación de campos obligatorios.
 - `figura-7-2.png`: alerta de validación o duplicidad.
 - `figura-7-3.png`: pérdida de conexión o error de carga.

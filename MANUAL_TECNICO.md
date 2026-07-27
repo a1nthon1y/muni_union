@@ -45,10 +45,10 @@ Este manual está dirigido a:
 | Producción | Entorno municipal en operación, distribuido en cuatro máquinas virtuales |
 | Red interna | Segmentos privados autorizados por Nginx (`172.16.0.0/16` y `192.168.0.0/16`) |
 | Portal público | Superficie de Internet limitada a la verificación ciudadana |
-| VM | Máquina virtual ejecutada en Proxmox VE |
+| VM | Máquina virtual ejecutada sobre un hipervisor tipo 1 |
 | API | Interfaz REST del Backend bajo el prefijo `/api` |
 | NFS | Sistema de archivos compartido por red para documentos y respaldos |
-| PISP | Plataforma de Interoperabilidad del Estado Peruano |
+| PIDE | Plataforma de Interoperabilidad del Estado |
 | No verificado | Dato que requiere comprobación directa en la infraestructura |
 | No implementado | Funcionalidad que no existe en el código ni en la configuración vigente |
 
@@ -81,7 +81,7 @@ Este manual está dirigido a:
    - 6.3. Políticas de almacenamiento de logs y registros de error
 7. **Interoperabilidad y Componentes Externos**
    - 7.1. Catálogo de APIs y endpoints
-   - 7.2. Integración con la PISP, de corresponder
+   - 7.2. Integración con la PIDE, de corresponder
 8. **Gestión de Base de Datos**
    - 8.1. Modelo Entidad–Relación
    - 8.2. Diccionario de datos
@@ -133,7 +133,7 @@ El sistema administra los procesos municipales relacionados con:
 | Aplicación administrativa completa | Implementada para la red interna municipal |
 | API administrativa | Implementada para consumo interno autenticado |
 | Verificación ciudadana | Implementada como única superficie prevista para acceso público |
-| Integración PISP | No implementada actualmente |
+| Integración PIDE | No implementada actualmente |
 | Consulta en línea a RENIEC o SUNARP | No implementada actualmente |
 | Webhooks, colas de mensajería o ESB | No implementados actualmente |
 | MFA, OAuth o API keys por integrador | No implementados actualmente |
@@ -327,13 +327,43 @@ sequenceDiagram
 | Estado cliente | Zustand | `5.0.11` | `front/package.json` |
 | Base de datos | PostgreSQL | 15 | Scripts de despliegue |
 | Contenedores | Docker / Docker Compose | Versión instalada no verificada | Infraestructura |
-| Hipervisor | Proxmox VE | Versión instalada no verificada | Infraestructura |
+| Virtualización | Hipervisor tipo 1 | Producto y versión instalados no verificados | Infraestructura |
 | Sistema operativo VM | Debian GNU/Linux | Release instalada no verificada | Infraestructura |
 
-Los scripts del repositorio fueron preparados para Debian 12. Las versiones instaladas de Proxmox, Docker, Docker Compose y Debian deberán comprobarse directamente con:
+#### Funcionamiento y uso de frameworks en el desarrollo
+
+La solución utiliza frameworks y librerías con responsabilidades separadas. **Next.js y Express son los frameworks principales**; React construye la interfaz, mientras las demás herramientas complementan validación, estado, estilos, comunicación y persistencia.
+
+| Tecnología | Tipo y forma de trabajo | Uso aplicado en el sistema |
+|---|---|---|
+| Node.js 20 | Runtime JavaScript del lado servidor. Ejecuta módulos ES, operaciones asíncronas y procesos de red/archivos. | Ejecuta Express en el Backend y los procesos de desarrollo, compilación y servicio de Next.js en el Frontend. |
+| Next.js 16 | Framework web basado en React. Utiliza **App Router**, layouts y enrutamiento por estructura de carpetas dentro de `src/app`. Se compila con `next build` y se sirve con `next start`. | Organiza login, dashboard, actas, personas, solicitudes, digitalización, administración y portal de verificación. Las pantallas interactivas usan componentes cliente; Next.js no implementa la API de negocio, pues esta reside en Express. |
+| React 19 | Librería declarativa basada en componentes, propiedades, estado y hooks. React vuelve a renderizar la interfaz cuando cambia el estado. | Construye formularios, tablas, paneles laterales, diálogos, navegación y vistas de impresión reutilizables. Hooks como `useState`, `useEffect` y hooks personalizados coordinan carga, filtros y acciones del usuario. |
+| Express 5 | Framework HTTP basado en una cadena de middlewares y rutas. Cada solicitud atraviesa controles comunes antes de llegar al controlador y al servicio correspondiente. | Publica la API bajo `/api`; aplica Helmet, CORS, cookies, límites de cuerpo, auditoría, autenticación/autorización, rutas funcionales y manejo centralizado de errores. También sirve `/uploads` desde el volumen documental. |
+| TypeScript 5 | Superset tipado de JavaScript con verificación durante desarrollo y compilación. Los tipos no se ejecutan en el navegador. | Define contratos de datos, propiedades de componentes, respuestas de servicios y estado del Frontend, reduciendo errores de integración. |
+| Tailwind CSS 4 | Motor CSS de clases utilitarias procesadas durante la compilación. | Implementa diseño responsivo, colores, espaciado, tipografía y estados visuales. Los componentes reutilizables combinan utilidades con `clsx`, `tailwind-merge` y variantes. |
+| React Hook Form + Zod | React Hook Form administra campos y errores con pocos renderizados; Zod declara esquemas y valida tipos, obligatoriedad y formatos. | Se utilizan en formularios de usuarios y registros funcionales para validar en cliente antes de enviar. La API vuelve a validar los datos: la validación del navegador no se considera una barrera de seguridad. |
+| Zustand 5 | Contenedor de estado global mediante stores y acciones. | Conserva en el Frontend la información visible de la sesión y facilita su uso entre componentes. El JWT real permanece en cookies `httpOnly`, no dentro de Zustand. |
+| Axios | Cliente HTTP basado en promesas con configuración común e interceptores. | Centraliza llamadas hacia `NEXT_PUBLIC_API_URL`, envía cookies con `withCredentials` y gestiona respuestas de autenticación antes de actualizar la interfaz. |
+| `pg` 8 | Driver PostgreSQL para Node.js con pool de conexiones y consultas asíncronas. | La mayoría de módulos concentra el SQL parametrizado en servicios. Los controladores especializados de documentos, verificación y backup consultan el pool directamente; las rutas no ejecutan SQL. |
+| Radix UI / componentes shadcn | Primitivas accesibles y componentes incorporados al código del proyecto; no constituyen un Backend ni un servicio externo. | Proporcionan diálogos, selectores, menús, tablas y controles visuales consistentes que luego se adaptan con Tailwind CSS. |
+
+El recorrido típico de una operación es:
+
+1. una ruta de Next.js presenta la página y compone la interfaz con React;
+2. el usuario completa un formulario; React Hook Form y Zod realizan la validación inmediata;
+3. un servicio del Frontend usa Axios para enviar una petición HTTPS a Nginx y `/api`;
+4. Express recibe la petición y ejecuta middlewares de seguridad, sesión, permisos, validación y auditoría;
+5. la ruta invoca un controlador y, en los módulos principales, este delega la regla de negocio al servicio;
+6. el servicio consulta PostgreSQL mediante `pg` o utiliza el volumen NFS cuando procesa documentos;
+7. Express devuelve JSON o un archivo; React actualiza la pantalla y Zustand solo conserva el estado global necesario.
+
+En desarrollo se ejecutan `npm run dev` dentro de `front/` y `back/`. Next.js ofrece recarga durante cambios del Frontend y Nodemon reinicia el Backend al detectar cambios. Antes de desplegar, el Frontend debe superar `npm run lint` y `npm run build`; el Backend debe superar `npm run build` y `npm test`.
+
+Los scripts del repositorio fueron preparados para Debian 12. El producto y la versión del hipervisor, así como las versiones instaladas de Docker, Docker Compose y Debian, deberán comprobarse directamente. No se exige una marca específica de virtualización; se recomienda una plataforma con hipervisor tipo 1 que soporte VMs Debian, redes virtuales, snapshots, consola remota, monitoreo y asignación controlada de CPU, memoria y almacenamiento.
 
 ```bash
-pveversion
+# Consultar producto y versión desde la consola de gestión del hipervisor
 docker --version
 docker compose version
 cat /etc/os-release
@@ -350,7 +380,7 @@ flowchart TB
     LAN[Red interna municipal] -->|HTTPS 443| V21
     INTERNET[Internet] -->|HTTPS 443: solo verificación| V21
 
-    subgraph PVE[Host Proxmox VE]
+    subgraph HV[Host de virtualización - hipervisor tipo 1]
         V21[VM Frontend\n172.16.3.21\nNginx + union_web]
         V22[VM Backend\n172.16.3.22\nunion_api :4000]
         V23[VM PostgreSQL\n172.16.3.23\nPostgreSQL 15 :5432]
@@ -393,9 +423,9 @@ flowchart TB
 
 | Artefacto | Clasificación | Uso |
 |---|---|---|
-| `deploy/docker-compose.backend.yml` | Producción vigente | VM Backend `.22` |
-| `deploy/docker-compose.frontend.yml` | Producción vigente | VM Frontend `.21` |
-| `deploy/frontend/04_setup_frontend.sh` | Producción vigente | Nginx del host `.21` |
+| `deploy/docker-compose.backend.yml` | Producción vigente | VM Backend `172.16.3.22` |
+| `deploy/docker-compose.frontend.yml` | Producción vigente | VM Frontend `172.16.3.21` |
+| `deploy/frontend/04_setup_frontend.sh` | Producción vigente | Nginx del host `172.16.3.21` |
 | `docker-compose.yml` del directorio raíz | Desarrollo/local | Stack integrado fuera de la arquitectura 4-VM |
 | `deploy/app/nginx-production.conf` | Legacy/no usar en 4-VM | Contiene upstream y límites distintos de producción |
 | `nginx/nginx.conf` | Desarrollo/local | Proxy del stack integrado |
@@ -404,10 +434,10 @@ flowchart TB
 
 El orden de encendido es:
 
-1. Storage `.24`.
-2. PostgreSQL `.23`.
-3. Backend `.22`.
-4. Frontend `.21`.
+1. Storage `172.16.3.24`.
+2. PostgreSQL `172.16.3.23`.
+3. Backend `172.16.3.22`.
+4. Frontend `172.16.3.21`.
 
 El apagado planificado se realiza en orden inverso.
 
@@ -478,7 +508,7 @@ La API constituye la última barrera de autorización. Ocultar una opción en el
 | Usuarios | ADMIN; contraseña propia para autenticados | Identidad, rol, estado y permisos | Alta, modificación, activación, eliminación lógica, permisos y cambio de contraseña | Cuenta y permisos efectivos | `/api/usuarios` | `usuarios`, `roles`, `usuario_permisos`, `refresh_tokens` |
 | Importación masiva | ADMIN | Excel `excel` y ZIP opcional `zip` | Validación y carga de hasta 30 000 filas; asociación de documentos | Resumen por fila y archivos importados | `/api/importacion` | `personas`, `actas`, `documentos_digitales`; NFS uploads |
 | Verificación pública | Ciudadano | Código/ID de solicitud | Rate limit y consulta de datos mínimos | Estado y constancia verificable | `/api/verificar` | `solicitudes`, `solicitantes`, `detalle_solicitud`, `usuarios` |
-| Configuración | Lectura autenticada; modificación ADMIN | URL pública de verificación | Validación y persistencia clave/valor | URL aplicada a nuevas constancias | `/api/configuracion` | `configuracion_sistema` |
+| Identidad visual | ADMIN | SVG con nombre canónico, máximo 2 MB | Validación de nombre, MIME y contenido; reemplazo atómico | Logos aplicados en login, menú, portal e impresiones | `/api/configuracion/logos` | NFS `/app/uploads/configuracion/logos`; metadatos en `configuracion_sistema` |
 | Backup BD | ADMIN | Sesión autorizada y variables `DB_*` | `pg_dump`: esquema y datos; fallback Node.js: solo sentencias `INSERT` | Archivo SQL descargable | `/api/backup` | Esquema `public` completo con `pg_dump`; datos restaurables tras migraciones en fallback |
 
 #### Dashboard
@@ -498,6 +528,8 @@ Gestiona actas de nacimiento, matrimonio y defunción. Incluye numeración clás
 La pantalla de Digitalización implementa un flujo compuesto: busca o registra personas y cónyuges, obtiene la siguiente numeración, crea o actualiza el acta y finalmente asocia el documento. Para ello consume `/api/personas`, `/api/actas` y `/api/documentos`.
 
 La operación documental recibe `acta_id` y el campo multipart `archivo`. El Backend admite PDF, JPG y PNG de hasta 20 MB, guarda el archivo bajo el volumen de uploads y registra metadatos en PostgreSQL. Al reemplazar un documento se elimina el archivo físico anterior y su registro queda marcado como eliminado. Cualquier usuario autenticado puede cargar o eliminar documentos; no existe un permiso granular específico para el archivo. Los documentos se sirven mediante `/uploads`, con Nginx como punto de entrada en producción.
+
+> **Aclaración sobre la URL visible de los documentos.** Es correcto que el navegador muestre una dirección como `https://172.16.3.21/uploads/documentos/archivo.pdf`. La IP `172.16.3.21` corresponde al punto de entrada HTTPS de Nginx y no indica dónde se almacena físicamente el archivo. Nginx reenvía `/uploads/` al Backend `172.16.3.22`; el Backend lee `/app/uploads` desde el volumen NFS montado en la VM Storage `172.16.3.24`. El flujo es: **navegador → Frontend/Nginx `172.16.3.21` → Backend `172.16.3.22` → NFS Storage `172.16.3.24`**. La VM Storage no debe publicarse directamente por HTTP ni exponerse al navegador.
 
 #### Solicitudes
 
@@ -735,14 +767,43 @@ El repositorio define límites de 1 GiB para el contenedor Frontend, 2 GiB para 
 
 | Componente | Capacidad base recomendada | Observación |
 |---|---|---|
-| Host Proxmox VE | 16 GiB RAM como mínimo operativo | Reservar entre 1.5 y 2 GiB para Proxmox |
-| Host con VM Windows auxiliar | 24–32 GiB RAM | La VM Windows debe apagarse cuando no se utilice |
-| VM Frontend `.21` | 2 vCPU, 2 GiB RAM | El contenedor limita su uso a 1 GiB |
-| VM Backend `.22` | 2 vCPU, 2–3 GiB RAM | El contenedor limita su uso a 2 GiB; importaciones elevan consumo |
-| VM PostgreSQL `.23` | 2 vCPU, 4 GiB RAM | El script configura `shared_buffers=1GB` y `effective_cache_size=3GB` |
-| VM Storage `.24` | 1–2 vCPU, 1–2 GiB RAM | El disco debe dimensionarse por uploads, logs y retención de backups |
+| Host de virtualización con hipervisor tipo 1 | 8 núcleos CPU, 16 GiB RAM como mínimo; 24–32 GiB recomendados | Reservar al menos 2 GiB para el hipervisor y sus servicios; no sobreasignar memoria |
+| VM Frontend `172.16.3.21` | 2 vCPU, 2 GiB RAM | El contenedor limita su uso a 1 GiB |
+| VM Backend `172.16.3.22` | 2 vCPU, 2–3 GiB RAM | El contenedor limita su uso a 2 GiB; importaciones elevan consumo |
+| VM PostgreSQL `172.16.3.23` | 2 vCPU, 4 GiB RAM | El script configura `shared_buffers=1GB` y `effective_cache_size=3GB` |
+| VM Storage `172.16.3.24` | 1–2 vCPU, 1–2 GiB RAM | El disco debe dimensionarse por uploads, logs y retención de backups |
 
 Cada VM debe contar con NIC virtual de al menos 1 Gbit/s dentro de la LAN. El almacenamiento mínimo no puede fijarse únicamente desde el repositorio: las imágenes, base y documentos reales no están inventariados aquí. Frontend y Backend deben cubrir Debian, imágenes Docker, dos builds simultáneos y 30 % libre; PostgreSQL debe cubrir tres veces el tamaño proyectado de la base y 30 % libre; Storage debe cubrir uploads proyectados más todas las copias de retención y 20 % libre. El responsable debe registrar los valores resultantes antes de aprobar capacidad.
+
+#### Equipo del usuario en producción
+
+El usuario accede mediante navegador; no necesita instalar Node.js, Docker ni PostgreSQL en su equipo. Para una operación fluida se establece la siguiente referencia general:
+
+| Recurso | Mínimo | Recomendado |
+|---|---|---|
+| Procesador | 2 núcleos de 2 GHz, arquitectura de 64 bits | 4 núcleos o superior |
+| Memoria RAM | 4 GiB | 8 GiB o más |
+| Almacenamiento local | 2 GiB libres para caché y descargas | 5 GiB libres |
+| Pantalla | `1366 × 768` | `1920 × 1080` |
+| Sistema operativo | Windows 10/11 o distribución Linux con soporte vigente | Versión corporativa mantenida y actualizada |
+| Navegador | Chrome, Edge o Firefox en una versión con soporte | Última versión estable aprobada por la Municipalidad |
+| Red | Conectividad estable a la LAN municipal, 10 Mbit/s por puesto | Ethernet de 100 Mbit/s o superior |
+| Software auxiliar | Visor PDF | Visor PDF actualizado y herramienta ofimática para CSV/Excel |
+
+#### Equipo de desarrollo
+
+La estación de desarrollo debe poder ejecutar simultáneamente Frontend, Backend, PostgreSQL y herramientas de prueba. Si se levanta toda la arquitectura mediante contenedores o VMs locales, se aplica la capacidad recomendada:
+
+| Recurso | Mínimo | Recomendado |
+|---|---|---|
+| Procesador | 4 núcleos de 64 bits con virtualización habilitada | 8 núcleos o superior |
+| Memoria RAM | 8 GiB | 16 GiB; 32 GiB para varias VMs o cargas masivas |
+| Almacenamiento | SSD con 30 GiB libres | SSD/NVMe con 60 GiB libres o más |
+| Sistema operativo | Windows 10/11, Linux o macOS con soporte vigente | Linux de 64 bits o entorno corporativo equivalente |
+| Herramientas | Git, Node.js 20, npm, editor, navegador y cliente PostgreSQL | Docker Engine/Desktop, Docker Compose, PostgreSQL 15, `psql`, `curl` y herramientas de pruebas |
+| Red | Acceso HTTPS a repositorios y registros de paquetes | Conexión estable de 50 Mbit/s o superior |
+
+Estos valores corresponden a la estación de trabajo del desarrollador, no reemplazan el dimensionamiento independiente del ambiente de producción.
 
 #### Incidente operativo de memoria confirmado
 
@@ -757,13 +818,13 @@ Condiciones observadas:
 
 Fuente de evidencia: salida de `journalctl` y `free -h` proporcionada por el administrador el 23/07/2026. El host registró `Out of memory: Killed process ... kvm` para `103.scope` el 22/07/2026 a las 23:21 y para `105.scope` el 23/07/2026 a las 00:46.
 
-No se debe operar nuevamente con esa sobreasignación. Antes de encender una VM auxiliar se verifican `free -h`, `swapon --show` y la suma de memoria de `qm list`.
+No se debe operar nuevamente con esa sobreasignación. Antes de encender una VM auxiliar se verifican la memoria física, el uso de swap y la suma de memoria asignada a todas las VMs desde la consola de gestión del hipervisor.
 
 #### Software requerido
 
 | Elemento | Requisito |
 |---|---|
-| Hipervisor | Proxmox VE; versión instalada no verificada |
+| Virtualización | Plataforma con hipervisor tipo 1; producto y versión deben verificarse en la infraestructura |
 | VMs | Debian GNU/Linux; scripts preparados para Debian 12 |
 | Contenedores | Docker CE y plugin Docker Compose |
 | Frontend | Node.js 20, Next.js 16.1.6 |
@@ -777,7 +838,7 @@ No se debe operar nuevamente con esa sobreasignación. Antes de encender una VM 
 
 Antes de ejecutar los scripts se debe contar con:
 
-1. las IPs `172.16.3.21–24` reservadas y configuradas de forma estática;
+1. las IPs `172.16.3.21–172.16.3.24` reservadas y configuradas de forma estática;
 2. gateway, DNS y NTP proporcionados por la red municipal;
 3. acceso saliente temporal a repositorios Debian, Docker, PostgreSQL y GitHub;
 4. una estación técnica dentro de `172.16.3.0/24`;
@@ -786,19 +847,19 @@ Antes de ejecutar los scripts se debe contar con:
 7. acceso al repositorio `https://github.com/a1nthon1y/muni_union`;
 8. decisión institucional sobre DNS y certificado de `verificar.muniunion.gob.pe`.
 
-Gateway, DNS, versión instalada de Proxmox y capacidad definitiva de disco deben verificarse directamente en la infraestructura; no están definidos en el repositorio.
+Gateway, DNS, producto y versión del hipervisor y capacidad definitiva de disco deben verificarse directamente en la infraestructura; no están definidos en el repositorio.
 
 #### Puertos de producción
 
 | Origen | Destino | Puerto | Uso | Restricción |
 |---|---|---:|---|---|
 | Red municipal | Todas las VMs | 22/TCP | SSH | Solo `172.16.3.0/24` |
-| Usuarios | Frontend `.21` | 80/TCP | Redirección a HTTPS | Según firewall perimetral |
-| Usuarios | Frontend `.21` | 443/TCP | Aplicación/verificación | Nginx separa zona interna y pública |
-| Frontend `.21` | Backend `.22` | 4000/TCP | API | UFW permite únicamente `.21` |
-| Backend `.22` | PostgreSQL `.23` | 5432/TCP | SQL sobre TLS | UFW y `pg_hba.conf` permiten únicamente `.22` |
-| Backend `.22` | Storage `.24` | 111 y 2049/TCP | NFS uploads/logs | Configuración vigente, potencialmente insuficiente por RPC dinámico |
-| PostgreSQL `.23` | Storage `.24` | 111 y 2049/TCP | NFS backups | Configuración vigente, potencialmente insuficiente por RPC dinámico |
+| Usuarios | Frontend `172.16.3.21` | 80/TCP | Redirección a HTTPS | Según firewall perimetral |
+| Usuarios | Frontend `172.16.3.21` | 443/TCP | Aplicación/verificación | Nginx separa zona interna y pública |
+| Frontend `172.16.3.21` | Backend `172.16.3.22` | 4000/TCP | API | UFW permite únicamente `172.16.3.21` |
+| Backend `172.16.3.22` | PostgreSQL `172.16.3.23` | 5432/TCP | SQL sobre TLS | UFW y `pg_hba.conf` permiten únicamente `172.16.3.22` |
+| Backend `172.16.3.22` | Storage `172.16.3.24` | 111 y 2049/TCP | NFS uploads/logs | Configuración vigente, potencialmente insuficiente por RPC dinámico |
+| PostgreSQL `172.16.3.23` | Storage `172.16.3.24` | 111 y 2049/TCP | NFS backups | Configuración vigente, potencialmente insuficiente por RPC dinámico |
 | Host Frontend | Contenedor Frontend | 3000/TCP | Next.js | Vinculado a `127.0.0.1` |
 
 ### 5.2. Guía de instalación en producción
@@ -808,7 +869,7 @@ Gateway, DNS, versión instalada de Proxmox y capacidad definitiva de disco debe
 Cada comando identifica el equipo donde se ejecuta:
 
 - `[OPERADOR]`: estación del técnico.
-- `[PVE]`: host Proxmox.
+- `[HV]`: host de virtualización o consola de gestión del hipervisor.
 - `[VM21]`: Frontend.
 - `[VM22]`: Backend.
 - `[VM23]`: PostgreSQL.
@@ -818,11 +879,10 @@ Los scripts `00` a `04` requieren privilegios `root`. Después del endurecimient
 
 #### Paso 0 — Crear y comprobar las VMs
 
-En Proxmox se crean cuatro VMs con las IPs definidas en la sección 2.4. Antes de instalar:
+En la plataforma de virtualización con hipervisor tipo 1 se crean cuatro VMs con las IPs definidas en la sección 2.4. Antes de instalar se revisan desde su consola de gestión el inventario de VMs y la memoria total asignada. Si el host está basado en Linux, también pueden utilizarse los comandos siguientes:
 
 ```bash
-# [PVE]
-qm list
+# [HV, cuando el host permite consola Linux]
 free -h
 swapon --show
 ```
@@ -831,7 +891,7 @@ No se continúa si la memoria comprometida supera la capacidad segura del host.
 
 #### Paso 1 — Endurecimiento base de todas las VMs
 
-Repetir para `.21`, `.22`, `.23` y `.24`:
+Repetir para `172.16.3.21`, `172.16.3.22`, `172.16.3.23` y `172.16.3.24`:
 
 ```bash
 # [OPERADOR]
@@ -867,12 +927,12 @@ Credenciales actuales informadas para las cuatro VMs:
 
 | Usuario | Contraseña | Acceso previsto |
 |---|---|---|
-| `deploy` | `1234567` | SSH desde la LAN en `.21`, `.22`, `.23` y `.24` |
-| `root` | `123456` | Consola local/Proxmox; SSH queda deshabilitado por el hardening |
+| `deploy` | `1234567` | SSH desde la LAN en `172.16.3.21`, `172.16.3.22`, `172.16.3.23` y `172.16.3.24` |
+| `root` | `123456` | Consola local del hipervisor; SSH queda deshabilitado por el hardening |
 
 Estas contraseñas son débiles y compartidas. Deben cambiarse antes de la puesta en producción, registrar valores diferentes por VM en la bóveda institucional y privilegiar llaves SSH para `deploy`.
 
-#### Paso 2 — Storage NFS `.24`
+#### Paso 2 — Storage NFS `172.16.3.24`
 
 ```bash
 # [OPERADOR]
@@ -887,13 +947,13 @@ Exports esperados:
 
 | Export | Cliente autorizado | Uso |
 |---|---|---|
-| `/srv/muni/uploads` | Backend `.22` | Documentos digitalizados |
-| `/srv/muni/backups` | PostgreSQL `.23` | Backups diarios/semanales/mensuales |
-| `/srv/muni/logs` | Backend `.22` | Volumen provisionado; logger centralizado no implementado |
+| `/srv/muni/uploads` | Backend `172.16.3.22` | Documentos digitalizados |
+| `/srv/muni/backups` | PostgreSQL `172.16.3.23` | Backups diarios/semanales/mensuales |
+| `/srv/muni/logs` | Backend `172.16.3.22` | Volumen provisionado; logger centralizado no implementado |
 
 El script vigente exporta con `no_root_squash` y abre TCP 111/2049. Esta configuración aumenta el impacto de un cliente comprometido y puede ser insuficiente para herramientas RPC como `showmount` si `mountd` usa puertos dinámicos. La aceptación se basa en una prueba real de montaje/escritura. Como endurecimiento posterior se recomienda migrar a NFSv4.2 sobre 2049/TCP y `root_squash`, después de validar permisos del contenedor.
 
-#### Paso 3 — PostgreSQL `.23`
+#### Paso 3 — PostgreSQL `172.16.3.23`
 
 Antes de ejecutar el script, generar el locale requerido y editar una copia controlada:
 
@@ -932,6 +992,7 @@ La secuencia oficial es:
 5. `004_usuario_permisos_modificar.sql`
 6. `005_seed_data.sql`
 7. `006_configuracion_sistema.sql`
+8. `007_identidad_visual.sql`
 
 Preparar el repositorio:
 
@@ -947,35 +1008,30 @@ Aplicar como `app_user` mediante socket local:
 ```bash
 # [VM23]
 export PGPASSWORD='muniunion2026_prod'
-for archivo in /opt/muni_union/back/src/migrations/00{0..6}_*.sql; do
+for archivo in /opt/muni_union/back/src/migrations/00{0..7}_*.sql; do
   psql -U app_user -d registro_muni_union -v ON_ERROR_STOP=1 -f "$archivo"
 done
 unset PGPASSWORD
 ```
 
-El patrón `00{0..6}_*.sql` debe resolver exactamente siete archivos. Revisar la lista antes de ejecutar:
+El patrón `00{0..7}_*.sql` debe resolver exactamente ocho archivos. Revisar la lista antes de ejecutar:
 
 ```bash
 # [VM23]
-ls -1 /opt/muni_union/back/src/migrations/00{0..6}_*.sql
+ls -1 /opt/muni_union/back/src/migrations/00{0..7}_*.sql
 ```
 
 ##### Alternativa destructiva `init_db.sh limpia`
 
 `init_db.sh limpia` elimina la base completa, termina conexiones y recrea los datos iniciales. Solo se utiliza en una instalación nueva o después de un backup validado. Exige escribir `SI BORRAR TODO`.
 
-`instalacion_limpia.sql` no contiene actualmente la tabla `configuracion_sistema`; después del modo limpio se debe aplicar `006_configuracion_sistema.sql` y verificarlo. Los comentarios `Muni2025*` dentro del SQL consolidado son inconsistentes con el hash y mensaje final; la credencial bootstrap verificada es `aespinoza` / `123456`.
+`instalacion_limpia.sql` ya crea `configuracion_sistema` con las claves `logo_principal` y `logo_blanco`. Los comentarios `Muni2025*` dentro del SQL consolidado son inconsistentes con el hash y mensaje final; la credencial bootstrap verificada es `aespinoza` / `123456`.
 
 ```bash
 # [VM23] — DESTRUCTIVO
 cd /opt/muni_union
 bash deploy/db/init_db.sh limpia
 
-# Obligatorio después del modo limpia
-export PGPASSWORD='muniunion2026_prod'
-psql -U app_user -d registro_muni_union -v ON_ERROR_STOP=1 \
-  -f back/src/migrations/006_configuracion_sistema.sql
-unset PGPASSWORD
 ```
 
 ##### Verificación del esquema
@@ -990,9 +1046,9 @@ sudo -u postgres psql -d registro_muni_union -c \
   "SELECT username, activo, rol_id FROM usuarios WHERE username='aespinoza';"
 ```
 
-Resultado esperado: 13 tablas, `url_verificacion_publica = https://172.16.3.21` y una fila `aespinoza` activa con `rol_id=1`.
+Resultado esperado: 13 tablas, `logo_principal = /Logo_MDUnion.svg`, `logo_blanco = /Logo_blanco.svg` y una fila `aespinoza` activa con `rol_id=1`.
 
-#### Paso 5 — Backend `.22`
+#### Paso 5 — Backend `172.16.3.22`
 
 ```bash
 # [OPERADOR]
@@ -1018,7 +1074,7 @@ curl -f http://172.16.3.22:4000/api/health
 
 Esperado: contenedor `union_api` saludable, `status=ok` y `services.db=ok`.
 
-#### Paso 6 — Frontend y Nginx `.21`
+#### Paso 6 — Frontend y Nginx `172.16.3.21`
 
 ```bash
 # [OPERADOR]
@@ -1055,12 +1111,12 @@ Los certificados autofirmados que genera el script no contienen SAN y no satisfa
 
 Encendido:
 
-1. Storage `.24`.
-2. PostgreSQL `.23`.
-3. Backend `.22`.
-4. Frontend `.21`.
+1. Storage `172.16.3.24`.
+2. PostgreSQL `172.16.3.23`.
+3. Backend `172.16.3.22`.
+4. Frontend `172.16.3.21`.
 
-Apagado planificado: `.21 → .22 → .23 → .24`.
+Apagado planificado: `172.16.3.21 → 172.16.3.22 → 172.16.3.23 → 172.16.3.24`.
 
 #### Paso 7 — Pruebas de aceptación
 
@@ -1135,7 +1191,7 @@ El uso de `curl -k` en la IP interna se limita a la verificación inicial del ce
 
 ### 5.3. Diccionario de variables de entorno
 
-#### Backend de producción — VM `.22`
+#### Backend de producción — VM `172.16.3.22`
 
 Archivo: `/opt/muni_union/.env.backend`
 Permiso recomendado: `600`, propietario `deploy`.
@@ -1156,7 +1212,7 @@ Permiso recomendado: `600`, propietario `deploy`.
 | `AUDIT_RETENTION_DAYS` | `730` | Retención predeterminada de auditoría |
 | `LOG_LEVEL` | `info` por defecto en producción | Nivel Pino |
 
-Los valores anteriores fueron extraídos de `/opt/muni_union/.env.backend` en la VM `.22` el 23/07/2026. No se deben reemplazar con los valores de `back/.env`, porque ese archivo corresponde a desarrollo.
+Los valores anteriores fueron extraídos de `/opt/muni_union/.env.backend` en la VM `172.16.3.22` el 23/07/2026. No se deben reemplazar con los valores de `back/.env`, porque ese archivo corresponde a desarrollo.
 
 Aunque su longitud es suficiente, los secretos actuales son frases predecibles y ya forman parte de documentación confidencial. Se recomienda rotarlos por valores aleatorios antes de la entrega definitiva y actualizar simultáneamente la copia restringida del manual.
 
@@ -1178,7 +1234,7 @@ sudo awk '/^(JWT_SECRET|REFRESH_TOKEN_SECRET)=/{print}' \
 
 La salida debe transferirse directamente al documento restringido o a la bóveda institucional. Los patrones `.env.backend` y `.env.frontend` no están cubiertos actualmente por el `.gitignore` raíz; no se deben copiar esos archivos dentro de un repositorio sin ampliar primero las reglas de exclusión.
 
-#### Frontend de producción — VM `.21`
+#### Frontend de producción — VM `172.16.3.21`
 
 Archivo: `/opt/muni_union/.env.frontend`
 
@@ -1193,13 +1249,13 @@ Archivo: `/opt/muni_union/.env.frontend`
 
 | Servicio | Usuario | Credencial | Ubicación | Comprobación | Cambio recomendado |
 |---|---|---|---|---|---|
-| Aplicación | `aespinoza` | `123456` | Seed `005`, PostgreSQL `.23` | Login en `.21` | Primer ingreso |
-| PostgreSQL aplicación | `app_user` | `muniunion2026_prod` | PostgreSQL `.23` y `.env.backend` `.22` | `psql` desde `.22` | Ventana coordinada DB/Backend |
-| PostgreSQL local | `postgres` | Autenticación `peer`; sin contraseña documentada | VM `.23` | `sudo -u postgres psql` | No corresponde |
+| Aplicación | `aespinoza` | `123456` | Seed `005`, PostgreSQL `172.16.3.23` | Login en `172.16.3.21` | Primer ingreso |
+| PostgreSQL aplicación | `app_user` | `muniunion2026_prod` | PostgreSQL `172.16.3.23` y `.env.backend` `172.16.3.22` | `psql` desde `172.16.3.22` | Ventana coordinada DB/Backend |
+| PostgreSQL local | `postgres` | Autenticación `peer`; sin contraseña documentada | VM `172.16.3.23` | `sudo -u postgres psql` | No corresponde |
 | Sistema operativo | `deploy` | `1234567` | Todas las VMs | SSH desde LAN | Rotar por VM y usar llave |
-| Sistema operativo | `root` | `123456` | Todas las VMs | Consola Proxmox; SSH deshabilitado | Rotar por VM |
-| JWT access | No aplica | `muni_union_registro_civil_jwt_produccion_2026_clave_super_segura_la_union` | `.env.backend` `.22` | Extracción controlada anterior | Rotar por valor aleatorio; invalida sesiones |
-| JWT refresh | No aplica | `muni_union_refresh_token_produccion_2026_otra_clave_diferente_segura` | `.env.backend` `.22` | Extracción controlada anterior | Rotar por valor aleatorio; invalida renovaciones |
+| Sistema operativo | `root` | `123456` | Todas las VMs | Consola del hipervisor; SSH deshabilitado | Rotar por VM |
+| JWT access | No aplica | `muni_union_registro_civil_jwt_produccion_2026_clave_super_segura_la_union` | `.env.backend` `172.16.3.22` | Extracción controlada anterior | Rotar por valor aleatorio; invalida sesiones |
+| JWT refresh | No aplica | `muni_union_refresh_token_produccion_2026_otra_clave_diferente_segura` | `.env.backend` `172.16.3.22` | Extracción controlada anterior | Rotar por valor aleatorio; invalida renovaciones |
 
 `muniunion2026_prod` es el valor documentado por el responsable para producción; su coincidencia con la credencial realmente desplegada debe verificarse mediante la prueba de conexión desde `union_api`.
 
@@ -1230,9 +1286,9 @@ Archivo: `/opt/muni_union/.env.frontend`
 - La API verifica roles y permisos aun cuando una ruta esté oculta en el Frontend.
 - La verificación pública no crea una sesión y aplica rate limit.
 
-Los grupos administrativos principales son `/api/usuarios`, `/api/auditoria`, `/api/backup`, `/api/importacion`, `/api/reportes/ingresos` y la modificación de `/api/configuracion/url-verificacion`. La sección 3 contiene la trazabilidad de cada módulo y la sección 7 contiene el catálogo método+ruta.
+Los grupos administrativos principales son `/api/usuarios`, `/api/auditoria`, `/api/backup`, `/api/importacion`, `/api/reportes/ingresos` y `/api/configuracion/logos`. La sección 3 contiene la trazabilidad de cada módulo y la sección 7 contiene el catálogo método+ruta.
 
-Express no configura actualmente `trust proxy`. Como todas las peticiones llegan desde Nginx `.21`, `req.ip` puede identificar al proxy en lugar del cliente real. Esto afecta auditoría y rate limits por IP: hasta corregir y probar una confianza limitada exclusivamente a `.21`, varios usuarios podrían compartir el mismo contador.
+Express no configura actualmente `trust proxy`. Como todas las peticiones llegan desde Nginx `172.16.3.21`, `req.ip` puede identificar al proxy en lugar del cliente real. Esto afecta auditoría y rate limits por IP: hasta corregir y probar una confianza limitada exclusivamente a `172.16.3.21`, varios usuarios podrían compartir el mismo contador.
 
 #### Controles perimetrales y del servidor
 
@@ -1277,9 +1333,9 @@ Express no configura actualmente `trust proxy`. Como todas las peticiones llegan
 |---|---|
 | Navegador → Nginx | TLS 1.2/1.3 |
 | Nginx → Frontend | HTTP en loopback `127.0.0.1:3000` |
-| Nginx `.21` → Backend `.22` | HTTP dentro de la red privada |
-| Backend `.22` → PostgreSQL `.23` | TLS obligatorio con certificado autofirmado |
-| Backend/DB → Storage `.24` | NFS sin Kerberos/cifrado configurado |
+| Nginx `172.16.3.21` → Backend `172.16.3.22` | HTTP dentro de la red privada |
+| Backend `172.16.3.22` → PostgreSQL `172.16.3.23` | TLS obligatorio con certificado autofirmado |
+| Backend/DB → Storage `172.16.3.24` | NFS sin Kerberos/cifrado configurado |
 
 El cliente PostgreSQL usa `rejectUnauthorized: false`: cifra el canal, pero no valida de forma fuerte la cadena ni la identidad del certificado. Existe un riesgo residual de intermediario dentro de la red.
 
@@ -1307,10 +1363,10 @@ No se debe afirmar cifrado en reposo integral. La Municipalidad debe definir cif
 | Fuerza bruta de login | 10 intentos/15 min | Rutas Auth | Contador en memoria y reiniciable |
 | Robo de token por JavaScript | Cookies `httpOnly` | Controlador Auth | Una XSS aún podría operar dentro de la sesión |
 | CSRF | `sameSite=strict` | Cookies producción | No existe token CSRF explícito |
-| Acceso administrativo público | ACL y rutas cerradas en Nginx | Configuración `.21` | Error de firewall/DNS puede ampliar superficie |
+| Acceso administrativo público | ACL y rutas cerradas en Nginx | Configuración `172.16.3.21` | Error de firewall/DNS puede ampliar superficie |
 | MITM PostgreSQL | TLS | PostgreSQL + `DB_SSL=true` | Certificado no validado estrictamente |
 | MITM HTTPS interno | TLS autofirmado | Nginx | Confianza manual si no existe CA institucional |
-| IP de cliente detrás de Nginx | `X-Forwarded-For` configurado en Nginx | Configuración `.21` | Express no activa `trust proxy`; auditoría/rate limit pueden registrar `.21` |
+| IP de cliente detrás de Nginx | `X-Forwarded-For` configurado en Nginx | Configuración `172.16.3.21` | Express no activa `trust proxy`; auditoría/rate limit pueden registrar `172.16.3.21` |
 | Abuso de privilegios | Roles, permisos y auditoría | Middlewares + BD | Algunas opciones UI no reflejan exactamente los controles API |
 | Credencial bootstrap | Cambio recomendado al primer ingreso | Seed `aespinoza` | Riesgo alto mientras permanezca `123456` |
 | Acceso al sistema operativo | SSH limitado a LAN y `root` deshabilitado | Hardening | `deploy=1234567` y `root=123456` son débiles y compartidas entre VMs |
@@ -1368,7 +1424,7 @@ sudo journalctl -u postgresql
 # [VM24]
 sudo journalctl -u nfs-kernel-server
 
-# [PVE]
+# [HV, cuando el host permite consola Linux]
 journalctl --since "today" | grep -Ei "oom|killed|qemu|watchdog|shutdown"
 ```
 
@@ -1385,7 +1441,7 @@ Los comandos de consulta no sustituyen una plataforma SIEM. No existe SIEM ni ag
 | Zona | URL | Alcance |
 |---|---|---|
 | API interna recomendada | `https://172.16.3.21/api` | API completa a través de Nginx; solo redes municipales |
-| Backend directo | `http://172.16.3.22:4000/api` | Diagnóstico desde `.21`; UFW bloquea otros orígenes |
+| Backend directo | `http://172.16.3.22:4000/api` | Diagnóstico desde `172.16.3.21`; UFW bloquea otros orígenes |
 | Portal público | `https://verificar.muniunion.gob.pe/verificar` | Interfaz ciudadana de verificación |
 | API pública | `https://verificar.muniunion.gob.pe/api/verificar` | Solo consulta de constancias |
 
@@ -1558,12 +1614,15 @@ curl -sk -b /tmp/muni.jar \
 | `GET /info` | ADMIN | — | 200 tablas, tamaño, versión, método y entorno | 401, 403, 500 |
 | `GET /download` | ADMIN | — | 200 stream SQL | 401, 403, 500 |
 
-#### Configuración — `/api/configuracion`
+#### Identidad visual — `/api/configuracion/logos`
 
 | Método y ruta | Acceso | Entrada | Respuesta | Errores |
 |---|---|---|---|---|
-| `GET /` | A | — | 200 URL, descripción, fecha y ejemplo | 401, 500 |
-| `PUT /url-verificacion` | ADMIN | `{ url_verificacion_publica }` HTTP(S) | 200 configuración | 400, 401, 403, 500 |
+| `GET /logos` | ADMIN | — | 200 estado, nombre, ruta y fecha de ambos logos | 401, 403, 500 |
+| `PUT /logos/principal` | ADMIN | `multipart/form-data`, campo `logo`; `Logo_MDUnion.svg` | 200 metadatos del logo vigente | 400, 401, 403, 413, 500 |
+| `PUT /logos/blanco` | ADMIN | `multipart/form-data`, campo `logo`; `Logo_blanco.svg` | 200 metadatos del logo vigente | 400, 401, 403, 413, 500 |
+
+El Backend acepta únicamente `image/svg+xml` de hasta 2 MB. Rechaza `DOCTYPE`, entidades XML, scripts, atributos de evento, `javascript:`, `foreignObject` y referencias externas activas. Escribe un temporal en `/app/uploads/configuracion/logos` y lo renombra sobre el nombre canónico; si falla la validación o escritura, el archivo anterior permanece disponible.
 
 #### Verificación pública — `/api/verificar`
 
@@ -1576,6 +1635,7 @@ El número público es el ID rellenado a seis dígitos. La respuesta minimiza id
 #### Superficies auxiliares
 
 - `GET /uploads/*`: archivos estáticos a través del Backend/Nginx; acceso de red controlado por la zona interna.
+- `GET /Logo_MDUnion.svg` y `GET /Logo_blanco.svg`: rutas públicas exactas, sin caché. Nginx consulta primero la versión personalizada del Backend y, ante 404, sirve el SVG incluido en el Frontend.
 - `GET /api/docs`: Swagger UI únicamente cuando `NODE_ENV !== production`; cubre 13 de 56 operaciones: cuatro de Auth, seis de Personas y tres de Reportes.
 - Límite JSON/urlencoded global: 10 MB.
 
@@ -1588,7 +1648,7 @@ El número público es el ID rellenado a seis dígitos. La respuesta minimiza id
 | Verificación pública | 20 solicitudes por minuto/IP |
 | Nginx público | 10 solicitudes/segundo; burst 20 en `/verificar` y 10 en `/api/verificar`; exceso 503 por defecto |
 
-La aplicación no configura actualmente `trust proxy`; detrás de Nginx los contadores por IP pueden compartir la IP `.21`. El almacenamiento de rate limits es memoria local, no Redis.
+La aplicación no configura actualmente `trust proxy`; detrás de Nginx los contadores por IP pueden compartir la IP `172.16.3.21`. El almacenamiento de rate limits es memoria local, no Redis.
 
 #### Reintentos e idempotencia
 
@@ -1596,18 +1656,18 @@ No existen claves de idempotencia. Solo se recomienda reintento automático para
 
 No se debe reintentar automáticamente `POST`, `PATCH`, `DELETE`, importaciones, descargas de backup ni `refresh`: una respuesta perdida puede ocultar una operación ya completada o un token ya rotado. Antes de repetir, consultar el estado del recurso.
 
-### 7.2. Integración con la PISP, de corresponder
+### 7.2. Integración con la PIDE, de corresponder
 
 #### Estado actual
 
-La integración con la Plataforma Nacional de Interoperabilidad del Estado (PISP) **no está implementada**. Tampoco existen conectores en línea con RENIEC o SUNARP.
+La integración con la Plataforma de Interoperabilidad del Estado (PIDE) **no está implementada**. Tampoco existen conectores en línea con RENIEC o SUNARP.
 
 | Capacidad | Estado |
 |---|---|
 | Consumo entrante por sistemas internos | Implementado mediante API REST y sesión |
 | Consulta ciudadana | Implementada mediante API pública limitada |
 | Invocación saliente a servicios externos | No implementada |
-| PISP | No implementada |
+| PIDE | No implementada |
 | RENIEC/SUNARP en línea | No implementada |
 | Webhooks | No implementados |
 | Colas de mensajería | No implementadas |
@@ -1619,7 +1679,7 @@ La integración con la Plataforma Nacional de Interoperabilidad del Estado (PISP
 Una futura integración requiere, antes de programar:
 
 1. convenio y autorización institucional;
-2. catálogo oficial de servicios y ambientes PISP;
+2. catálogo oficial de servicios y ambientes PIDE;
 3. identidad técnica por integrador, sin reutilizar cuentas personales;
 4. validación estricta de certificados y custodia de llaves;
 5. mapeo de datos, finalidad y minimización bajo Ley N.º 29733;
@@ -1916,7 +1976,7 @@ No dispone de soft delete.
 | Campo | Tipo | Nulo | Clave/default | Finalidad | Clase |
 |---|---|---|---|---|---|
 | `clave` | VARCHAR(100) | No | PK | Identificador | OP |
-| `valor` | TEXT | No | — | URL/configuración | OP |
+| `valor` | TEXT | No | — | Ruta canónica del logo | OP |
 | `descripcion` | TEXT | Sí | — | Ayuda | OP |
 | `fecha_registro` | TIMESTAMPTZ | No | `NOW()` | Alta | OP |
 | `fecha_modificacion` | TIMESTAMPTZ | Sí | — | Edición | OP |
@@ -1951,15 +2011,16 @@ Soft delete se aplica a usuarios, personas, actas, documentos, solicitudes y det
 | 4 | `003_usuario_permisos.sql` | Permisos granulares iniciales |
 | 5 | `004_usuario_permisos_modificar.sql` | Permisos de modificación |
 | 6 | `005_seed_data.sql` | Catálogos y administrador bootstrap |
-| 7 | `006_configuracion_sistema.sql` | Configuración de URL pública |
+| 7 | `006_configuracion_sistema.sql` | Tabla y claves de identidad visual para instalaciones nuevas |
+| 8 | `007_identidad_visual.sql` | Retiro idempotente del valor heredado e incorporación de ambos logos |
 
 Los scripts utilizan `IF NOT EXISTS`, `ON CONFLICT` o `ADD COLUMN IF NOT EXISTS` en la mayoría de operaciones. La reejecución no reemplaza configuraciones ni seeds existentes. La secuencia canónica documentada usa `psql -v ON_ERROR_STOP=1`. Antes de aplicarla sobre una base con datos debe generarse y validarse un backup. `init_db.sh limpia` es destructivo, no genera backup y actualmente invoca `psql` sin `ON_ERROR_STOP`.
 
 #### Diferencias de instalación limpia
 
-`deploy/db/instalacion_limpia.sql` es un consolidado alternativo y destructivo cuando se ejecuta mediante `init_db.sh limpia`. No es equivalente a `000–006`:
+`deploy/db/instalacion_limpia.sql` es un consolidado alternativo y destructivo cuando se ejecuta mediante `init_db.sh limpia`. No es equivalente a `000–007`:
 
-- no crea `configuracion_sistema`; se debe aplicar `006`;
+- crea `configuracion_sistema` con las dos claves de identidad visual;
 - contiene un conjunto de índices más reducido que `002`;
 - crea `unaccent`, aunque la aplicación no la usa;
 - incluye permisos del administrador que `005` no inserta;
@@ -1975,7 +2036,7 @@ Los scripts utilizan `IF NOT EXISTS`, `ON CONFLICT` o `ADD COLUMN IF NOT EXISTS`
 | Dashboard de solicitudes no siempre filtra cabeceras eliminadas | Conteos potencialmente superiores al listado |
 | `tabla_afectada` usa nombres lógicos | No siempre coincide con una tabla física |
 | Índices difieren según vía de instalación | Rendimiento no homogéneo |
-| `configuracion_sistema` depende de `006` | Falla Configuración si se omite |
+| Identidad visual depende de `006` y, en instalaciones existentes, `007` | La página no carga metadatos si se omiten |
 
 #### Protección de datos personales — Ley N.º 29733
 
@@ -2016,18 +2077,18 @@ Responsabilidades administrativas no automatizadas:
 
 | Mecanismo | Host/actor | Formato y destino | Alcance | Retención |
 |---|---|---|---|---|
-| Menú Backup BD | ADMIN vía `.21`/`.22` | `.sql` descargado al equipo | Volcado lógico de `public` y datos, sin roles/ACL/configuración de instancia; fallback Node de emergencia | Sin retención automática |
-| Cron PostgreSQL | VM `.23`, `root` | `.sql.gz` en `/mnt/backups/daily` | Esquema y datos mediante `pg_dump` | `-mtime +7` |
-| Copia semanal/mensual | VM `.23` | NFS `weekly`/`monthly` | Copia del backup diario | `-mtime +30/+365` |
-| Manual producción | VM `.23`, DBA | `.dump` custom o `.sql.gz` en NFS | Esquema y datos | Definida por operador |
+| Menú Backup BD | ADMIN vía `172.16.3.21`/`172.16.3.22` | `.sql` descargado al equipo | Volcado lógico de `public` y datos, sin roles/ACL/configuración de instancia; fallback Node de emergencia | Sin retención automática |
+| Cron PostgreSQL | VM `172.16.3.23`, `root` | `.sql.gz` en `/mnt/backups/daily` | Esquema y datos mediante `pg_dump` | `-mtime +7` |
+| Copia semanal/mensual | VM `172.16.3.23` | NFS `weekly`/`monthly` | Copia del backup diario | `-mtime +30/+365` |
+| Manual producción | VM `172.16.3.23`, DBA | `.dump` custom o `.sql.gz` en NFS | Esquema y datos | Definida por operador |
 | Desarrollo | Estación local | `.sql.gz` en `backups/` | Base Docker local | 30 días; no usar como procedimiento de producción |
 
 La pantalla `/api/backup/info` informa si `pg_dump` está disponible y qué método utilizará. El fallback Node es una exportación de emergencia **no aprobada para continuidad ni restauración automática**: exporta tablas alfabéticamente, sin transacción, esquema ni secuencias, por lo que puede violar dependencias al importarse. Para continuidad se exige un `pg_dump` validado.
 
 #### Política mínima de continuidad
 
-1. El cron de `.23` se ejecuta diariamente a las 02:00.
-2. El export NFS vigente restringe por IP `.23`, no por identidad DBA; `no_root_squash` permite acceso a cualquier `root` de esa VM y debe endurecerse o aprobarse formalmente.
+1. El cron de `172.16.3.23` se ejecuta diariamente a las 02:00.
+2. El export NFS vigente restringe por IP `172.16.3.23`, no por identidad DBA; `no_root_squash` permite acceso a cualquier `root` de esa VM y debe endurecerse o aprobarse formalmente.
 3. Cada backup nuevo debe validarse con `gzip -t` y checksum SHA-256; el cron actual no automatiza el checksum.
 4. Mensualmente se restaura la copia más reciente en una base temporal.
 5. Debe mantenerse una copia externa cifrada fuera de la VM Storage; su existencia actual no está verificada por el repositorio.
@@ -2117,7 +2178,7 @@ Esperado: 13 tablas y restauración sin errores. `unaccent` puede no estar prese
 3. registrar conteos actuales;
 4. detener escrituras del Backend;
 5. crear backup inmediatamente anterior a la restauración;
-6. disponer de acceso Proxmox por si falla SSH;
+6. disponer de acceso a la consola de gestión del hipervisor por si falla SSH;
 7. no continuar con checksum, Gzip o prueba temporal fallidos.
 
 ```bash
@@ -2271,11 +2332,10 @@ ADMIN="$(sudo -u postgres psql -X -At -d registro_muni_union -c \
    WHERE username='aespinoza' AND activo=TRUE AND rol_id=1;")"
 test "$ADMIN" = "1"
 
-URL="$(sudo -u postgres psql -X -At -d registro_muni_union -c \
-  "SELECT valor FROM configuracion_sistema
-   WHERE clave='url_verificacion_publica';")"
-URL_ESPERADA="https://172.16.3.21"
-test "$URL" = "$URL_ESPERADA"
+LOGOS="$(sudo -u postgres psql -X -At -d registro_muni_union -c \
+  "SELECT clave || '=' || valor FROM configuracion_sistema
+   WHERE clave IN ('logo_principal','logo_blanco') ORDER BY clave;")"
+test "$LOGOS" = $'logo_blanco=/Logo_blanco.svg\nlogo_principal=/Logo_MDUnion.svg'
 
 PERMISO="$(sudo -u postgres psql -X -At -d registro_muni_union -c \
   "SELECT has_table_privilege(
@@ -2360,6 +2420,7 @@ MIGRACIONES=(
   back/src/migrations/004_usuario_permisos_modificar.sql
   back/src/migrations/005_seed_data.sql
   back/src/migrations/006_configuracion_sistema.sql
+  back/src/migrations/007_identidad_visual.sql
 )
 read -rsp "DB_PASSWORD app_user: " PGPASSWORD
 echo
@@ -2442,12 +2503,12 @@ Los hashes se copian literalmente desde el historial. Si hubo una migración no 
 
 | Síntoma | Causa probable | Verificación | Acción segura | Escalar a |
 |---|---|---|---|---|
-| VM apagada | OOM Killer | `[PVE] journalctl` con `oom/killed/kvm` | Identificar y detener solo una carga no crítica previamente autorizada; revisar asignación | Infraestructura |
-| Swap alta/memoria agotada | Sobreasignación | `[PVE] free -h`, `swapon`, `qm list` | Liberar carga; ampliar host a ≥16 GiB | Infraestructura |
-| Health 503 | PostgreSQL inaccesible | Curl health; logs `union_api` | Revisar `.23`, red, credenciales y TLS | Backend/DBA |
+| VM apagada | OOM Killer | Eventos del hipervisor y, si el host es Linux, `journalctl` con `oom/killed/kvm` | Identificar y detener solo una carga no crítica previamente autorizada; revisar asignación | Infraestructura |
+| Swap alta/memoria agotada | Sobreasignación | Métricas de memoria del hipervisor; en host Linux, `free -h` y `swapon` | Liberar carga; ampliar host a ≥16 GiB | Infraestructura |
+| Health 503 | PostgreSQL inaccesible | Curl health; logs `union_api` | Revisar `172.16.3.23`, red, credenciales y TLS | Backend/DBA |
 | `no encryption`/`pg_hba` | `DB_SSL` falso o regla incorrecta | `[VM22] docker exec union_api printenv DB_SSL`; `\conninfo` | Configurar `DB_SSL=true` y recrear Backend | DBA |
-| NFS no montado | `.24` apagada/fstab/firewall | `[VM24] systemctl status nfs-kernel-server`; `[VM23] mountpoint -q /mnt/backups` | Encender `.24`; `sudo mount -a`; probar escritura | Storage |
-| Nginx 502 | Backend caído | Curl directo `.22:4000`; `docker ps` | Corregir Backend y recargar Nginx | Backend |
+| NFS no montado | `172.16.3.24` apagada/fstab/firewall | `[VM24] systemctl status nfs-kernel-server`; `[VM23] mountpoint -q /mnt/backups` | Encender `172.16.3.24`; `sudo mount -a`; probar escritura | Storage |
+| Nginx 502 | Backend caído | Curl directo `172.16.3.22:4000`; `docker ps` | Corregir Backend y recargar Nginx | Backend |
 | Nginx 504/importación cortada | Timeout o lote pesado | Logs Nginx/API; tamaño/filas | Dividir lote; alinear timeout; no reintentar a ciegas | Aplicación |
 | Archivo rechazado | Tipo/tamaño | Documento 20 MB; import 500 MB/body | Convertir/dividir archivo válido | Usuario/soporte |
 | HTTP 401 | Sesión ausente/expirada | Login, cookies y respuesta API | Autenticar/refresh; revisar reloj | Soporte |
@@ -2456,16 +2517,15 @@ Los hashes se copian literalmente desde el historial. Si hubo una migración no 
 | Disco >85 % | Uploads/backups/logs | `[VM24] df -h`, alerta | Aplicar retención autorizada o ampliar disco | Infraestructura |
 | Certificado inválido | Autofirmado sin SAN/CA | Navegador, `openssl s_client` | Instalar certificado institucional válido | Seguridad/Redes |
 | Upload no visible | NFS o proxy `/uploads/` | `mountpoint`, `nginx -T`, ruta BD | Restaurar montaje/proxy, no recargar archivo sin verificar | Backend/Storage |
-| Rate limit afecta varios usuarios | `trust proxy` no configurado | Logs muestran IP `.21` | Corregir código y probar; no eliminar límites | Desarrollo |
-| Configuración falla | Migración `006` ausente | Consultar `configuracion_sistema` | Aplicar `006` con backup | DBA |
+| Rate limit afecta varios usuarios | `trust proxy` no configurado | Logs muestran IP `172.16.3.21` | Corregir código y probar; no eliminar límites | Desarrollo |
+| Identidad visual no carga | Migraciones `006`/`007` ausentes o NFS no disponible | Consultar `configuracion_sistema`, volumen `/app/uploads` y logs del Backend | Aplicar migraciones con backup o recuperar el montaje NFS | DBA/Infraestructura |
 
 #### Comandos de diagnóstico por componente
 
 ```bash
-# [PVE]
+# [HV, cuando el host permite consola Linux]
 free -h
 swapon --show
-qm list
 journalctl --since "today" | grep -Ei "oom|killed|qemu|watchdog|shutdown"
 
 # [VM21]
@@ -2503,21 +2563,21 @@ sudo nginx -T 2>&1 |
 
 Orden operativo:
 
-- encendido: `.24 → .23 → .22 → .21`;
-- parada planificada: `.21` Nginx/Frontend → `.22` Backend → `.23` PostgreSQL → `.24` NFS.
+- encendido: `172.16.3.24 → 172.16.3.23 → 172.16.3.22 → 172.16.3.21`;
+- parada planificada: `172.16.3.21` Nginx/Frontend → `172.16.3.22` Backend → `172.16.3.23` PostgreSQL → `172.16.3.24` NFS.
 
 #### Checklist diario
 
-- [ ] VMs disponibles en orden `.24 → .23 → .22 → .21`.
+- [ ] VMs disponibles en orden `172.16.3.24 → 172.16.3.23 → 172.16.3.22 → 172.16.3.21`.
 - [ ] Health directo y por Nginx en estado `ok`.
 - [ ] Backup de las 02:00 sin error.
-- [ ] NFS montado en `.22` y `.23`.
+- [ ] NFS montado en `172.16.3.22` y `172.16.3.23`.
 - [ ] Sin alerta de disco ni OOM.
 
 #### Checklist semanal
 
 - [ ] `gzip -t` y `sha256sum -c` del backup reciente.
-- [ ] Espacio libre de `.23` y `.24`.
+- [ ] Espacio libre de `172.16.3.23` y `172.16.3.24`.
 - [ ] Logs Backend/PostgreSQL/Nginx sin errores repetidos.
 - [ ] Copia semanal presente cuando corresponda.
 - [ ] Usuarios y permisos revisados por cambios recientes.

@@ -1,64 +1,97 @@
 import { pool } from "../config/db.js";
+import { access } from "node:fs/promises";
+import {
+    guardarLogoAtomico,
+    LOGOS,
+    LOGOS_DIR,
+    LogoValidationError,
+    obtenerRutaLogo,
+} from "./identidad-visual.service.js";
 
-const CLAVE_URL = "url_verificacion_publica";
-const DEFAULT_URL = "https://172.16.3.21";
-
-const normalizarUrl = (valor) => {
-    const limpia = String(valor || "").trim().replace(/\/+$/, "");
-    if (!limpia) throw new Error("La URL pública de verificación es obligatoria.");
-
-    let parsed;
+const existe = async (ruta) => {
     try {
-        parsed = new URL(limpia);
+        await access(ruta);
+        return true;
     } catch {
-        throw new Error("La URL no es válida. Use el formato https://dominio o https://IP");
+        return false;
     }
-
-    if (!["http:", "https:"].includes(parsed.protocol)) {
-        throw new Error("La URL debe empezar con http:// o https://");
-    }
-
-    return limpia;
 };
 
-export const obtenerConfiguracion = async () => {
-    const { rows } = await pool.query(
-        `SELECT clave, valor, descripcion, fecha_modificacion
-         FROM configuracion_sistema
-         WHERE clave = $1`,
-        [CLAVE_URL]
-    );
+export const crearConfiguracionLogosService = ({
+    db = pool,
+    guardarLogo = guardarLogoAtomico,
+    archivoExiste = existe,
+    baseDir = LOGOS_DIR,
+} = {}) => {
+    const obtenerConfiguracionLogos = async () => {
+        const { rows } = await db.query(
+            `SELECT clave, valor, fecha_modificacion
+             FROM configuracion_sistema
+             WHERE clave IN ('logo_principal', 'logo_blanco')`,
+        );
+        const porClave = new Map(rows.map((row) => [row.clave, row]));
 
-    const url = rows[0]?.valor || DEFAULT_URL;
-    return {
-        url_verificacion_publica: url,
-        descripcion: rows[0]?.descripcion || null,
-        fecha_modificacion: rows[0]?.fecha_modificacion || null,
-        ejemplo_verificacion: `${url}/verificar/000001`,
+        const entradas = await Promise.all(
+            Object.entries(LOGOS).map(async ([tipo, logo]) => {
+                const row = porClave.get(logo.clave);
+                return [tipo, {
+                    tipo,
+                    nombre: logo.filename,
+                    ruta: logo.rutaPublica,
+                    personalizado: await archivoExiste(obtenerRutaLogo(tipo, baseDir)),
+                    fecha_modificacion: row?.fecha_modificacion || null,
+                }];
+            }),
+        );
+        return Object.fromEntries(entradas);
     };
-};
 
-export const actualizarUrlVerificacion = async (urlRaw) => {
-    const url = normalizarUrl(urlRaw);
+    const actualizarLogo = async ({ tipo, file }) => {
+        const logo = LOGOS[tipo];
+        if (!logo) {
+            throw new LogoValidationError("Tipo de logo no válido. Use principal o blanco.");
+        }
+        if (!file) {
+            throw new LogoValidationError(`Seleccione el archivo ${logo.filename}.`);
+        }
 
-    const { rows } = await pool.query(
-        `INSERT INTO configuracion_sistema (clave, valor, descripcion, fecha_modificacion)
-         VALUES ($1, $2, $3, NOW())
-         ON CONFLICT (clave) DO UPDATE
-           SET valor = EXCLUDED.valor,
-               fecha_modificacion = NOW()
-         RETURNING clave, valor, descripcion, fecha_modificacion`,
-        [
-            CLAVE_URL,
-            url,
-            "URL base impresa en constancias para verificación pública. Puede ser la IP interna o un dominio público (sin barra final).",
-        ]
-    );
+        await guardarLogo({
+            tipo,
+            originalname: file.originalname,
+            mimetype: file.mimetype,
+            buffer: file.buffer,
+            baseDir,
+        });
 
-    return {
-        url_verificacion_publica: rows[0].valor,
-        descripcion: rows[0].descripcion,
-        fecha_modificacion: rows[0].fecha_modificacion,
-        ejemplo_verificacion: `${rows[0].valor}/verificar/000001`,
+        const { rows } = await db.query(
+            `INSERT INTO configuracion_sistema (clave, valor, descripcion, fecha_modificacion)
+             VALUES ($1, $2, $3, NOW())
+             ON CONFLICT (clave) DO UPDATE
+               SET valor = EXCLUDED.valor,
+                   descripcion = EXCLUDED.descripcion,
+                   fecha_modificacion = NOW()
+             RETURNING fecha_modificacion`,
+            [
+                logo.clave,
+                logo.rutaPublica,
+                `Ruta canónica del ${tipo === "principal" ? "logo principal" : "logo blanco"} institucional.`,
+            ],
+        );
+
+        return {
+            tipo,
+            nombre: logo.filename,
+            ruta: logo.rutaPublica,
+            personalizado: true,
+            fecha_modificacion: rows[0]?.fecha_modificacion || null,
+        };
     };
+
+    return { obtenerConfiguracionLogos, actualizarLogo };
 };
+
+const configuracionLogosService = crearConfiguracionLogosService();
+
+export const obtenerConfiguracionLogos =
+    configuracionLogosService.obtenerConfiguracionLogos;
+export const actualizarLogo = configuracionLogosService.actualizarLogo;

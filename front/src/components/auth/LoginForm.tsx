@@ -6,7 +6,7 @@ import * as z from "zod";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Eye, EyeOff, Loader2, Lock, User, Fingerprint } from "lucide-react";
+import { Eye, EyeOff, Loader2, Lock, User } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -54,8 +54,12 @@ export default function LoginForm() {
             login(usuario);
             toast.success(`Bienvenido, ${usuario.nombres}`);
             router.push("/dashboard");
-        } catch (error: any) {
-            toast.error(error.response?.data?.message || "Error al iniciar sesión");
+        } catch (error: unknown) {
+            const message =
+                (error as { response?: { data?: { message?: string } } })
+                    ?.response?.data?.message
+                || "Error al iniciar sesión";
+            toast.error(message);
         } finally {
             setIsLoading(false);
         }
@@ -71,6 +75,7 @@ export default function LoginForm() {
                             alt="Logo MD Unión"
                             width={400}
                             height={120}
+                            unoptimized
                             className="w-full h-auto object-contain"
                             priority
                         />

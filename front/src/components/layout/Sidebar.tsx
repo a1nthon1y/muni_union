@@ -177,6 +177,7 @@ export function Sidebar() {
                             alt="Logo Blanco Unión"
                             width={120}
                             height={40}
+                            unoptimized
                             className="h-10 w-auto object-contain"
                         />
                     </div>
@@ -188,6 +189,7 @@ export function Sidebar() {
                             alt="Logo Blanco Unión"
                             width={40}
                             height={24}
+                            unoptimized
                             className="h-6 w-auto object-contain"
                         />
                     </div>

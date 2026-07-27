@@ -75,7 +75,7 @@ El sistema permite:
 - gestionar solicitudes de copias y sus constancias;
 - importar actas históricas desde Excel;
 - exportar información autorizada a Excel;
-- administrar usuarios, auditoría, backup y URL pública;
+- administrar usuarios, auditoría, backup e identidad visual;
 - ofrecer al ciudadano una verificación limitada, sin acceso al sistema interno.
 
 ### 1.3. Requisitos básicos del usuario
@@ -177,7 +177,7 @@ El Dashboard es informativo: no edita registros.
 | Usuarios | Sí | No | Cuentas y permisos |
 | Auditoría | Sí | No | Bitácora y exportación |
 | Backup BD | Sí | No | Descarga de respaldo |
-| Configuración | Sí | No | URL de verificación |
+| Configuración | Sí | No | Reemplazo de logos institucionales |
 
 La opción **IMPORTAR** se encuentra en **Actas**, fuera del menú lateral. Aunque el botón pueda aparecer a un REGISTRADOR, el proceso está autorizado únicamente para ADMIN.
 
@@ -639,21 +639,32 @@ El archivo SQL contiene datos confidenciales. El usuario funcional **no debe int
 
 > **Captura pendiente — Figura 6.6.** Panel **Backup BD** y botón **DESCARGAR BACKUP AHORA**.
 
-#### 6.3.3. Configuración de URL pública
+#### 6.3.3. Identidad visual
 
 **Menú:** Configuración
 
 **Rol:** ADMIN
 
-1. Obtenga del área de Sistemas la URL aprobada.
-2. Escríbala en **URL base**.
-3. Revise el ejemplo mostrado.
-4. Pulse **Guardar URL pública**.
-5. Confirme `URL pública guardada`.
+La pantalla contiene dos tarjetas:
 
-Cambiar este valor solo modifica el enlace impreso. No configura dominio, DNS, certificado ni acceso a Internet. Esas tareas corresponden a Sistemas.
+- **Logo principal:** `Logo_MDUnion.svg`, usado en el acceso, portal y documentos impresos.
+- **Logo para fondos oscuros:** `Logo_blanco.svg`, usado en el menú lateral.
 
-> **Captura pendiente — Figura 6.7.** Configuración de URL pública y confirmación de guardado.
+Para reemplazar un logo:
+
+1. Identifique la tarjeta correspondiente.
+2. Prepare un SVG de hasta 2 MB con el nombre exacto indicado en la tarjeta.
+3. Pulse **Seleccionar** y elija el archivo.
+4. Revise la vista previa.
+5. Pulse **Reemplazar logo**.
+6. Confirme el mensaje de reemplazo correcto.
+7. Actualice las pantallas relacionadas y compruebe el cambio.
+
+> Al cargar otro archivo con este mismo nombre, el logo anterior será reemplazado y el cambio se aplicará en todo el sistema.
+
+Si el archivo tiene otro nombre, formato o tamaño, la pantalla lo rechaza y conserva el logo anterior. Si persiste un error de almacenamiento, coordine con el encargado de la Oficina de Informática.
+
+> **Captura pendiente — Figura 6.7.** Pantalla **Identidad visual**, selección, vista previa y confirmación del reemplazo.
 
 ---
 
@@ -667,6 +678,7 @@ Cambiar este valor solo modifica el enlace impreso. No configura dominio, DNS, c
 | DNI inválido | No contiene 8 dígitos | Corrija el número; no agregue letras ni espacios |
 | `Documento Requerido` | No se adjuntó el archivo del acta | Seleccione PDF, JPG o PNG |
 | Archivo rechazado | Tipo no admitido o más de 20 MB | Use un formato permitido y reduzca el tamaño |
+| Logo rechazado | Nombre distinto, formato diferente de SVG o más de 2 MB | Use exactamente `Logo_MDUnion.svg` o `Logo_blanco.svg`, según la tarjeta |
 | Acta duplicada | Ya existe el número/año o CUI | Busque el acta existente; no vuelva a guardar |
 | Motivo obligatorio | Se intentó anular sin justificar | Registre el motivo antes de confirmar |
 | Persona no se elimina | Tiene actas vinculadas | Revise sus relaciones; no fuerce la eliminación |
@@ -707,6 +719,9 @@ No. La versión actual no ofrece recuperación automática. Solicite el cambio a
 
 **¿Por qué no veo Usuarios, Auditoría, Backup BD o Configuración?**  
 Esas opciones corresponden al perfil ADMIN.
+
+**¿Por qué el logo no cambió después de reemplazarlo?**<br>
+Actualice la página. Si continúa la versión anterior, comuníquelo al encargado de la Oficina de Informática indicando cuál de los dos logos reemplazó y la hora aproximada.
 
 **¿Por qué no puedo editar, anular o eliminar?**  
 El perfil REGISTRADOR necesita permisos específicos. Solicite al ADMIN la revisión de su cuenta.
