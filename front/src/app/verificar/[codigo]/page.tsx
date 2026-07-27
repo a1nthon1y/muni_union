@@ -159,10 +159,17 @@ export default function VerificarPage() {
     .footer { border-top: 1px solid #e2e8f0; padding-top: 14px; display: flex; justify-content: space-between; font-size: 10px; color: #94a3b8; }
     .footer strong { display: block; font-weight: 900; text-transform: uppercase; letter-spacing: .08em; color: #64748b; margin-bottom: 2px; }
     .watermark { text-align: center; font-size: 9px; color: #cbd5e1; text-transform: uppercase; letter-spacing: .15em; margin-top: 18px; }
-    @media print { body { padding: 28px; } }
+    .toolbar { position: fixed; top: 24px; right: 24px; display: flex; gap: 10px; z-index: 9999; }
+    .toolbar button { font-family: Arial, sans-serif; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: .08em; padding: 12px 18px; border-radius: 999px; cursor: pointer; border: 1px solid #e2e8f0; background: #fff; color: #475569; }
+    .toolbar button.primary { background: #0f172a; color: #fff; border-color: #0f172a; }
+    @media print { body { padding: 28px; } .no-print { display: none !important; } }
   </style>
 </head>
 <body>
+  <div class="toolbar no-print">
+    <button type="button" onclick="window.close()">Cerrar</button>
+    <button type="button" class="primary" onclick="window.print()">Imprimir</button>
+  </div>
   <div class="header">
     <img src="${window.location.origin}/Logo_MDUnion.svg" alt="Logo" />
     <div class="header-text">
@@ -206,7 +213,6 @@ export default function VerificarPage() {
     No reemplaza a la constancia oficial emitida por la Oficina de Registro Civil.
   </div>
 
-  <script>window.onload = () => { window.print(); }<\/script>
 </body>
 </html>`;
 

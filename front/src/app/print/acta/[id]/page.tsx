@@ -19,10 +19,6 @@ export default function ActaPrintPage() {
             try {
                 const data = await actasService.getById(Number(id));
                 setActa(data);
-                // Dar tiempo para que las fuentes y el logo carguen antes de imprimir
-                setTimeout(() => {
-                    window.print();
-                }, 1200);
             } catch (error) {
                 console.error("Error al cargar acta:", error);
                 setError(true);
@@ -65,7 +61,11 @@ export default function ActaPrintPage() {
     return (
         <div className="min-h-screen bg-white text-black p-0 print:p-0 relative flex justify-center !bg-white !text-black shadow-none border-none">
             {/* Control flotante para imprimir de nuevo si es necesario, oculto en print */}
-            <div className="fixed top-8 right-8 print:hidden z-50 flex gap-3">
+            <div className="fixed top-8 right-8 print:hidden z-50 flex flex-col items-end gap-3">
+                <p className="max-w-[220px] text-right text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                    Revise el documento. Luego imprima con el botón o Ctrl+P.
+                </p>
+                <div className="flex gap-3">
                 <Button
                     variant="outline"
                     onClick={() => window.close()}
@@ -77,8 +77,9 @@ export default function ActaPrintPage() {
                     onClick={() => window.print()}
                     className="bg-slate-900 text-white hover:bg-slate-800 shadow-xl rounded-full px-6 h-12 font-black uppercase tracking-widest text-[10px] flex gap-2"
                 >
-                    <Printer size={16} /> RE-IMPRIMIR
+                    <Printer size={16} /> IMPRIMIR
                 </Button>
+                </div>
             </div>
 
             <ActaPrintView acta={acta} />
