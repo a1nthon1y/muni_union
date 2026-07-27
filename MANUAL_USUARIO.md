@@ -346,11 +346,25 @@ El archivo es obligatorio para este flujo.
 
 #### 4.2.1. Buscar y filtrar
 
-Los filtros reducen la lista a medida que se escriben o seleccionan. No es necesario llenar todos. Puede usar uno solo o combinar varios.
+La pantalla separa la búsqueda en dos grupos:
+
+1. **Buscar por ciudadano:** campo principal para DNI, apellidos o nombres.
+2. **Filtros del registro:** código o folio, libro, año, tipo y fechas.
+
+Los resultados se actualizan mientras escribe o selecciona. No es necesario llenar todos los filtros.
+
+**Búsqueda progresiva por ciudadano:**
+
+1. Escriba primero el apellido paterno, por ejemplo `QUISPE`.
+2. Si aparecen muchas personas, continúe con el apellido materno: `QUISPE RAMOS`.
+3. Agregue los nombres para reducir más el resultado: `QUISPE RAMOS JUAN CARLOS`.
+4. Si conoce el DNI, escriba directamente el número completo.
+
+Cada palabra ingresada debe aparecer en los datos del titular o del cónyuge. La búsqueda no diferencia mayúsculas de minúsculas y también encuentra a una persona cuando figura como segundo contrayente de un matrimonio.
 
 | Filtro visible | Qué debe ingresar | Ejemplo y resultado |
 |---|---|---|
-| **Buscar por DNI o Nombres...** | DNI completo, nombre o apellido de la persona | `12345678` muestra actas relacionadas con ese DNI; `QUISPE` muestra coincidencias por nombre |
+| **Buscar por ciudadano** | DNI, primer apellido, segundo apellido o nombres | `12345678` muestra actas relacionadas con ese DNI; `QUISPE RAMOS` reduce coincidencias progresivamente |
 | **Código o folio** | Código completo, folio numérico o CUI | `NAC-L32-15`, `15` o el CUI registrado |
 | **Libro** | Solo el número del libro | `32` busca actas cuyo código pertenece al libro 32 |
 | **Año** | Año de cuatro dígitos | `2024` limita el resultado a ese año |
@@ -360,7 +374,7 @@ Los filtros reducen la lista a medida que se escriben o seleccionan. No es neces
 Procedimiento recomendado:
 
 1. Antes de escribir, mire si ya existe algún filtro activo.
-2. Ingrese primero el dato más específico, por ejemplo DNI, código, folio o CUI.
+2. Para ubicar a una persona, use el buscador ciudadano; para ubicar un registro conocido, use código, folio o CUI.
 3. Espere a que la lista se actualice.
 4. Si aparecen demasiados resultados, agregue tipo, año o fechas.
 5. Antes de exportar, confirme que la lista visible corresponda a lo solicitado.
@@ -443,9 +457,13 @@ El campo **Buscar por DNI o Nombres...** consulta mientras escribe.
 
 #### 4.3.3. Editar, eliminar y exportar
 
+- **Ver detalles:** abra el menú **⋮** y seleccione **Ver detalles**. El panel muestra los datos del ciudadano y la sección **Actas vinculadas**, incluyendo nacimiento, matrimonio o defunción donde figure como titular o cónyuge.
+- Desde **Actas vinculadas** puede usar **Ver acta**, **Imprimir** y, cuando esté digitalizada, **Ver documento**.
 - Editar requiere `personas_modificar`. Desde **Editar Ciudadano** puede registrar, corregir o borrar **F. Fallecimiento**. Para borrarla, deje el campo vacío y guarde.
 - Eliminar requiere `personas_eliminar` y puede rechazarse si la persona tiene actas.
 - **EXPORTAR** genera Excel del resultado filtrado con fecha de nacimiento y fecha de fallecimiento.
+
+Las actas se vinculan cuando se registra o edita el acta. El panel de Personas solo consulta las relaciones existentes y no permite vincularlas manualmente.
 
 No elimine una persona para resolver un duplicado sin verificar antes sus actas vinculadas.
 

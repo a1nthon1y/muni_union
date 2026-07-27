@@ -124,7 +124,7 @@ export default function PersonasPage() {
             <div className="flex flex-col xl:flex-row gap-4 items-center">
 
                 {/* CONTENEDOR DE FILTROS (70px de alto) */}
-                <div className="flex-1 flex items-center gap-3 bg-card h-[70px] px-5 rounded-2xl border border-border shadow-sm">
+                <div className="flex-1 flex items-center gap-3 bg-card h-17.5 px-5 rounded-2xl border border-border shadow-sm">
                     <div className="relative flex-1">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 icon-std text-slate-400" />
                         <Input

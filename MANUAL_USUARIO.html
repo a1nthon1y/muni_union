@@ -1514,8 +1514,29 @@ Actas: búsqueda, filtrado y descarga</h3>
 <p><strong>Menú:</strong> Actas</p>
 <p><strong>Pantalla:</strong> Registro de Actas</p>
 <h4 id="421-buscar-y-filtrar">4.2.1. Buscar y filtrar</h4>
-<p>Los filtros reducen la lista a medida que se escriben o seleccionan.
-No es necesario llenar todos. Puede usar uno solo o combinar varios.</p>
+<p>La pantalla separa la búsqueda en dos grupos:</p>
+<ol type="1">
+<li><strong>Buscar por ciudadano:</strong> campo principal para DNI,
+apellidos o nombres.</li>
+<li><strong>Filtros del registro:</strong> código o folio, libro, año,
+tipo y fechas.</li>
+</ol>
+<p>Los resultados se actualizan mientras escribe o selecciona. No es
+necesario llenar todos los filtros.</p>
+<p><strong>Búsqueda progresiva por ciudadano:</strong></p>
+<ol type="1">
+<li>Escriba primero el apellido paterno, por ejemplo
+<code>QUISPE</code>.</li>
+<li>Si aparecen muchas personas, continúe con el apellido materno:
+<code>QUISPE RAMOS</code>.</li>
+<li>Agregue los nombres para reducir más el resultado:
+<code>QUISPE RAMOS JUAN CARLOS</code>.</li>
+<li>Si conoce el DNI, escriba directamente el número completo.</li>
+</ol>
+<p>Cada palabra ingresada debe aparecer en los datos del titular o del
+cónyuge. La búsqueda no diferencia mayúsculas de minúsculas y también
+encuentra a una persona cuando figura como segundo contrayente de un
+matrimonio.</p>
 <table>
 <thead>
 <tr>
@@ -1526,10 +1547,10 @@ No es necesario llenar todos. Puede usar uno solo o combinar varios.</p>
 </thead>
 <tbody>
 <tr>
-<td><strong>Buscar por DNI o Nombres...</strong></td>
-<td>DNI completo, nombre o apellido de la persona</td>
+<td><strong>Buscar por ciudadano</strong></td>
+<td>DNI, primer apellido, segundo apellido o nombres</td>
 <td><code>12345678</code> muestra actas relacionadas con ese DNI;
-<code>QUISPE</code> muestra coincidencias por nombre</td>
+<code>QUISPE RAMOS</code> reduce coincidencias progresivamente</td>
 </tr>
 <tr>
 <td><strong>Código o folio</strong></td>
@@ -1561,8 +1582,8 @@ No es necesario llenar todos. Puede usar uno solo o combinar varios.</p>
 <p>Procedimiento recomendado:</p>
 <ol type="1">
 <li>Antes de escribir, mire si ya existe algún filtro activo.</li>
-<li>Ingrese primero el dato más específico, por ejemplo DNI, código,
-folio o CUI.</li>
+<li>Para ubicar a una persona, use el buscador ciudadano; para ubicar un
+registro conocido, use código, folio o CUI.</li>
 <li>Espere a que la lista se actualice.</li>
 <li>Si aparecen demasiados resultados, agregue tipo, año o fechas.</li>
 <li>Antes de exportar, confirme que la lista visible corresponda a lo
@@ -1723,6 +1744,14 @@ Fallecimiento</strong>.</li>
 <h4 id="433-editar-eliminar-y-exportar">4.3.3. Editar, eliminar y
 exportar</h4>
 <ul>
+<li><strong>Ver detalles:</strong> abra el menú <strong>⋮</strong> y
+seleccione <strong>Ver detalles</strong>. El panel muestra los datos del
+ciudadano y la sección <strong>Actas vinculadas</strong>, incluyendo
+nacimiento, matrimonio o defunción donde figure como titular o
+cónyuge.</li>
+<li>Desde <strong>Actas vinculadas</strong> puede usar <strong>Ver
+acta</strong>, <strong>Imprimir</strong> y, cuando esté digitalizada,
+<strong>Ver documento</strong>.</li>
 <li>Editar requiere <code>personas_modificar</code>. Desde
 <strong>Editar Ciudadano</strong> puede registrar, corregir o borrar
 <strong>F. Fallecimiento</strong>. Para borrarla, deje el campo vacío y
@@ -1732,6 +1761,9 @@ si la persona tiene actas.</li>
 <li><strong>EXPORTAR</strong> genera Excel del resultado filtrado con
 fecha de nacimiento y fecha de fallecimiento.</li>
 </ul>
+<p>Las actas se vinculan cuando se registra o edita el acta. El panel de
+Personas solo consulta las relaciones existentes y no permite
+vincularlas manualmente.</p>
 <p>No elimine una persona para resolver un duplicado sin verificar antes
 sus actas vinculadas.</p>
 <figure class="manual-capture" id="figura-4-7">
