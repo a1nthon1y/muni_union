@@ -10,13 +10,24 @@ export interface ActasFilters {
     libro?: string;
     fecha_desde?: string;
     fecha_hasta?: string;
+    persona_id?: number | string;
     page?: number;
     limit?: number;
 }
 
+export interface ActasPagination {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+}
+
 export const actasService = {
     async getAll(filtros: ActasFilters = {}) {
-        const { data } = await api.get<{ data: Acta[]; pagination: any }>("/actas", { params: filtros });
+        const { data } = await api.get<{
+            data: Acta[];
+            pagination: ActasPagination;
+        }>("/actas", { params: filtros });
         return data;
     },
 

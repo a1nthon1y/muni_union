@@ -38,7 +38,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -185,74 +184,100 @@ export function ActasTable({
 
     return (
         <div className="space-y-6">
-            {/* HERRAMIENTAS DE TABLA: FILTROS Y ACCIONES SEPARADOS */}
-            <div className="flex flex-col xl:flex-row gap-4 items-center">
+            <div className="space-y-3">
+                <section
+                    aria-label="Búsqueda por ciudadano"
+                    className="rounded-2xl border border-border bg-card p-4 shadow-sm"
+                >
+                    <label
+                        htmlFor="actas-ciudadano"
+                        className="mb-2 block text-xs font-semibold text-foreground"
+                    >
+                        Buscar por ciudadano
+                    </label>
+                    <div className="relative">
+                        <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                        <Input
+                            id="actas-ciudadano"
+                            aria-label="Buscar actas por ciudadano"
+                            placeholder="DNI, primer apellido, segundo apellido o nombres"
+                            className="h-12 w-full pl-10 font-semibold"
+                            value={searchTerm}
+                            onChange={(event) => setSearchTerm(event.target.value)}
+                        />
+                    </div>
+                    <p className="mt-2 text-[11px] text-muted-foreground">
+                        Escriba progresivamente: primer apellido, segundo apellido y nombres.
+                    </p>
+                </section>
 
-                {/* FILTROS FILA 1: texto + número + año + tipo */}
-                <div className="flex-1 space-y-2">
-                    <div className="flex items-center gap-3 bg-card h-17.5 px-5 rounded-2xl border border-border shadow-sm">
-                        <div className="relative flex-1">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 icon-std text-slate-400" />
-                            <Input
-                                placeholder="Buscar por DNI o Nombres..."
-                                className="pl-9 std-input border-none bg-transparent focus-visible:ring-0 h-11 w-full font-semibold"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
-                        </div>
-                        <Separator orientation="vertical" className="h-8 mx-1 opacity-50" />
+                <section
+                    aria-label="Filtros del registro"
+                    className="rounded-2xl border border-border bg-card p-4 shadow-sm"
+                >
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
                         <Input
+                            aria-label="Código o folio"
                             placeholder="Código o folio"
-                            className="std-input w-28 border-none bg-transparent focus-visible:ring-0 h-11 font-semibold"
+                            className="h-11 font-semibold"
                             value={searchNumero}
-                            onChange={(e) => setSearchNumero(e.target.value)}
+                            onChange={(event) => setSearchNumero(event.target.value)}
                         />
                         <Input
+                            aria-label="Libro"
                             placeholder="Libro"
-                            className="std-input w-20 border-none bg-transparent focus-visible:ring-0 h-11 font-semibold"
+                            className="h-11 font-semibold"
                             value={searchLibro}
-                            onChange={(e) => setSearchLibro(e.target.value)}
+                            onChange={(event) => setSearchLibro(event.target.value)}
                         />
                         <Input
+                            aria-label="Año"
                             placeholder="Año"
                             type="number"
-                            className="std-input w-20 border-none bg-transparent focus-visible:ring-0 h-11 font-semibold"
+                            className="h-11 font-semibold"
                             value={searchAnio}
-                            onChange={(e) => setSearchAnio(e.target.value)}
+                            onChange={(event) => setSearchAnio(event.target.value)}
                         />
                         <Select value={searchTipo} onValueChange={setSearchTipo}>
-                            <SelectTrigger className="w-36 border-none bg-transparent focus:ring-0 h-11 text-xs font-bold uppercase truncate">
+                            <SelectTrigger
+                                aria-label="Tipo de acta"
+                                className="h-11 w-full text-xs font-bold uppercase"
+                            >
                                 <SelectValue placeholder="Tipo" />
                             </SelectTrigger>
-                            <SelectContent className="rounded-xl shadow-xl border-border">
-                                <SelectItem value="TODOS" className="font-medium text-xs">TODOS</SelectItem>
-                                <SelectItem value="NACIMIENTO" className="font-medium text-xs">NACIMIENTO</SelectItem>
-                                <SelectItem value="MATRIMONIO" className="font-medium text-xs">MATRIMONIO</SelectItem>
-                                <SelectItem value="DEFUNCION" className="font-medium text-xs">DEFUNCION</SelectItem>
+                            <SelectContent className="rounded-xl border-border shadow-xl">
+                                <SelectItem value="TODOS" className="text-xs font-medium">TODOS</SelectItem>
+                                <SelectItem value="NACIMIENTO" className="text-xs font-medium">NACIMIENTO</SelectItem>
+                                <SelectItem value="MATRIMONIO" className="text-xs font-medium">MATRIMONIO</SelectItem>
+                                <SelectItem value="DEFUNCION" className="text-xs font-medium">DEFUNCIÓN</SelectItem>
                             </SelectContent>
                         </Select>
-                        <Separator orientation="vertical" className="h-8 mx-1 opacity-50" />
-                        {/* Rango de fechas */}
-                        <div className="flex items-center gap-2 shrink-0">
-                            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Desde</span>
+                        <div>
+                            <label htmlFor="actas-desde" className="sr-only">Desde</label>
                             <Input
+                                id="actas-desde"
+                                aria-label="Fecha desde"
                                 type="date"
-                                className="std-input w-36 border-none bg-transparent focus-visible:ring-0 h-9 text-xs"
+                                className="h-11 text-xs"
                                 value={fechaDesde}
-                                onChange={(e) => setFechaDesde(e.target.value)}
+                                onChange={(event) => setFechaDesde(event.target.value)}
                             />
-                            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Hasta</span>
+                        </div>
+                        <div>
+                            <label htmlFor="actas-hasta" className="sr-only">Hasta</label>
                             <Input
+                                id="actas-hasta"
+                                aria-label="Fecha hasta"
                                 type="date"
-                                className="std-input w-36 border-none bg-transparent focus-visible:ring-0 h-9 text-xs"
+                                className="h-11 text-xs"
                                 value={fechaHasta}
-                                onChange={(e) => setFechaHasta(e.target.value)}
+                                onChange={(event) => setFechaHasta(event.target.value)}
                             />
                         </div>
                         <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-9 w-9 text-slate-400 hover:text-primary hover:bg-primary/5 shrink-0"
+                            aria-label="Limpiar filtros"
+                            variant="outline"
+                            className="h-11 gap-2"
                             onClick={() => {
                                 setSearchTerm("");
                                 setSearchNumero("");
@@ -264,27 +289,30 @@ export function ActasTable({
                             }}
                         >
                             <RefreshCw className="h-4 w-4" />
+                            Limpiar
                         </Button>
                     </div>
-                </div>
+                </section>
 
-                <Button
-                    variant="default"
-                    className="h-12 px-7 bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-500/20 text-white font-bold text-xs rounded-2xl transition-all active:scale-95 flex items-center gap-2"
-                    onClick={() => window.location.href = '/dashboard/digitalizacion/carga-masiva'}
-                >
-                    <FileSpreadsheet className="h-5 w-5" />
-                    IMPORTAR
-                </Button>
-                <Button
-                    variant="outline"
-                    disabled={exporting}
-                    className="h-12 px-7 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-xs rounded-2xl shadow-sm transition-all active:scale-95 flex items-center gap-2"
-                    onClick={handleExport}
-                >
-                    {exporting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Download className="h-5 w-5" />}
-                    EXPORTAR
-                </Button>
+                <div className="flex flex-col justify-end gap-3 sm:flex-row">
+                    <Button
+                        variant="default"
+                        className="h-12 gap-2 rounded-2xl bg-emerald-600 px-7 text-xs font-bold text-white shadow-lg shadow-emerald-500/20 transition-all hover:bg-emerald-700 active:scale-95"
+                        onClick={() => window.location.href = "/dashboard/digitalizacion/carga-masiva"}
+                    >
+                        <FileSpreadsheet className="h-5 w-5" />
+                        IMPORTAR
+                    </Button>
+                    <Button
+                        variant="outline"
+                        disabled={exporting}
+                        className="h-12 gap-2 rounded-2xl px-7 text-xs font-bold shadow-sm transition-all active:scale-95"
+                        onClick={handleExport}
+                    >
+                        {exporting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Download className="h-5 w-5" />}
+                        EXPORTAR
+                    </Button>
+                </div>
             </div>
 
             <div className="std-table-container">
