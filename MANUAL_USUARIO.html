@@ -787,6 +787,10 @@ usuario</a></li>
 id="toc-2-acceso-y-autenticación-al-sistema">2. Acceso y Autenticación
 al Sistema</a>
 <ul>
+<li><a
+href="#20-qué-verá-al-ingresar-por-primera-vez-orden-de-pantallas"
+id="toc-20-qué-verá-al-ingresar-por-primera-vez-orden-de-pantallas">2.0.
+Qué verá al ingresar por primera vez (orden de pantallas)</a></li>
 <li><a href="#21-enlace-oficial-de-acceso-a-la-plataforma"
 id="toc-21-enlace-oficial-de-acceso-a-la-plataforma">2.1. Enlace oficial
 de acceso a la plataforma</a></li>
@@ -1036,51 +1040,145 @@ formularios extensos se recomienda 1920 × 1080.</li>
 <li>Lector de PDF y aplicación compatible con Excel (<code>.xlsx</code>)
 para documentos y reportes.</li>
 </ul>
-<p>Al abrir la URL interna, el navegador puede mostrar una advertencia
-de seguridad antes del login. El procedimiento para continuar se
-encuentra en la sección 2.1.</p>
+<p><strong>Primera vez en el equipo o en el navegador:</strong> casi
+siempre verá <strong>primero</strong> una advertencia de seguridad del
+navegador y <strong>después</strong> la pantalla de inicio de sesión. El
+orden completo está en la sección 2.0.</p>
+<p><strong>Recomendación municipal:</strong> para acceder al sistema,
+<strong>corrobore primero</strong> que la barra de direcciones muestre
+la IP oficial <strong><code>https://172.16.3.21</code></strong>. Solo
+entonces se recomienda <strong>saltar</strong> la advertencia del
+navegador según la sección 2.1.1. Si la dirección no coincide,
+<strong>no</strong> continúe.</p>
 <hr />
 <h2 id="2-acceso-y-autenticación-al-sistema">2. Acceso y Autenticación
 al Sistema</h2>
+<h3 id="20-qué-verá-al-ingresar-por-primera-vez-orden-de-pantallas">2.0.
+Qué verá al ingresar por primera vez (orden de pantallas)</h3>
+<p>Use este apartado la <strong>primera vez</strong> que abra el sistema
+en un equipo nuevo, en otro navegador o después de borrar datos del
+navegador.</p>
+<table>
+<thead>
+<tr>
+<th>Paso</th>
+<th>Qué aparece en pantalla</th>
+<th>¿Puede iniciar sesión aquí?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>1</strong></td>
+<td>Advertencia de seguridad del <strong>navegador</strong> (texto sobre
+conexión no privada o riesgo). <strong>No</strong> muestra logo
+municipal ni campos Usuario/Contraseña.</td>
+<td><strong>No</strong> — se recomienda saltar la advertencia
+<strong>solo</strong> tras corroborar la IP (2.1.1)</td>
+</tr>
+<tr>
+<td><strong>2</strong></td>
+<td>Pantalla <strong>Acceso al Sistema</strong> / inicio de sesión:
+logo, <strong>Nombre de Usuario</strong>, <strong>Contraseña</strong>,
+botón <strong>Ingresar</strong>.</td>
+<td><strong>Sí</strong> — use la sección 2.2</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Importante:</strong> si al abrir el enlace solo ve la
+advertencia del navegador, es <strong>normal</strong>. No es un fallo
+del sistema municipal. <strong>Recomendación:</strong> verifique la IP
+oficial y, si coincide, siga el paso 1 de la sección 2.1.1; recién
+entonces cargará el login.</p>
+<p><strong>Resultado esperado al terminar el paso 1:</strong> la barra
+de direcciones sigue en <code>https://172.16.3.21</code> (o termina en
+<code>/login</code>) y aparece la tarjeta de acceso con usuario y
+contraseña.</p>
 <h3 id="21-enlace-oficial-de-acceso-a-la-plataforma">2.1. Enlace oficial
 de acceso a la plataforma</h3>
-<p>Desde un equipo conectado a la red municipal, abra:</p>
+<p>Desde un equipo conectado a la <strong>red municipal</strong>, abra
+el navegador (Chrome, Edge o Firefox) y escriba en la barra de
+direcciones:</p>
 <p><code>https://172.16.3.21/login</code></p>
+<p>También puede usar <code>https://172.16.3.21</code>; el sistema lo
+llevará al acceso si no tiene sesión activa.</p>
 <p>El portal público de consulta es independiente del acceso interno y
 se describe en 5.3.</p>
-<h4 id="211-saltar-la-advertencia-del-navegador">2.1.1. Saltar la
-advertencia del navegador</h4>
-<p>La advertencia aparece porque el navegador no reconoce
-automáticamente el certificado utilizado en la red privada municipal.
-Para ingresar:</p>
+<h4
+id="211-recomendación-para-saltar-la-advertencia-del-navegador-tras-corroborar-la-ip">2.1.1.
+Recomendación para saltar la advertencia del navegador (tras corroborar
+la IP)</h4>
+<p>Esta pantalla la muestra el <strong>navegador</strong>, no la
+aplicación del Registro Civil. Aparece porque el certificado HTTPS de la
+red interna no está registrado como un sitio público de Internet.
+<strong>No necesita llamar a Informática</strong> solo por ver este
+aviso.</p>
+<p><strong>Condición obligatoria antes de continuar:</strong> la barra
+de direcciones debe indicar exactamente
+<strong><code>https://172.16.3.21</code></strong>. Si la dirección es
+distinta, <strong>no</strong> pulse Continuar; cierre la pestaña y use
+únicamente el enlace oficial proporcionado por la municipalidad.</p>
+<p><strong>Recomendación de acceso (Chrome, Edge o Firefox)</strong> —
+aplicar <strong>solo</strong> si corroboró la IP anterior:</p>
 <ol type="1">
-<li>Confirme que el equipo esté conectado a la red municipal.</li>
-<li>Mire la barra de direcciones y compruebe que muestre
-<code>https://172.16.3.21</code>.</li>
-<li>Pulse <strong>Configuración avanzada</strong> o
-<strong>Avanzado</strong>. El nombre depende del navegador.</li>
-<li>Busque la opción <strong>Continuar a 172.16.3.21</strong> o un texto
-equivalente que incluya esa misma dirección.</li>
+<li>Lea el mensaje; es una advertencia habitual en redes privadas
+municipales.</li>
+<li>Corrobore una vez más que la URL sea
+<strong><code>https://172.16.3.21</code></strong>.</li>
+<li>Localice <strong>Configuración avanzada</strong>,
+<strong>Avanzado</strong> o <strong>Advanced</strong>.</li>
+<li>Pulse ese enlace.</li>
+<li>Elija <strong>Continuar a 172.16.3.21 (no seguro)</strong> o texto
+equivalente que <strong>incluya la IP 172.16.3.21</strong>.</li>
 <li>Pulse <strong>Continuar a 172.16.3.21</strong>.</li>
-<li>Espere hasta que aparezca la pantalla <strong>Iniciar
-Sesión</strong>.</li>
+<li>Espere a que cargue la página del municipio.</li>
+<li><strong>Recién entonces</strong> debería ver <strong>Acceso al
+Sistema</strong> con <strong>Nombre de Usuario</strong> y
+<strong>Contraseña</strong> (Figura 2.1).</li>
 </ol>
-<p><strong>Resultado esperado:</strong> se muestran los campos
-<strong>Nombre de Usuario</strong>, <strong>Contraseña</strong> y el
-botón <strong>Ingresar</strong>.</p>
-<blockquote>
-<p>Si la barra de direcciones muestra una dirección diferente de
-<code>https://172.16.3.21</code>, no pulse
-<strong>Continuar</strong>.</p>
-</blockquote>
-<p>La advertencia puede aparecer nuevamente al usar otro navegador, otro
-equipo o una sesión nueva. En ese caso repita estos pasos y vuelva a
-comprobar la dirección.</p>
+<p><strong>Si la IP no es la oficial:</strong> no se recomienda saltar
+la advertencia; puede tratarse de un sitio incorrecto o no
+autorizado.</p>
+<p><strong>Si corroboró la IP y no aparece el login:</strong></p>
+<ol type="1">
+<li>Pulse <strong>Actualizar</strong> (F5) una sola vez.</li>
+<li>Compruebe otra vez que la URL sea
+<code>https://172.16.3.21</code>.</li>
+<li>Si sigue sin login, verifique que el equipo esté en la red municipal
+y reporte a Informática.</li>
+</ol>
+<p>La advertencia puede volver a salir en otro navegador, otro equipo o
+tras limpiar el historial. Repita estos pasos; no es necesario
+“configurar” nada permanente en el PC.</p>
 <figure class="manual-capture" id="figura-2-1a">
   <div class="capture-slot">Imagen pendiente<br><code>docs/manual-usuario/capturas/figura-2-1a.png</code></div><img src="docs/manual-usuario/capturas/figura-2-1a.png" alt="Figura 2.1-A" loading="lazy" onload="this.hidden=false;this.previousElementSibling.hidden=true" onerror="this.hidden=true;this.previousElementSibling.hidden=false">
-  <figcaption><strong>Figura 2.1-A.</strong> Advertencia del
-navegador con las opciones <strong>Avanzado</strong> y <strong>Continuar
-a 172.16.3.21</strong> identificadas.</figcaption>
+  <figcaption><strong>Figura 2.1-A.</strong> Pantalla
+<strong>completa</strong> de advertencia del navegador
+<strong>antes</strong> del login, con <strong>Avanzado</strong> /
+<strong>Configuración avanzada</strong> y <strong>Continuar a
+172.16.3.21</strong> señalados. No confundir con la pantalla de usuario
+y contraseña.</figcaption>
+</figure>
+<h4
+id="212-cómo-reconocer-que-ya-llegó-al-login-después-de-la-advertencia">2.1.2.
+Cómo reconocer que ya llegó al login (después de la advertencia)</h4>
+<p>Cuando superó la advertencia del navegador, debe ver:</p>
+<ul>
+<li>Título <strong>Acceso al Sistema</strong> (o similar).</li>
+<li>Texto <strong>Registro Civil Municipal · Municipalidad Distrital de
+La Unión</strong>.</li>
+<li>Campos <strong>Nombre de Usuario</strong> y
+<strong>Contraseña</strong>.</li>
+<li>Botón <strong>Ingresar</strong>.</li>
+</ul>
+<p>Si en cambio sigue viendo solo texto rojo/amarillo del navegador
+sobre “conexión no privada”, <strong>aún no completó</strong> el paso
+2.1.1.</p>
+<figure class="manual-capture" id="figura-2-1">
+  <div class="capture-slot">Imagen pendiente<br><code>docs/manual-usuario/capturas/figura-2-1.png</code></div><img src="docs/manual-usuario/capturas/figura-2-1.png" alt="Figura 2.1" loading="lazy" onload="this.hidden=false;this.previousElementSibling.hidden=true" onerror="this.hidden=true;this.previousElementSibling.hidden=false">
+  <figcaption><strong>Figura 2.1.</strong> Pantalla real de
+inicio de sesión <strong>después</strong> de superar la advertencia, con
+<strong>Nombre de Usuario</strong>, <strong>Contraseña</strong> e
+<strong>Ingresar</strong>, sin credenciales visibles.</figcaption>
 </figure>
 <h3 id="22-interfaz-de-inicio-de-sesión-y-campos-requeridos">2.2.
 Interfaz de inicio de sesión y campos requeridos</h3>
@@ -1124,14 +1222,10 @@ Interfaz de inicio de sesión y campos requeridos</h3>
 </tr>
 </tbody>
 </table>
-<figure class="manual-capture" id="figura-2-1">
-  <div class="capture-slot">Imagen pendiente<br><code>docs/manual-usuario/capturas/figura-2-1.png</code></div><img src="docs/manual-usuario/capturas/figura-2-1.png" alt="Figura 2.1" loading="lazy" onload="this.hidden=false;this.previousElementSibling.hidden=true" onerror="this.hidden=true;this.previousElementSibling.hidden=false">
-  <figcaption><strong>Figura 2.1.</strong> Pantalla real de
-inicio de sesión con los campos <strong>Nombre de Usuario</strong>,
-<strong>Contraseña</strong> y el botón <strong>Ingresar</strong>. Debe
-obtenerse de <code>https://172.16.3.21/login</code> sin mostrar
-credenciales.</figcaption>
-</figure>
+<blockquote>
+<p>La Figura 2.1 corresponde a esta pantalla, <strong>después</strong>
+de la advertencia del navegador (Figura 2.1-A).</p>
+</blockquote>
 <p>La sesión se renueva automáticamente mientras el sistema está en uso.
 Si vuelve al login:</p>
 <ol type="1">
@@ -2447,6 +2541,20 @@ Mensajes de error del sistema o pérdida de conexión</h3>
 </thead>
 <tbody>
 <tr>
+<td>Advertencia “conexión no privada” / sitio no seguro</td>
+<td>Pantalla del <strong>navegador</strong> antes del login</td>
+<td><strong>No es fallo del sistema.</strong> Corrobore
+<strong><code>https://172.16.3.21</code></strong>; si coincide, sección
+<strong>2.1.1</strong> (recomendación: <strong>Avanzado → Continuar a
+172.16.3.21</strong>); luego verá usuario y contraseña</td>
+</tr>
+<tr>
+<td>No aparecen Usuario y Contraseña</td>
+<td>Aún en la advertencia del navegador</td>
+<td>Corrobore la IP oficial y aplique la recomendación de 2.1.1; la
+Figura 2.1-A es distinta de la Figura 2.1 (login)</td>
+</tr>
+<tr>
 <td>No abre la aplicación</td>
 <td>Red o servicio</td>
 <td>Verifique la conexión municipal y reporte; no cambie configuraciones
@@ -2558,6 +2666,15 @@ Respuestas a las consultas funcionales más frecuentes</h3>
 <p><strong>¿Puedo recuperar mi contraseña desde el login?</strong><br />
 No. La versión actual no ofrece recuperación automática. Solicite el
 cambio a un ADMIN por el canal institucional.</p>
+<p><strong>¿Por qué al abrir el sistema no veo usuario y contraseña,
+solo una advertencia de seguridad?</strong><br />
+Es la <strong>primera pantalla del navegador</strong> en la red
+municipal. No es un error del sistema. <strong>Recomendación:</strong>
+confirme que la dirección sea
+<strong><code>https://172.16.3.21</code></strong>; solo entonces pulse
+<strong>Avanzado</strong> (o <strong>Configuración avanzada</strong>) y
+<strong>Continuar a 172.16.3.21</strong>. <strong>Después</strong>
+aparecerá el login (secciones 2.0 y 2.1.1).</p>
 <p><strong>¿Por qué no veo Usuarios, Auditoría, Backup BD o
 Configuración?</strong><br />
 Esas opciones corresponden al perfil ADMIN.</p>

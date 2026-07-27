@@ -12,8 +12,8 @@ Coloque aquí las capturas en formato PNG. `MANUAL_USUARIO.html` las carga autom
 
 ## Lista de capturas
 
-- `figura-2-1.png`: pantalla de inicio de sesión.
-- `figura-2-1a.png`: advertencia del navegador con Avanzado y Continuar.
+- `figura-2-1a.png`: advertencia del navegador **antes** del login (Avanzado / Continuar a 172.16.3.21).
+- `figura-2-1.png`: pantalla de inicio de sesión **después** de superar la advertencia (Usuario, Contraseña, Ingresar).
 - `figura-2-2.png`: Editar Perfil → Cambiar Contraseña, abierta por ADMIN.
 - `figura-3-1.png`: Dashboard con indicadores y gráficas.
 - `figura-3-2.png`: menú lateral de ADMIN.

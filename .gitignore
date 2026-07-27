@@ -9,6 +9,10 @@ node_modules/
 # Archivos de entorno
 .env
 .env.local
+.env.backend
+.env.frontend
+**/.env
+!**/.env*.example
 
 # Docker
 .docker_data/

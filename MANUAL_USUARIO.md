@@ -87,38 +87,78 @@ El sistema permite:
 - Cuenta personal activa. No se deben compartir cuentas.
 - Lector de PDF y aplicación compatible con Excel (`.xlsx`) para documentos y reportes.
 
-Al abrir la URL interna, el navegador puede mostrar una advertencia de seguridad antes del login. El procedimiento para continuar se encuentra en la sección 2.1.
+**Primera vez en el equipo o en el navegador:** casi siempre verá **primero** una advertencia de seguridad del navegador y **después** la pantalla de inicio de sesión. El orden completo está en la sección 2.0.
+
+**Recomendación municipal:** para acceder al sistema, **corrobore primero** que la barra de direcciones muestre la IP oficial **`https://172.16.3.21`**. Solo entonces se recomienda **saltar** la advertencia del navegador según la sección 2.1.1. Si la dirección no coincide, **no** continúe.
 
 ---
 
 ## 2. Acceso y Autenticación al Sistema
 
+### 2.0. Qué verá al ingresar por primera vez (orden de pantallas)
+
+Use este apartado la **primera vez** que abra el sistema en un equipo nuevo, en otro navegador o después de borrar datos del navegador.
+
+| Paso | Qué aparece en pantalla | ¿Puede iniciar sesión aquí? |
+|------|-------------------------|-----------------------------|
+| **1** | Advertencia de seguridad del **navegador** (texto sobre conexión no privada o riesgo). **No** muestra logo municipal ni campos Usuario/Contraseña. | **No** — se recomienda saltar la advertencia **solo** tras corroborar la IP (2.1.1) |
+| **2** | Pantalla **Acceso al Sistema** / inicio de sesión: logo, **Nombre de Usuario**, **Contraseña**, botón **Ingresar**. | **Sí** — use la sección 2.2 |
+
+**Importante:** si al abrir el enlace solo ve la advertencia del navegador, es **normal**. No es un fallo del sistema municipal. **Recomendación:** verifique la IP oficial y, si coincide, siga el paso 1 de la sección 2.1.1; recién entonces cargará el login.
+
+**Resultado esperado al terminar el paso 1:** la barra de direcciones sigue en `https://172.16.3.21` (o termina en `/login`) y aparece la tarjeta de acceso con usuario y contraseña.
+
 ### 2.1. Enlace oficial de acceso a la plataforma
 
-Desde un equipo conectado a la red municipal, abra:
+Desde un equipo conectado a la **red municipal**, abra el navegador (Chrome, Edge o Firefox) y escriba en la barra de direcciones:
 
 `https://172.16.3.21/login`
 
+También puede usar `https://172.16.3.21`; el sistema lo llevará al acceso si no tiene sesión activa.
+
 El portal público de consulta es independiente del acceso interno y se describe en 5.3.
 
-#### 2.1.1. Saltar la advertencia del navegador
+#### 2.1.1. Recomendación para saltar la advertencia del navegador (tras corroborar la IP)
 
-La advertencia aparece porque el navegador no reconoce automáticamente el certificado utilizado en la red privada municipal. Para ingresar:
+Esta pantalla la muestra el **navegador**, no la aplicación del Registro Civil. Aparece porque el certificado HTTPS de la red interna no está registrado como un sitio público de Internet. **No necesita llamar a Informática** solo por ver este aviso.
 
-1. Confirme que el equipo esté conectado a la red municipal.
-2. Mire la barra de direcciones y compruebe que muestre `https://172.16.3.21`.
-3. Pulse **Configuración avanzada** o **Avanzado**. El nombre depende del navegador.
-4. Busque la opción **Continuar a 172.16.3.21** o un texto equivalente que incluya esa misma dirección.
-5. Pulse **Continuar a 172.16.3.21**.
-6. Espere hasta que aparezca la pantalla **Iniciar Sesión**.
+**Condición obligatoria antes de continuar:** la barra de direcciones debe indicar exactamente **`https://172.16.3.21`**. Si la dirección es distinta, **no** pulse Continuar; cierre la pestaña y use únicamente el enlace oficial proporcionado por la municipalidad.
 
-**Resultado esperado:** se muestran los campos **Nombre de Usuario**, **Contraseña** y el botón **Ingresar**.
+**Recomendación de acceso (Chrome, Edge o Firefox)** — aplicar **solo** si corroboró la IP anterior:
 
-> Si la barra de direcciones muestra una dirección diferente de `https://172.16.3.21`, no pulse **Continuar**.
+1. Lea el mensaje; es una advertencia habitual en redes privadas municipales.
+2. Corrobore una vez más que la URL sea **`https://172.16.3.21`**.
+3. Localice **Configuración avanzada**, **Avanzado** o **Advanced**.
+4. Pulse ese enlace.
+5. Elija **Continuar a 172.16.3.21 (no seguro)** o texto equivalente que **incluya la IP 172.16.3.21**.
+6. Pulse **Continuar a 172.16.3.21**.
+7. Espere a que cargue la página del municipio.
+8. **Recién entonces** debería ver **Acceso al Sistema** con **Nombre de Usuario** y **Contraseña** (Figura 2.1).
 
-La advertencia puede aparecer nuevamente al usar otro navegador, otro equipo o una sesión nueva. En ese caso repita estos pasos y vuelva a comprobar la dirección.
+**Si la IP no es la oficial:** no se recomienda saltar la advertencia; puede tratarse de un sitio incorrecto o no autorizado.
 
-> **Captura pendiente — Figura 2.1-A.** Advertencia del navegador con las opciones **Avanzado** y **Continuar a 172.16.3.21** identificadas.
+**Si corroboró la IP y no aparece el login:**
+
+1. Pulse **Actualizar** (F5) una sola vez.
+2. Compruebe otra vez que la URL sea `https://172.16.3.21`.
+3. Si sigue sin login, verifique que el equipo esté en la red municipal y reporte a Informática.
+
+La advertencia puede volver a salir en otro navegador, otro equipo o tras limpiar el historial. Repita estos pasos; no es necesario “configurar” nada permanente en el PC.
+
+> **Captura pendiente — Figura 2.1-A.** Pantalla **completa** de advertencia del navegador **antes** del login, con **Avanzado** / **Configuración avanzada** y **Continuar a 172.16.3.21** señalados. No confundir con la pantalla de usuario y contraseña.
+
+#### 2.1.2. Cómo reconocer que ya llegó al login (después de la advertencia)
+
+Cuando superó la advertencia del navegador, debe ver:
+
+- Título **Acceso al Sistema** (o similar).
+- Texto **Registro Civil Municipal · Municipalidad Distrital de La Unión**.
+- Campos **Nombre de Usuario** y **Contraseña**.
+- Botón **Ingresar**.
+
+Si en cambio sigue viendo solo texto rojo/amarillo del navegador sobre “conexión no privada”, **aún no completó** el paso 2.1.1.
+
+> **Captura pendiente — Figura 2.1.** Pantalla real de inicio de sesión **después** de superar la advertencia, con **Nombre de Usuario**, **Contraseña** e **Ingresar**, sin credenciales visibles.
 
 ### 2.2. Interfaz de inicio de sesión y campos requeridos
 
@@ -139,7 +179,7 @@ La advertencia puede aparecer nuevamente al usar otro navegador, otro equipo o u
 | `La cuenta se encuentra inactiva. Contacte al administrador.` | Solicite reactivación al ADMIN |
 | Demasiados intentos | Espere el tiempo indicado y contacte a soporte si persiste |
 
-> **Captura pendiente — Figura 2.1.** Pantalla real de inicio de sesión con los campos **Nombre de Usuario**, **Contraseña** y el botón **Ingresar**. Debe obtenerse de `https://172.16.3.21/login` sin mostrar credenciales.
+> La Figura 2.1 corresponde a esta pantalla, **después** de la advertencia del navegador (Figura 2.1-A).
 
 La sesión se renueva automáticamente mientras el sistema está en uso. Si vuelve al login:
 
@@ -843,6 +883,8 @@ Si el archivo tiene otro nombre, formato o tamaño, la pantalla lo rechaza y con
 
 | Situación | Causa posible | Procedimiento de atención |
 |---|---|---|
+| Advertencia “conexión no privada” / sitio no seguro | Pantalla del **navegador** antes del login | **No es fallo del sistema.** Corrobore **`https://172.16.3.21`**; si coincide, sección **2.1.1** (recomendación: **Avanzado → Continuar a 172.16.3.21**); luego verá usuario y contraseña |
+| No aparecen Usuario y Contraseña | Aún en la advertencia del navegador | Corrobore la IP oficial y aplique la recomendación de 2.1.1; la Figura 2.1-A es distinta de la Figura 2.1 (login) |
 | No abre la aplicación | Red o servicio | Verifique la conexión municipal y reporte; no cambie configuraciones técnicas |
 | Sesión volvió al login | Expiración | Ingrese y compruebe si la operación anterior terminó |
 | 401 / sesión no válida | Sesión ausente o expirada | Inicie sesión nuevamente |
@@ -897,6 +939,9 @@ Repetir una operación sin verificar puede producir duplicados o dificultar la r
 
 **¿Puedo recuperar mi contraseña desde el login?**  
 No. La versión actual no ofrece recuperación automática. Solicite el cambio a un ADMIN por el canal institucional.
+
+**¿Por qué al abrir el sistema no veo usuario y contraseña, solo una advertencia de seguridad?**  
+Es la **primera pantalla del navegador** en la red municipal. No es un error del sistema. **Recomendación:** confirme que la dirección sea **`https://172.16.3.21`**; solo entonces pulse **Avanzado** (o **Configuración avanzada**) y **Continuar a 172.16.3.21**. **Después** aparecerá el login (secciones 2.0 y 2.1.1).
 
 **¿Por qué no veo Usuarios, Auditoría, Backup BD o Configuración?**  
 Esas opciones corresponden al perfil ADMIN.

@@ -8,7 +8,7 @@
 --    ✔ Índices de rendimiento
 --    ✔ Roles del sistema (ADMIN, USER)
 --    ✔ Tipos de documento
---    ✔ UN SOLO usuario administrador (contraseña: Muni2025*)
+--    ✔ UN SOLO usuario administrador (contraseña inicial: 123456)
 --
 --  NO incluye:
 --    ✘ Personas registradas en desarrollo
@@ -257,9 +257,9 @@ ON CONFLICT (id) DO NOTHING;
 -- ─────────────────────────────────────────────────────────────────
 -- PASO 11: Usuario administrador único
 -- ─────────────────────────────────────────────────────────────────
--- ⚠ CONTRASEÑA POR DEFECTO: Muni2025*
+-- ⚠ CONTRASEÑA POR DEFECTO: 123456
 -- ⚠ CAMBIAR INMEDIATAMENTE después del primer inicio de sesión
--- Hash generado con bcrypt (10 rounds) para "Muni2025*"
+-- Hash bcrypt (10 rounds) para "123456" — mismo valor que 005_seed_data.sql
 INSERT INTO usuarios (username, password_hash, nombres, apellidos, rol_id, activo)
 VALUES (
     'aespinoza',
