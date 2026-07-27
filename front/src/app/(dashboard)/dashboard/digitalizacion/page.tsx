@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import {
@@ -18,10 +18,11 @@ import {
     Phone,
     Heart
 } from "lucide-react";
+import axios from "axios";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -40,7 +41,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 
 import { personasService } from "@/services/personas.service";
@@ -132,7 +132,6 @@ export default function DigitalizacionPage() {
 
     const [tiposDocumento, setTiposDocumento] = useState<{ id: number, nombre: string }[]>([]);
     const [personaSecundariaEncontrada, setPersonaSecundariaEncontrada] = useState<Persona | null>(null);
-    const [sugerencia, setSugerencia] = useState<number | null>(null);
     // Indica si el valor actual del campo fue puesto por la sugerencia automática (no por el usuario)
     const [esSugerencia, setEsSugerencia] = useState(false);
 
@@ -143,7 +142,7 @@ export default function DigitalizacionPage() {
     }, []);
 
     const form = useForm<FormValues>({
-        resolver: zodResolver(formSchema) as any,
+        resolver: zodResolver(formSchema) as Resolver<FormValues>,
         defaultValues: {
             tipo_documento: "DNI",
             dni: "",
@@ -201,7 +200,7 @@ export default function DigitalizacionPage() {
     useEffect(() => {
         const readyClasico = modoValue === "CLASICO" && tipoActaValue && anioValue >= 1900 && libroValue?.trim();
         const readyCui     = modoValue === "CUI"     && tipoActaValue && anioValue >= 1900;
-        if (!readyClasico && !readyCui) { setSugerencia(null); return; }
+        if (!readyClasico && !readyCui) return;
 
         const timer = setTimeout(async () => {
             try {
@@ -211,7 +210,6 @@ export default function DigitalizacionPage() {
                     modo:      modoValue,
                     libro:     modoValue === "CLASICO" ? libroValue : undefined,
                 });
-                setSugerencia(res.siguiente);
                 // Auto-fill: solo si el campo está vacío o si el valor actual era la sugerencia anterior
                 if (res.siguiente !== null) {
                     const current = form.getValues("numero_acta");
@@ -221,7 +219,7 @@ export default function DigitalizacionPage() {
                     }
                 }
             } catch {
-                setSugerencia(null);
+                // Sin numeración sugerida; el usuario puede ingresar el número manualmente
             }
         }, 400);
         return () => clearTimeout(timer);
@@ -382,7 +380,6 @@ export default function DigitalizacionPage() {
         setFile(null);
         setPersonaEncontrada(null);
         setActaEncontrada(null);
-        setSugerencia(null);
         setEsSugerencia(false);
         toast.info("Formulario reiniciado");
     };
@@ -508,7 +505,7 @@ export default function DigitalizacionPage() {
                 try {
                     await documentosService.upload(currentActaId, file);
                     toast.success("Operación exitosa: Datos y documento actualizados.");
-                } catch (err) {
+                } catch {
                     toast.warning("Datos guardados, pero falló la subida del archivo.");
                 }
             } else {
@@ -516,8 +513,12 @@ export default function DigitalizacionPage() {
             }
 
             resetAll();
-        } catch (error: any) {
-            toast.error(error.response?.data?.message || "Error al procesar el registro integral");
+        } catch (error: unknown) {
+            const apiMessage = axios.isAxiosError(error)
+                && typeof error.response?.data?.message === "string"
+                ? error.response.data.message
+                : undefined;
+            toast.error(apiMessage ?? "Error al procesar el registro integral");
         } finally {
             setLoading(false);
         }
@@ -718,7 +719,7 @@ export default function DigitalizacionPage() {
                                                 <FormLabel className="std-label">Observaciones</FormLabel>
                                                 <FormControl>
                                                     <Textarea {...field} placeholder="Aclaraciones adicionales..."
-                                                        className={cn("std-input min-h-[36px] py-2 resize-none text-xs", !!personaEncontrada && "border-amber-400 bg-amber-50/50 dark:bg-amber-950/20")} rows={1} />
+                                                        className={cn("std-input min-h-9 py-2 resize-none text-xs", !!personaEncontrada && "border-amber-400 bg-amber-50/50 dark:bg-amber-950/20")} rows={1} />
                                                 </FormControl>
                                                 <FormMessage />
                                             </FormItem>
@@ -998,7 +999,7 @@ export default function DigitalizacionPage() {
                                                     <FormLabel className="std-label">Observaciones</FormLabel>
                                                     <FormControl>
                                                         <Textarea {...field} disabled={!!actaEncontrada} placeholder="Notas adicionales del acta..."
-                                                            className="std-input min-h-[36px] py-2 resize-none text-xs" rows={1} />
+                                                            className="std-input min-h-9 py-2 resize-none text-xs" rows={1} />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
@@ -1035,7 +1036,7 @@ export default function DigitalizacionPage() {
                                     <div
                                         className={cn(
                                             "border-2 border-dashed rounded-2xl transition-all cursor-pointer group",
-                                            "flex xl:flex-col items-center gap-3 xl:justify-center p-4 xl:py-6 xl:min-h-[140px]",
+                                            "flex xl:flex-col items-center gap-3 xl:justify-center p-4 xl:py-6 xl:min-h-35",
                                             file
                                                 ? "border-primary/60 bg-primary/5"
                                                 : "border-border/70 hover:border-primary/50 hover:bg-muted/20 dark:border-border"
