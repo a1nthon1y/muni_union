@@ -132,6 +132,9 @@ export default function DigitalizacionPage() {
 
     const [tiposDocumento, setTiposDocumento] = useState<{ id: number, nombre: string }[]>([]);
     const [personaSecundariaEncontrada, setPersonaSecundariaEncontrada] = useState<Persona | null>(null);
+    // Indica si el usuario ya modificó manualmente algún campo de la persona auto-completada
+    const [personaModificada, setPersonaModificada] = useState(false);
+    const [conyugeModificado, setConyugeModificado] = useState(false);
     // Indica si el valor actual del campo fue puesto por la sugerencia automática (no por el usuario)
     const [esSugerencia, setEsSugerencia] = useState(false);
 
@@ -232,6 +235,7 @@ export default function DigitalizacionPage() {
             personasService.checkDni(dniValue).then(p => {
                 if (p) {
                     setPersonaEncontrada(p);
+                    setPersonaModificada(false);
                     form.setValue("tipo_documento", p.tipo_documento || "DNI");
                     form.setValue("nombres", p.nombres);
                     form.setValue("apellido_paterno", p.apellido_paterno);
@@ -244,6 +248,7 @@ export default function DigitalizacionPage() {
                     toast.info("Ciudadano identificado.");
                 } else {
                     setPersonaEncontrada(null);
+                    setPersonaModificada(false);
                     form.setValue("nombres", "");
                     form.setValue("apellido_paterno", "");
                     form.setValue("apellido_materno", "");
@@ -261,6 +266,7 @@ export default function DigitalizacionPage() {
         if (!conygeDniValue || conygeDniValue.length < 8) {
             if (!conygeDniValue) {
                 setPersonaSecundariaEncontrada(null);
+                setConyugeModificado(false);
                 form.setValue("conyuge_nombres", "");
                 form.setValue("conyuge_apellido_paterno", "");
                 form.setValue("conyuge_apellido_materno", "");
@@ -275,6 +281,7 @@ export default function DigitalizacionPage() {
                 const found = res.data?.[0];
                 if (found) {
                     setPersonaSecundariaEncontrada(found);
+                    setConyugeModificado(false);
                     form.setValue("conyuge_nombres", found.nombres);
                     form.setValue("conyuge_apellido_paterno", found.apellido_paterno);
                     form.setValue("conyuge_apellido_materno", found.apellido_materno);
@@ -284,6 +291,7 @@ export default function DigitalizacionPage() {
                     toast.info("Cónyuge identificado.");
                 } else {
                     setPersonaSecundariaEncontrada(null);
+                    setConyugeModificado(false);
                     form.setValue("conyuge_nombres", "");
                     form.setValue("conyuge_apellido_paterno", "");
                     form.setValue("conyuge_apellido_materno", "");
@@ -379,6 +387,8 @@ export default function DigitalizacionPage() {
         form.reset();
         setFile(null);
         setPersonaEncontrada(null);
+        setPersonaModificada(false);
+        setConyugeModificado(false);
         setActaEncontrada(null);
         setEsSugerencia(false);
         toast.info("Formulario reiniciado");
@@ -579,9 +589,12 @@ export default function DigitalizacionPage() {
                                             <FormField control={form.control} name="tipo_documento" render={({ field }) => (
                                                 <FormItem>
                                                     <FormLabel className="std-label">Tipo Doc.</FormLabel>
-                                                    <Select onValueChange={field.onChange} value={field.value}>
+                                                    <Select
+                                                        onValueChange={(v) => { setPersonaModificada(true); field.onChange(v); }}
+                                                        value={field.value}
+                                                    >
                                                         <FormControl>
-                                                            <SelectTrigger className={cn("std-input h-9 text-xs font-semibold", !!personaEncontrada && "border-amber-400 bg-amber-50/50 dark:bg-amber-950/20")}>
+                                                            <SelectTrigger className={cn("std-input h-9 text-xs font-semibold", !!personaEncontrada && !personaModificada && "border-amber-400 bg-amber-50/50 dark:bg-amber-950/20")}>
                                                                 <SelectValue placeholder="—" />
                                                             </SelectTrigger>
                                                         </FormControl>
@@ -622,7 +635,8 @@ export default function DigitalizacionPage() {
                                                     <FormLabel className="std-label">F. Nacimiento</FormLabel>
                                                     <FormControl>
                                                         <Input type="date" {...field}
-                                                            className={cn("std-input h-9 text-xs", !!personaEncontrada && "border-amber-400 bg-amber-50/50 dark:bg-amber-950/20")}
+                                                            className={cn("std-input h-9 text-xs", !!personaEncontrada && !personaModificada && "border-amber-400 bg-amber-50/50 dark:bg-amber-950/20")}
+                                                            onChange={(e) => { setPersonaModificada(true); field.onChange(e.target.value); }}
                                                              />
                                                     </FormControl>
                                                     <FormMessage />
@@ -634,9 +648,12 @@ export default function DigitalizacionPage() {
                                             <FormField control={form.control} name="sexo" render={({ field }) => (
                                                 <FormItem>
                                                     <FormLabel className="std-label">Sexo</FormLabel>
-                                                    <Select onValueChange={field.onChange} value={field.value}>
+                                                    <Select
+                                                        onValueChange={(v) => { setPersonaModificada(true); field.onChange(v); }}
+                                                        value={field.value}
+                                                    >
                                                         <FormControl>
-                                                            <SelectTrigger className={cn("std-input h-9 font-bold text-xs justify-center gap-1 px-2 [&>span]:flex-none", !!personaEncontrada && "border-amber-400 bg-amber-50/50 dark:bg-amber-950/20")}>
+                                                            <SelectTrigger className={cn("std-input h-9 font-bold text-xs justify-center gap-1 px-2 [&>span]:flex-none", !!personaEncontrada && !personaModificada && "border-amber-400 bg-amber-50/50 dark:bg-amber-950/20")}>
                                                                 <span className="font-bold">{field.value || "—"}</span>
                                                             </SelectTrigger>
                                                         </FormControl>
@@ -651,26 +668,15 @@ export default function DigitalizacionPage() {
                                         </div>
                                     </div>
 
-                                    {/* Fila 2: nombres */}
+                                    {/* Fila 2: apellidos y nombres — orden: Paterno · Materno · Nombres */}
                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                                        <FormField control={form.control} name="nombres" render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel className="std-label">Nombres</FormLabel>
-                                                <FormControl>
-                                                    <Input {...field} placeholder="NOMBRES"
-                                                        className={cn("std-input h-9 font-semibold uppercase text-xs", !!personaEncontrada && "border-amber-400 bg-amber-50/50 dark:bg-amber-950/20")}
-                                                        onChange={(e) => field.onChange(e.target.value.toUpperCase())} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )} />
                                         <FormField control={form.control} name="apellido_paterno" render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel className="std-label">Ap. Paterno</FormLabel>
                                                 <FormControl>
                                                     <Input {...field} placeholder="PATERNO"
-                                                        className={cn("std-input h-9 font-semibold uppercase text-xs", !!personaEncontrada && "border-amber-400 bg-amber-50/50 dark:bg-amber-950/20")}
-                                                        onChange={(e) => field.onChange(e.target.value.toUpperCase())} />
+                                                        className={cn("std-input h-9 font-semibold uppercase text-xs", !!personaEncontrada && !personaModificada && "border-amber-400 bg-amber-50/50 dark:bg-amber-950/20")}
+                                                        onChange={(e) => { setPersonaModificada(true); field.onChange(e.target.value.toUpperCase()); }} />
                                                 </FormControl>
                                                 <FormMessage />
                                             </FormItem>
@@ -680,8 +686,19 @@ export default function DigitalizacionPage() {
                                                 <FormLabel className="std-label">Ap. Materno</FormLabel>
                                                 <FormControl>
                                                     <Input {...field} placeholder="MATERNO"
-                                                        className={cn("std-input h-9 font-semibold uppercase text-xs", !!personaEncontrada && "border-amber-400 bg-amber-50/50 dark:bg-amber-950/20")}
-                                                        onChange={(e) => field.onChange(e.target.value.toUpperCase())} />
+                                                        className={cn("std-input h-9 font-semibold uppercase text-xs", !!personaEncontrada && !personaModificada && "border-amber-400 bg-amber-50/50 dark:bg-amber-950/20")}
+                                                        onChange={(e) => { setPersonaModificada(true); field.onChange(e.target.value.toUpperCase()); }} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
+                                        <FormField control={form.control} name="nombres" render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="std-label">Nombres</FormLabel>
+                                                <FormControl>
+                                                    <Input {...field} placeholder="NOMBRES"
+                                                        className={cn("std-input h-9 font-semibold uppercase text-xs", !!personaEncontrada && !personaModificada && "border-amber-400 bg-amber-50/50 dark:bg-amber-950/20")}
+                                                        onChange={(e) => { setPersonaModificada(true); field.onChange(e.target.value.toUpperCase()); }} />
                                                 </FormControl>
                                                 <FormMessage />
                                             </FormItem>
@@ -695,7 +712,8 @@ export default function DigitalizacionPage() {
                                                 <FormLabel className="std-label">F. Fallecimiento</FormLabel>
                                                 <FormControl>
                                                     <Input type="date" {...field}
-                                                        className={cn("std-input h-9 text-xs", !!personaEncontrada && "border-amber-400 bg-amber-50/50 dark:bg-amber-950/20")}
+                                                        className={cn("std-input h-9 text-xs", !!personaEncontrada && !personaModificada && "border-amber-400 bg-amber-50/50 dark:bg-amber-950/20")}
+                                                        onChange={(e) => { setPersonaModificada(true); field.onChange(e.target.value); }}
                                                          />
                                                 </FormControl>
                                                 <FormMessage />
@@ -707,7 +725,8 @@ export default function DigitalizacionPage() {
                                                 <FormControl>
                                                     <div className="relative">
                                                         <Input {...field} placeholder="Opcional"
-                                                            className={cn("std-input h-9 pl-8 text-xs", !!personaEncontrada && "border-amber-400 bg-amber-50/50 dark:bg-amber-950/20")} />
+                                                            className={cn("std-input h-9 pl-8 text-xs", !!personaEncontrada && !personaModificada && "border-amber-400 bg-amber-50/50 dark:bg-amber-950/20")}
+                                                            onChange={(e) => { setPersonaModificada(true); field.onChange(e.target.value); }} />
                                                         <Phone size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/40 pointer-events-none" />
                                                     </div>
                                                 </FormControl>
@@ -719,7 +738,9 @@ export default function DigitalizacionPage() {
                                                 <FormLabel className="std-label">Observaciones</FormLabel>
                                                 <FormControl>
                                                     <Textarea {...field} placeholder="Aclaraciones adicionales..."
-                                                        className={cn("std-input min-h-9 py-2 resize-none text-xs", !!personaEncontrada && "border-amber-400 bg-amber-50/50 dark:bg-amber-950/20")} rows={1} />
+                                                        className={cn("std-input min-h-9 py-2 resize-none text-xs", !!personaEncontrada && !personaModificada && "border-amber-400 bg-amber-50/50 dark:bg-amber-950/20")}
+                                                        onChange={(e) => { setPersonaModificada(true); field.onChange(e.target.value); }}
+                                                        rows={1} />
                                                 </FormControl>
                                                 <FormMessage />
                                             </FormItem>
@@ -771,26 +792,26 @@ export default function DigitalizacionPage() {
                                             </FormItem>
                                         )} />
 
-                                        {/* nombres cónyuge */}
+                                        {/* nombres cónyuge — orden: Paterno · Materno · Nombres */}
                                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                                            <FormField control={form.control} name="conyuge_nombres" render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel className="std-label">Nombres</FormLabel>
-                                                    <FormControl><Input {...field} placeholder="NOMBRES" className="std-input h-9 text-xs uppercase" onChange={(e) => field.onChange(e.target.value.toUpperCase())} /></FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )} />
                                             <FormField control={form.control} name="conyuge_apellido_paterno" render={({ field }) => (
                                                 <FormItem>
                                                     <FormLabel className="std-label">Ap. Paterno</FormLabel>
-                                                    <FormControl><Input {...field} placeholder="PATERNO" className="std-input h-9 text-xs uppercase" onChange={(e) => field.onChange(e.target.value.toUpperCase())} /></FormControl>
+                                                    <FormControl><Input {...field} placeholder="PATERNO" className={cn("std-input h-9 text-xs uppercase", !!personaSecundariaEncontrada && !conyugeModificado && "border-amber-400 bg-amber-50/50 dark:bg-amber-950/20")} onChange={(e) => { setConyugeModificado(true); field.onChange(e.target.value.toUpperCase()); }} /></FormControl>
                                                     <FormMessage />
                                                 </FormItem>
                                             )} />
                                             <FormField control={form.control} name="conyuge_apellido_materno" render={({ field }) => (
                                                 <FormItem>
                                                     <FormLabel className="std-label">Ap. Materno</FormLabel>
-                                                    <FormControl><Input {...field} placeholder="MATERNO" className="std-input h-9 text-xs uppercase" onChange={(e) => field.onChange(e.target.value.toUpperCase())} /></FormControl>
+                                                    <FormControl><Input {...field} placeholder="MATERNO" className={cn("std-input h-9 text-xs uppercase", !!personaSecundariaEncontrada && !conyugeModificado && "border-amber-400 bg-amber-50/50 dark:bg-amber-950/20")} onChange={(e) => { setConyugeModificado(true); field.onChange(e.target.value.toUpperCase()); }} /></FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )} />
+                                            <FormField control={form.control} name="conyuge_nombres" render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="std-label">Nombres</FormLabel>
+                                                    <FormControl><Input {...field} placeholder="NOMBRES" className={cn("std-input h-9 text-xs uppercase", !!personaSecundariaEncontrada && !conyugeModificado && "border-amber-400 bg-amber-50/50 dark:bg-amber-950/20")} onChange={(e) => { setConyugeModificado(true); field.onChange(e.target.value.toUpperCase()); }} /></FormControl>
                                                     <FormMessage />
                                                 </FormItem>
                                             )} />

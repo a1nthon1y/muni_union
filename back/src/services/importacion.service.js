@@ -5,6 +5,7 @@ import logger from "../config/logger.js";
 import {
     normalizarFechaPersona,
     resolverFechasPersona,
+    FechaPersonaValidationError,
 } from "./persona-fechas.service.js";
 
 const TIPOS_ACTA_VALIDOS = new Set(["NACIMIENTO", "MATRIMONIO", "DEFUNCION"]);
@@ -232,7 +233,27 @@ export const importarActasMasivo = async (
                 const cambiosFechas = {};
                 if (fechaNacimiento) cambiosFechas.fecha_nacimiento = fechaNacimiento;
                 if (fechaFallecimiento) cambiosFechas.fecha_fallecimiento = fechaFallecimiento;
-                const fechas = resolverFechasPersona(personaEncontrada, cambiosFechas);
+
+                let fechas;
+                try {
+                    fechas = resolverFechasPersona(personaEncontrada, cambiosFechas);
+                } catch (e) {
+                    if (e instanceof FechaPersonaValidationError) {
+                        // Conflicto de fechas con datos ya guardados en BD
+                        // (homonimia o dato histórico inconsistente) — se conservan
+                        // las fechas existentes y se continúa vinculando el acta.
+                        logger.warn(
+                            { fila: rowNum, personaId, err: e.message },
+                            "Conflicto de fechas al actualizar persona existente — se conservan fechas actuales"
+                        );
+                        fechas = {
+                            fecha_nacimiento:    personaEncontrada.fecha_nacimiento    ?? null,
+                            fecha_fallecimiento: personaEncontrada.fecha_fallecimiento ?? null,
+                        };
+                    } else {
+                        throw e;
+                    }
+                }
 
                 await client.query(
                     `UPDATE personas SET
@@ -257,10 +278,29 @@ export const importarActasMasivo = async (
 
             // 1c. Crear persona nueva (no encontrada, o homonimia detectada)
             if (!personaId) {
-                const fechasNuevaPersona = resolverFechasPersona(null, {
-                    fecha_nacimiento: fechaNacimiento,
-                    fecha_fallecimiento: fechaFallecimiento,
-                });
+                let fechasNuevaPersona;
+                try {
+                    fechasNuevaPersona = resolverFechasPersona(null, {
+                        fecha_nacimiento: fechaNacimiento,
+                        fecha_fallecimiento: fechaFallecimiento,
+                    });
+                } catch (e) {
+                    if (e instanceof FechaPersonaValidationError) {
+                        // Las fechas del Excel se contradicen entre sí — se guarda
+                        // solo la fecha de nacimiento y se descarta el fallecimiento.
+                        logger.warn(
+                            { fila: rowNum, err: e.message },
+                            "Conflicto de fechas en persona nueva — se omite fecha_fallecimiento"
+                        );
+                        fechasNuevaPersona = resolverFechasPersona(null, {
+                            fecha_nacimiento: fechaNacimiento,
+                            fecha_fallecimiento: null,
+                        });
+                    } else {
+                        throw e;
+                    }
+                }
+
                 const r = await client.query(
                     `INSERT INTO personas
                        (dni, tipo_documento_id, nombres, apellido_paterno, apellido_materno,
@@ -337,10 +377,26 @@ export const importarActasMasivo = async (
                     // Crear cónyuge si no existe
                     if (!personaSecundariaId) {
                         const tipoDocConyugeId = resolverTipoDocId(fila.conyuge_tipo_documento, tiposDocMap);
-                        const fechasConyuge = resolverFechasPersona(null, {
-                            fecha_nacimiento: conyugeNacimiento,
-                            fecha_fallecimiento: conyugeFallecimiento,
-                        });
+                        let fechasConyuge;
+                        try {
+                            fechasConyuge = resolverFechasPersona(null, {
+                                fecha_nacimiento: conyugeNacimiento,
+                                fecha_fallecimiento: conyugeFallecimiento,
+                            });
+                        } catch (e) {
+                            if (e instanceof FechaPersonaValidationError) {
+                                logger.warn(
+                                    { fila: rowNum, err: e.message },
+                                    "Conflicto de fechas en cónyuge nuevo — se omite fecha_fallecimiento"
+                                );
+                                fechasConyuge = resolverFechasPersona(null, {
+                                    fecha_nacimiento: conyugeNacimiento,
+                                    fecha_fallecimiento: null,
+                                });
+                            } else {
+                                throw e;
+                            }
+                        }
 
                         const r = await client.query(
                             `INSERT INTO personas
@@ -365,10 +421,27 @@ export const importarActasMasivo = async (
                         const cambiosFechas = {};
                         if (conyugeNacimiento) cambiosFechas.fecha_nacimiento = conyugeNacimiento;
                         if (conyugeFallecimiento) cambiosFechas.fecha_fallecimiento = conyugeFallecimiento;
-                        const fechasConyuge = resolverFechasPersona(
-                            personaSecundariaEncontrada,
-                            cambiosFechas,
-                        );
+
+                        let fechasConyuge;
+                        try {
+                            fechasConyuge = resolverFechasPersona(
+                                personaSecundariaEncontrada,
+                                cambiosFechas,
+                            );
+                        } catch (e) {
+                            if (e instanceof FechaPersonaValidationError) {
+                                logger.warn(
+                                    { fila: rowNum, err: e.message },
+                                    "Conflicto de fechas al actualizar cónyuge existente — se conservan fechas actuales"
+                                );
+                                fechasConyuge = {
+                                    fecha_nacimiento:    personaSecundariaEncontrada.fecha_nacimiento    ?? null,
+                                    fecha_fallecimiento: personaSecundariaEncontrada.fecha_fallecimiento ?? null,
+                                };
+                            } else {
+                                throw e;
+                            }
+                        }
 
                         await client.query(
                             `UPDATE personas SET
