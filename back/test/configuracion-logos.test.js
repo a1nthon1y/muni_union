@@ -18,40 +18,77 @@ test("la configuración devuelve únicamente los dos logos canónicos", async ()
 
     assert.deepEqual(Object.keys(resultado).sort(), ["blanco", "principal"]);
     assert.equal(resultado.principal.nombre, "Logo_MDUnion.svg");
-    assert.equal(resultado.principal.ruta, "/Logo_MDUnion.svg");
-    assert.equal(resultado.principal.personalizado, true);
-    assert.ok(resultado.principal.fecha_modificacion);
+    assert.equal(resultado.principal.ruta, "/uploads/configuracion/logos/Logo_MDUnion.svg");
+    // SVG se considera predeterminado (del sistema), no personalizado
+    assert.equal(resultado.principal.personalizado, false);
     assert.equal(resultado.blanco.personalizado, false);
     assert.equal(resultado.blanco.fecha_modificacion, null);
 });
 
-test("actualizar un logo conserva la ruta canónica y registra su fecha", async () => {
+test("la configuración detecta logos en diferentes formatos", async () => {
     const dir = await mkdtemp(path.join(os.tmpdir(), "logos-"));
-    const guardados = [];
-    const service = crearConfiguracionLogosService({
+    await writeFile(path.join(dir, "Logo_MDUnion.png"), Buffer.alloc(100));
+    await writeFile(path.join(dir, "Logo_blanco.jpg"), Buffer.alloc(100));
+    const service = crearConfiguracionLogosService({ baseDir: dir });
+
+    const resultado = await service.obtenerConfiguracionLogos();
+
+    assert.equal(resultado.principal.nombre, "Logo_MDUnion.png");
+    assert.equal(resultado.principal.ruta, "/uploads/configuracion/logos/Logo_MDUnion.png");
+    assert.equal(resultado.principal.personalizado, true);
+    assert.equal(resultado.blanco.nombre, "Logo_blanco.jpg");
+    assert.equal(resultado.blanco.ruta, "/uploads/configuracion/logos/Logo_blanco.jpg");
+    assert.equal(resultado.blanco.personalizado, true);
+});
+
+test("actualizar un logo con diferentes formatos", async () => {
+    const dir = await mkdtemp(path.join(os.tmpdir(), "logos-"));
+    
+    // Test con PNG
+    const pngBuffer = Buffer.alloc(100);
+    const pngService = crearConfiguracionLogosService({
         guardarLogo: async (archivo) => {
-            guardados.push(archivo);
-            const destino = path.join(dir, "Logo_blanco.svg");
-            await writeFile(destino, svgSeguro);
+            const destino = path.join(dir, "Logo_blanco.png");
+            await writeFile(destino, pngBuffer);
             return destino;
         },
         baseDir: dir,
     });
 
-    const resultado = await service.actualizarLogo({
+    const resultadoPng = await pngService.actualizarLogo({
         tipo: "blanco",
         file: {
-            originalname: "Logo_blanco.svg",
-            mimetype: "image/svg+xml",
-            buffer: svgSeguro,
+            mimetype: "image/png",
+            buffer: pngBuffer,
         },
     });
 
-    assert.equal(resultado.ruta, "/Logo_blanco.svg");
-    assert.equal(resultado.nombre, "Logo_blanco.svg");
-    assert.equal(resultado.personalizado, true);
-    assert.ok(resultado.fecha_modificacion);
-    assert.equal(guardados[0].tipo, "blanco");
+    assert.equal(resultadoPng.tipo, "blanco");
+    assert.equal(resultadoPng.personalizado, true);
+    assert.ok(resultadoPng.fecha_modificacion);
+    
+    // Test con JPEG
+    const jpegBuffer = Buffer.alloc(100);
+    const jpegService = crearConfiguracionLogosService({
+        guardarLogo: async (archivo) => {
+            const destino = path.join(dir, "Logo_blanco.jpg");
+            await writeFile(destino, jpegBuffer);
+            return destino;
+        },
+        baseDir: dir,
+    });
+
+    const resultadoJpeg = await jpegService.actualizarLogo({
+        tipo: "blanco",
+        file: {
+            mimetype: "image/jpeg",
+            buffer: jpegBuffer,
+        },
+    });
+
+    assert.equal(resultadoJpeg.tipo, "blanco");
+    assert.equal(resultadoJpeg.personalizado, true);
+    assert.ok(resultadoJpeg.fecha_modificacion);
 });
 
 test("no actualiza metadatos cuando falla el almacenamiento", async () => {
@@ -66,7 +103,6 @@ test("no actualiza metadatos cuando falla el almacenamiento", async () => {
         service.actualizarLogo({
             tipo: "principal",
             file: {
-                originalname: "Logo_MDUnion.svg",
                 mimetype: "image/svg+xml",
                 buffer: svgSeguro,
             },

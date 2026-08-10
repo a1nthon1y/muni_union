@@ -15,29 +15,47 @@ const svgSeguro = Buffer.from(
 
 const archivoPrincipal = (overrides = {}) => ({
     tipo: "principal",
-    originalname: "Logo_MDUnion.svg",
     mimetype: "image/svg+xml",
     buffer: svgSeguro,
     ...overrides,
 });
 
-test("acepta el SVG principal con nombre canónico", () => {
+test("acepta el SVG principal con cualquier nombre", () => {
     assert.doesNotThrow(() => validarLogoSvg(archivoPrincipal()));
 });
 
-test("acepta el SVG blanco con su nombre canónico", () => {
+test("acepta el SVG blanco con cualquier nombre", () => {
     assert.doesNotThrow(() => validarLogoSvg({
         tipo: "blanco",
-        originalname: "Logo_blanco.svg",
         mimetype: "image/svg+xml",
         buffer: svgSeguro,
     }));
 });
 
-test("rechaza un nombre distinto del canónico", () => {
+test("acepta PNG válido", () => {
+    assert.doesNotThrow(() => validarLogoSvg({
+        tipo: "principal",
+        mimetype: "image/png",
+        buffer: Buffer.alloc(100), // Datos PNG simulados
+    }));
+});
+
+test("acepta JPEG válido", () => {
+    assert.doesNotThrow(() => validarLogoSvg({
+        tipo: "principal",
+        mimetype: "image/jpeg",
+        buffer: Buffer.alloc(100), // Datos JPEG simulados
+    }));
+});
+
+test("rechaza formato no válido", () => {
     assert.throws(
-        () => validarLogoSvg(archivoPrincipal({ originalname: "otro.svg" })),
-        /Logo_MDUnion\.svg/,
+        () => validarLogoSvg({
+            tipo: "principal",
+            mimetype: "image/gif",
+            buffer: Buffer.alloc(100),
+        }),
+        /Solo se aceptan archivos SVG, PNG o JPEG/,
     );
 });
 
@@ -65,17 +83,37 @@ for (const contenido of [
     });
 }
 
-test("guarda el logo usando el nombre canónico", async () => {
+test("guarda el logo con la extensión correcta según el tipo", async () => {
     const dir = await mkdtemp(path.join(os.tmpdir(), "logos-"));
 
-    const ruta = await guardarLogoAtomico({
-        ...archivoPrincipal(),
+    // Test SVG
+    const rutaSvg = await guardarLogoAtomico({
+        tipo: "principal",
+        mimetype: "image/svg+xml",
+        buffer: svgSeguro,
         baseDir: dir,
     });
+    assert.equal(rutaSvg, path.join(dir, "Logo_MDUnion.svg"));
 
-    assert.equal(ruta, path.join(dir, "Logo_MDUnion.svg"));
-    assert.deepEqual(await readFile(ruta), svgSeguro);
-    assert.equal(obtenerRutaLogo("principal", dir), ruta);
+    // Test PNG
+    const pngBuffer = Buffer.alloc(100);
+    const rutaPng = await guardarLogoAtomico({
+        tipo: "principal",
+        mimetype: "image/png",
+        buffer: pngBuffer,
+        baseDir: dir,
+    });
+    assert.equal(rutaPng, path.join(dir, "Logo_MDUnion.png"));
+
+    // Test JPEG
+    const jpegBuffer = Buffer.alloc(100);
+    const rutaJpeg = await guardarLogoAtomico({
+        tipo: "principal",
+        mimetype: "image/jpeg",
+        buffer: jpegBuffer,
+        baseDir: dir,
+    });
+    assert.equal(rutaJpeg, path.join(dir, "Logo_MDUnion.jpg"));
 });
 
 test("un reemplazo inválido conserva el archivo anterior", async () => {
@@ -85,7 +123,9 @@ test("un reemplazo inválido conserva el archivo anterior", async () => {
 
     await assert.rejects(
         guardarLogoAtomico({
-            ...archivoPrincipal({ buffer: Buffer.alloc(0) }),
+            tipo: "principal",
+            mimetype: "image/svg+xml",
+            buffer: Buffer.alloc(0),
             baseDir: dir,
         }),
         /vacío/,

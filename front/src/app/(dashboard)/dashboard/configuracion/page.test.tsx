@@ -69,55 +69,65 @@ describe("Configuración de identidad visual", () => {
         });
     });
 
-    test("muestra los nombres obligatorios de los dos logos", async () => {
+    test("muestra los requisitos de los archivos de logos", async () => {
         render(<ConfiguracionPage />);
 
         expect(await screen.findByRole("heading", {
             name: /Identidad visual — logos/i,
         })).toBeInTheDocument();
         expect(screen.getByRole("heading", {
-            name: "Nombre obligatorio de cada imagen",
+            name: "Requisitos de los archivos",
         })).toBeInTheDocument();
-        expect(screen.getAllByText("Logo_MDUnion.svg").length).toBeGreaterThan(0);
-        expect(screen.getAllByText("Logo_blanco.svg").length).toBeGreaterThan(0);
+        expect(screen.getByText(/Formatos aceptados: SVG, PNG, JPEG/)).toBeInTheDocument();
+        expect(screen.getAllByText(/renombrará automáticamente/).length).toBeGreaterThan(0);
         expect(screen.queryByText(/URL pública de verificación/i)).not.toBeInTheDocument();
         expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
     });
 
-    test("rechaza un archivo cuyo nombre no es el canónico", async () => {
+    test("acepta un archivo SVG con cualquier nombre", async () => {
         const user = userEvent.setup();
         render(<ConfiguracionPage />);
-        const input = await screen.findByLabelText("Seleccionar Logo_MDUnion.svg");
+        const input = await screen.findByLabelText(/Seleccionar Logo principal/i);
 
         await user.upload(
             input,
-            new File(["<svg/>"], "otro.svg", { type: "image/svg+xml" }),
+            new File(["<svg/>"], "cualquier-nombre.svg", { type: "image/svg+xml" }),
         );
 
-        expect(await screen.findByRole("alert")).toHaveTextContent(
-            /Logo_MDUnion\.svg/,
-        );
-        expect(updateLogo).not.toHaveBeenCalled();
+        expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     });
 
-    test("envía un SVG válido y confirma el reemplazo", async () => {
+    test("acepta un archivo PNG con cualquier nombre", async () => {
         const user = userEvent.setup();
         render(<ConfiguracionPage />);
-        const input = await screen.findByLabelText("Seleccionar Logo_MDUnion.svg");
+        const input = await screen.findByLabelText(/Seleccionar Logo principal/i);
+
+        await user.upload(
+            input,
+            new File(["data"], "logo-empresa.png", { type: "image/png" }),
+        );
+
+        expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    });
+
+    test("envía un archivo válido y confirma el reemplazo", async () => {
+        const user = userEvent.setup();
+        render(<ConfiguracionPage />);
+        const input = await screen.findByLabelText(/Seleccionar Logo principal/i);
         const archivo = new File(
             ["<svg/>"],
-            "Logo_MDUnion.svg",
+            "nombre-arbitrario.svg",
             { type: "image/svg+xml" },
         );
 
         await user.upload(input, archivo);
-        await user.click(screen.getByRole("button", { name: "Reemplazar Logo_MDUnion.svg" }));
+        await user.click(screen.getByRole("button", { name: /Reemplazar Logo principal/i }));
 
         await waitFor(() => {
             expect(updateLogo).toHaveBeenCalledWith("principal", archivo);
         });
         expect(toastSuccess).toHaveBeenCalledWith(
-            expect.stringContaining("Logo_MDUnion.svg fue reemplazado"),
+            expect.stringContaining("reemplazado"),
         );
     });
 });

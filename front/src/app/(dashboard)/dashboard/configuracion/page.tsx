@@ -25,24 +25,23 @@ import {
     LOGOS_INSTITUCIONALES,
     logosInstitucionalesPorDefecto,
     validarArchivoLogo,
+    obtenerRutaLogoDinamica,
 } from "@/lib/logo-institucional";
+import { useLogosStore } from "@/store/useLogosStore";
 
 const DEFINICIONES: Record<LogoTipo, {
     titulo: string;
     descripcion: string;
-    nombre: LogoConfig["nombre"];
     uso: string;
 }> = {
     principal: {
         titulo: LOGOS_INSTITUCIONALES.principal.titulo,
         descripcion: LOGOS_INSTITUCIONALES.principal.uso,
-        nombre: LOGOS_INSTITUCIONALES.principal.nombreArchivo,
         uso: LOGOS_INSTITUCIONALES.principal.uso,
     },
     blanco: {
         titulo: LOGOS_INSTITUCIONALES.blanco.titulo,
         descripcion: LOGOS_INSTITUCIONALES.blanco.uso,
-        nombre: LOGOS_INSTITUCIONALES.blanco.nombreArchivo,
         uso: LOGOS_INSTITUCIONALES.blanco.uso,
     },
 };
@@ -114,8 +113,7 @@ export default function ConfiguracionPage() {
 
     const seleccionarArchivo = (tipo: LogoTipo, file?: File) => {
         if (!file) return;
-        const esperado = DEFINICIONES[tipo].nombre;
-        const error = validarArchivoLogo(file, esperado);
+        const error = validarArchivoLogo(file);
 
         if (error) {
             setErroresArchivo((actual) => ({ ...actual, [tipo]: error }));
@@ -153,7 +151,7 @@ export default function ConfiguracionPage() {
         const file = archivos[tipo];
         if (!file) return;
 
-        const errorLocal = validarArchivoLogo(file, DEFINICIONES[tipo].nombre);
+        const errorLocal = validarArchivoLogo(file);
         if (errorLocal) {
             setErroresArchivo((actual) => ({ ...actual, [tipo]: errorLocal }));
             return;
@@ -179,6 +177,8 @@ export default function ConfiguracionPage() {
             toast.success(
                 `${actualizado.nombre} fue reemplazado. El cambio se verá en todo el sistema.`,
             );
+            // Actualizar el estado global de los logos en Zustand
+            useLogosStore.getState().loadLogos();
         } catch (error: unknown) {
             const mensaje = mensajeError(error);
             setErroresArchivo((actual) => ({ ...actual, [tipo]: mensaje }));
@@ -212,9 +212,10 @@ export default function ConfiguracionPage() {
                     </h1>
                 </div>
                 <p className="max-w-3xl text-sm text-muted-foreground">
-                    Suba sus dos logos institucionales. Cada archivo debe tener el nombre
-                    exacto indicado abajo. Al reemplazarlo, el sistema conserva la misma
-                    ruta y el logo nuevo aparece en acceso, menú, portal e impresiones.
+                    Suba sus dos logos institucionales. Se aceptan formatos SVG, PNG y JPEG.
+                    El sistema validará el formato y tamaño, y renombrará automáticamente los archivos
+                    según la nomenclatura interna. Al reemplazarlos, los logos nuevos aparecerán en acceso,
+                    menú, portal e impresiones.
                 </p>
             </header>
 
@@ -226,31 +227,12 @@ export default function ConfiguracionPage() {
                     id="instrucciones-logos"
                     className="text-sm font-semibold text-foreground"
                 >
-                    Nombre obligatorio de cada imagen
+                    Requisitos de los archivos
                 </h2>
                 <p className="mt-1 text-xs text-muted-foreground">
-                    Formato: solo SVG · tamaño máximo: 2 MB. Si el nombre o el formato no
-                    coinciden, la pantalla y el servidor rechazarán el archivo.
+                    Formatos aceptados: SVG, PNG, JPEG · tamaño máximo: 2 MB. El sistema validará
+                    el formato y tamaño, y renombrará automáticamente los archivos según la nomenclatura interna.
                 </p>
-                <ul className="mt-4 space-y-3 text-sm">
-                    {(Object.keys(DEFINICIONES) as LogoTipo[]).map((tipo) => {
-                        const def = DEFINICIONES[tipo];
-                        return (
-                            <li
-                                key={tipo}
-                                className="flex flex-col gap-1 rounded-xl border border-border bg-card px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
-                            >
-                                <div>
-                                    <p className="font-medium text-foreground">{def.titulo}</p>
-                                    <p className="text-xs text-muted-foreground">{def.uso}</p>
-                                </div>
-                                <code className="mt-1 shrink-0 rounded-md bg-slate-900 px-2.5 py-1.5 text-xs font-semibold text-white sm:mt-0">
-                                    {def.nombre}
-                                </code>
-                            </li>
-                        );
-                    })}
-                </ul>
             </section>
 
             {avisoCarga ? (
@@ -278,7 +260,7 @@ export default function ConfiguracionPage() {
                     {(Object.keys(DEFINICIONES) as LogoTipo[]).map((tipo) => {
                         const definicion = DEFINICIONES[tipo];
                         const logo = logos[tipo];
-                        const preview = previews[tipo] || logo.ruta;
+                        const preview = previews[tipo] || obtenerRutaLogoDinamica(tipo, logos);
                         const seleccionado = archivos[tipo];
                         const errorArchivo = erroresArchivo[tipo];
                         const esBlanco = tipo === "blanco";
@@ -292,7 +274,7 @@ export default function ConfiguracionPage() {
                                     <div className="flex items-start justify-between gap-3">
                                         <div>
                                             <h2 className="font-semibold text-foreground">
-                                                Insertar: {definicion.nombre}
+                                                {definicion.titulo}
                                             </h2>
                                             <p className="mt-1 text-xs leading-5 text-muted-foreground">
                                                 {definicion.descripcion}
@@ -330,7 +312,7 @@ export default function ConfiguracionPage() {
                                     </div>
 
                                     <p className="text-[11px] text-muted-foreground">
-                                        Última actualización: {formatearFecha(logo.fecha_modificacion)}
+                                        Última actualización: {formatearFecha(logo.fecha_modificacion || null)}
                                     </p>
 
                                     {errorArchivo ? (
@@ -345,11 +327,7 @@ export default function ConfiguracionPage() {
                                         <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-950">
                                             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
                                             <p>
-                                                Seleccione un archivo que se llame exactamente{" "}
-                                                <span className="font-mono font-semibold">
-                                                    {definicion.nombre}
-                                                </span>
-                                                .
+                                                El sistema validará el formato y tamaño, y renombrará automáticamente el archivo según la nomenclatura interna.
                                             </p>
                                         </div>
                                     )}
@@ -361,12 +339,12 @@ export default function ConfiguracionPage() {
                                         <Upload className="h-4 w-4" />
                                         {seleccionado
                                             ? seleccionado.name
-                                            : `Elegir archivo ${definicion.nombre}`}
+                                            : `Elegir archivo`}
                                         <input
                                             id={`logo-${tipo}`}
-                                            aria-label={`Seleccionar ${definicion.nombre}`}
+                                            aria-label={`Seleccionar ${definicion.titulo}`}
                                             type="file"
-                                            accept=".svg,image/svg+xml"
+                                            accept=".svg,.png,.jpg,.jpeg,image/svg+xml,image/png,image/jpeg"
                                             className="sr-only"
                                             onChange={(event) => seleccionarArchivo(
                                                 tipo,
@@ -380,7 +358,7 @@ export default function ConfiguracionPage() {
                                         onClick={() => reemplazarLogo(tipo)}
                                         disabled={!seleccionado || saving !== null}
                                         className="h-11 w-full rounded-xl text-xs font-semibold"
-                                        aria-label={`Reemplazar ${definicion.nombre}`}
+                                        aria-label={`Reemplazar ${definicion.titulo}`}
                                     >
                                         {saving === tipo ? (
                                             <>

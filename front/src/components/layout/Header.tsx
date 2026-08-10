@@ -25,6 +25,7 @@ import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { NavContent } from "./Sidebar";
 import { usePathname, useRouter } from "next/navigation";
 import api from "@/utils/api";
+import { useLogosConfig, obtenerRutaLogoDinamica } from "@/lib/logo-institucional";
 
 export function Header() {
     const usuario = useAuthStore((state) => state.usuario);
@@ -32,6 +33,7 @@ export function Header() {
     const pathname = usePathname();
     const router = useRouter();
     const [mobileOpen, setMobileOpen] = useState(false);
+    const { logos: logosConfig } = useLogosConfig();
 
     const logout = async () => {
         try { await api.post("/auth/logout"); } catch { /* ignorar errores de red */ }
@@ -48,16 +50,8 @@ export function Header() {
     };
 
     return (
-        <header className="
-  h-16 
-  sticky top-0 z-40
-  bg-background/80 
-  backdrop-blur-xl 
-  border-b border-border/50 
-  flex items-center justify-between 
-  px-4 md:px-8
-  transition-all duration-300
-">
+        <header className="sticky top-0 z-40 w-full border-b border-border/40 bg-background/85 backdrop-blur-md transition-all">
+            <div className="flex h-16 items-center justify-between px-4 md:px-6">
 
             {/* LEFT */}
             <div className="flex items-center gap-3">
@@ -75,9 +69,9 @@ export function Header() {
 
                         <div className="p-6 h-20 flex items-center justify-center border-b border-sidebar-border/30 bg-black/5">
                             <img
-                                src="/Logo_blanco.svg"
+                                src={obtenerRutaLogoDinamica("blanco", logosConfig)}
                                 alt="Logo Blanco Unión"
-                                className="h-8 w-auto"
+                                className="h-8 w-auto object-contain"
                             />
                         </div>
 
@@ -222,6 +216,7 @@ export function Header() {
                     </DropdownMenu>
 
                 </div>
+            </div>
             </div>
         </header>
 

@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { useLogosConfig, obtenerRutaLogoDinamica } from "@/lib/logo-institucional";
 import { Usuario } from "@/types/auth";
 
 import { cn } from "@/lib/utils";
@@ -136,6 +137,7 @@ export function Sidebar() {
     const usuario = useAuthStore((state) => state.usuario);
     const logoutStore = useAuthStore((state) => state.logout);
     const router = useRouter();
+    const { logos: logosConfig } = useLogosConfig();
 
     const logout = async () => {
         try { await api.post("/auth/logout"); } catch { /* ignorar errores de red */ }
@@ -173,7 +175,7 @@ export function Sidebar() {
                 {!isCollapsed && (
                     <div className="flex items-center justify-center animate-in fade-in slide-in-from-left-2 duration-300 w-full px-2">
                         <Image
-                            src="/Logo_blanco.svg"
+                            src={obtenerRutaLogoDinamica("blanco", logosConfig || undefined)}
                             alt="Logo Blanco Unión"
                             width={120}
                             height={40}
@@ -185,7 +187,7 @@ export function Sidebar() {
                 {isCollapsed && (
                     <div className="flex items-center justify-center animate-in fade-in zoom-in duration-300">
                         <Image
-                            src="/Logo_blanco.svg"
+                            src={obtenerRutaLogoDinamica("blanco", logosConfig || undefined)}
                             alt="Logo Blanco Unión"
                             width={40}
                             height={24}

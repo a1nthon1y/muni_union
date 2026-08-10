@@ -40,8 +40,14 @@ const allowedOrigins = (process.env.FRONTEND_URL || "http://localhost:3000")
 
 app.use(cors({
     origin: (origin, callback) => {
-        // Permitir peticiones sin origin (Postman, curl, mismo servidor)
-        if (!origin || allowedOrigins.includes(origin)) {
+        if (!origin) {
+            return callback(null, true);
+        }
+        
+        // Permitir cualquier puerto de localhost en desarrollo
+        const esLocalhost = /^https?:\/\/localhost(:\d+)?$/.test(origin);
+        
+        if (esLocalhost || allowedOrigins.includes(origin)) {
             callback(null, true);
         } else {
             callback(new Error(`CORS: origen no permitido → ${origin}`));
@@ -54,12 +60,26 @@ app.use(cookieParser());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
-// Logos institucionales personalizados. Un 404 permite que Nginx use
-// como respaldo los SVG incluidos en el Frontend.
-app.get(["/Logo_MDUnion.svg", "/Logo_blanco.svg"], serveLogo);
+// Logos institucionales personalizados (cualquier extensión válida).
+// Un 404 permite que Nginx use como respaldo los SVG incluidos en el Frontend.
+app.get(
+    [
+        "/Logo_MDUnion.svg", "/Logo_MDUnion.png", "/Logo_MDUnion.jpg", "/Logo_MDUnion.jpeg",
+        "/Logo_blanco.svg",  "/Logo_blanco.png",  "/Logo_blanco.jpg",  "/Logo_blanco.jpeg",
+    ],
+    serveLogo,
+);
 
-// Servir carpetas estáticas (Documentos subidos)
-app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+// Servir carpetas estáticas (Documentos subidos sin caché para los logos)
+app.use("/uploads", express.static(path.join(__dirname, "../uploads"), {
+    setHeaders: (res, filepath) => {
+        if (filepath.includes("configuracion") || filepath.includes("logos")) {
+            res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0");
+            res.set("Pragma", "no-cache");
+            res.set("Expires", "0");
+        }
+    }
+}));
 
 // Verificación pública de constancias — sin auth, antes de la auditoría
 app.use("/api/verificar", verificarRoutes);

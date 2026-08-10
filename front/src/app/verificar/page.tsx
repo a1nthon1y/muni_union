@@ -3,11 +3,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ShieldCheck, ArrowRight, Lock } from "lucide-react";
+import { useLogosConfig, obtenerRutaLogoDinamica } from "@/lib/logo-institucional";
 
 export default function VerificarIndexPage() {
     const router = useRouter();
     const [codigo, setCodigo] = useState("");
     const [error, setError] = useState("");
+    const { logos: logosConfig } = useLogosConfig();
+    const logoRuta = obtenerRutaLogoDinamica("principal", logosConfig);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -44,7 +47,7 @@ export default function VerificarIndexPage() {
                 <div className="absolute top-[55%] left-8 w-1 h-1 rounded-full bg-white/20" />
 
                 <div className="relative mb-6">
-                    <img src="/Logo_MDUnion.svg" alt="Logo" className="w-20 h-20 mx-auto drop-shadow-lg" />
+                    <img src={logoRuta} alt="Logo" className="w-20 h-20 mx-auto drop-shadow-lg object-contain" />
                 </div>
                 <h1 className="text-xl font-black uppercase tracking-widest leading-snug mb-2">
                     Municipalidad Distrital<br />de La Unión

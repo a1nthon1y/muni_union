@@ -4,18 +4,22 @@ import { Acta } from "@/types/acta";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { dateUtils } from "@/utils/dateUtils";
+import { useLogosConfig, obtenerRutaLogoDinamica } from "@/lib/logo-institucional";
 
 interface ActaPrintViewProps {
     acta: Acta;
 }
 
 export function ActaPrintView({ acta }: ActaPrintViewProps) {
+    const { logos: logosConfig } = useLogosConfig();
+    const logoRuta = obtenerRutaLogoDinamica("principal", logosConfig);
+
     return (
         <div className="print-container bg-white text-black p-0 font-serif leading-relaxed block overflow-visible">
             <div className="max-w-[190mm] mx-auto p-8 border border-slate-200">
                 {/* Header Compacto */}
                 <div className="flex flex-col items-center text-center space-y-1 border-b-2 border-slate-900 pb-3 mb-4 relative">
-                    <img src="/Logo_MDUnion.svg" alt="Logo" className="w-14 h-14 mb-1" />
+                    <img src={logoRuta} alt="Logo" className="w-14 h-14 mb-1 object-contain" />
                     <h1 className="text-xl font-black uppercase tracking-widest text-slate-900">Municipalidad Distrital de La Unión</h1>
                     <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-600">Oficina de Registro Civil</h2>
                     <div className="absolute top-0 right-0 text-[8px] font-mono text-slate-400">STDU-V2.0</div>
@@ -183,7 +187,7 @@ export function ActaPrintView({ acta }: ActaPrintViewProps) {
                 <div className="mt-12 pt-6 flex justify-between items-end border-t border-slate-100">
                     <div className="text-center w-48">
                         <div className="h-16 flex items-center justify-center opacity-10 grayscale">
-                            <img src="/Logo_MDUnion.svg" alt="Sello" className="h-full" />
+                            <img src={logoRuta} alt="Sello" className="h-full object-contain" />
                         </div>
                         <div className="border-t-2 border-slate-900 pt-1 text-[8px] font-black uppercase tracking-[0.2em] text-slate-900">
                             Sello del Registrador Civil

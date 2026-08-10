@@ -55,12 +55,15 @@ const useFormField = () => {
 
   const { id } = itemContext
 
+  // Use deterministic IDs based on field name to prevent hydration mismatch
+  const deterministicId = String(fieldContext.name).replace(/\./g, '-')
+
   return {
     id,
     name: fieldContext.name,
-    formItemId: `${id}-form-item`,
-    formDescriptionId: `${id}-form-item-description`,
-    formMessageId: `${id}-form-item-message`,
+    formItemId: deterministicId,
+    formDescriptionId: `${deterministicId}-description`,
+    formMessageId: `${deterministicId}-message`,
     ...fieldState,
   }
 }

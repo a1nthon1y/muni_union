@@ -1,4 +1,5 @@
 import { access, stat } from "node:fs/promises";
+import path from "node:path";
 import {
     guardarLogoAtomico,
     LOGOS,
@@ -28,15 +29,46 @@ const fechaModificacionArchivo = async (ruta) => {
 const armarEstadoLogos = async ({ archivoExiste, baseDir }) => {
     const entradas = await Promise.all(
         Object.entries(LOGOS).map(async ([tipo, logo]) => {
-            const rutaFisica = obtenerRutaLogo(tipo, baseDir);
-            const personalizado = await archivoExiste(rutaFisica);
+            // Buscar primero extensiones no-SVG (indican archivo subido por el usuario)
+            const extensionesPersonalizadas = [".png", ".jpg", ".jpeg"];
+            let rutaPersonalizada = null;
+
+            for (const ext of extensionesPersonalizadas) {
+                const ruta = path.join(baseDir, `${logo.basename}${ext}`);
+                if (await archivoExiste(ruta)) {
+                    rutaPersonalizada = ruta;
+                    break;
+                }
+            }
+
+            // Si hay un archivo personalizado (no SVG), usarlo
+            if (rutaPersonalizada) {
+                const extension = rutaPersonalizada.match(/\.(svg|png|jpe?g)$/)?.[0] || ".svg";
+                const nombreArchivo = `${logo.basename}${extension}`;
+                const rutaPublica = `/uploads/configuracion/logos/${nombreArchivo}`;
+                return [tipo, {
+                    tipo,
+                    nombre: nombreArchivo,
+                    ruta: rutaPublica,
+                    personalizado: true,
+                    fecha_modificacion: await fechaModificacionArchivo(rutaPersonalizada),
+                }];
+            }
+
+            // Si solo existe SVG, puede ser el original o uno subido como SVG
+            // Lo consideramos predeterminado (no personalizado) por convención
+            const rutaSvg = path.join(baseDir, `${logo.basename}.svg`);
+            const svgExiste = await archivoExiste(rutaSvg);
+            const nombreArchivo = `${logo.basename}.svg`;
+            const rutaPublica = `/uploads/configuracion/logos/${nombreArchivo}`;
+
             return [tipo, {
                 tipo,
-                nombre: logo.filename,
-                ruta: logo.rutaPublica,
-                personalizado,
-                fecha_modificacion: personalizado
-                    ? await fechaModificacionArchivo(rutaFisica)
+                nombre: nombreArchivo,
+                ruta: rutaPublica,
+                personalizado: false,
+                fecha_modificacion: svgExiste
+                    ? await fechaModificacionArchivo(rutaSvg)
                     : null,
             }];
         }),
@@ -59,21 +91,34 @@ export const crearConfiguracionLogosService = ({
             throw new LogoValidationError("Tipo de logo no válido. Use principal o blanco.");
         }
         if (!file) {
-            throw new LogoValidationError(`Seleccione el archivo ${logo.filename}.`);
+            throw new LogoValidationError("Seleccione un archivo SVG válido.");
         }
 
         const ruta = await guardarLogo({
             tipo,
-            originalname: file.originalname,
             mimetype: file.mimetype,
             buffer: file.buffer,
             baseDir,
         });
 
+        // Obtener la extensión correcta del archivo guardado
+        const extension = ruta.match(/\.(svg|png|jpe?g)$/)?.[0] || ".svg";
+        const nombreArchivo = `${logo.basename}${extension}`;
+        // Usar siempre la ruta pública bajo /uploads/... (consistente con armarEstadoLogos)
+        const rutaPublica = `/uploads/configuracion/logos/${nombreArchivo}`;
+
+        // Eliminar otros formatos personalizados obsoletos para evitar conflictos de prioridad
+        const otrasExtensiones = [".png", ".jpg", ".jpeg"].filter(ext => ext !== extension);
+        const { rm } = await import("node:fs/promises");
+        for (const ext of otrasExtensiones) {
+            const rutaObsoleta = path.join(baseDir, `${logo.basename}${ext}`);
+            await rm(rutaObsoleta, { force: true }).catch(() => {});
+        }
+
         return {
             tipo,
-            nombre: logo.filename,
-            ruta: logo.rutaPublica,
+            nombre: nombreArchivo,
+            ruta: rutaPublica,
             personalizado: true,
             fecha_modificacion: await fechaModificacionArchivo(ruta),
         };

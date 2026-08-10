@@ -22,6 +22,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import Image from "next/image";
 import api from "@/utils/api";
 import { useAuthStore } from "@/store/useAuthStore";
+import { useLogosConfig, obtenerRutaLogoDinamica } from "@/lib/logo-institucional";
 
 const loginSchema = z.object({
     username: z.string().min(1, "El usuario es obligatorio"),
@@ -35,6 +36,7 @@ export default function LoginForm() {
     const [showPassword, setShowPassword] = useState(false);
     const router = useRouter();
     const login = useAuthStore((state) => state.login);
+    const { logos: logosConfig } = useLogosConfig();
 
     const form = useForm<LoginValues>({
         resolver: zodResolver(loginSchema),
@@ -71,7 +73,7 @@ export default function LoginForm() {
                 <div className="flex justify-center mb-6">
                     <div className="p-2 w-full max-w-[280px]">
                         <Image
-                            src="/Logo_MDUnion.svg"
+                            src={obtenerRutaLogoDinamica("principal", logosConfig || undefined)}
                             alt="Logo MD Unión"
                             width={400}
                             height={120}

@@ -1,6 +1,12 @@
+"use client";
+
 import LoginForm from "@/components/auth/LoginForm";
+import { useLogosConfig, obtenerRutaLogoDinamica } from "@/lib/logo-institucional";
 
 export default function LoginPage() {
+    const { logos: logosConfig } = useLogosConfig();
+    const logoRuta = obtenerRutaLogoDinamica("principal", logosConfig);
+
     return (
         <div className="min-h-screen flex flex-col lg:flex-row">
 
@@ -20,7 +26,7 @@ export default function LoginPage() {
                 {/* Blob pequeño — zona central-alta derecha */}
                 <div className="absolute top-16 right-8 w-[160px] h-[160px] rounded-full"
                     style={{ background: "radial-gradient(circle, rgba(40,100,180,0.2) 0%, transparent 70%)" }} />
-
+ 
                 {/* Puntos flotantes decorativos */}
                 <div className="absolute bottom-[38%] left-10 w-2.5 h-2.5 rounded-full bg-blue-400/70" />
                 <div className="absolute bottom-[34%] left-20 w-1.5 h-1.5 rounded-full bg-emerald-400/60" />
@@ -28,16 +34,16 @@ export default function LoginPage() {
                 <div className="absolute top-[38%] right-24 w-1 h-1 rounded-full bg-blue-300/50" />
                 <div className="absolute bottom-[20%] right-12 w-1.5 h-1.5 rounded-full bg-slate-400/40" />
                 <div className="absolute top-[55%] left-8 w-1 h-1 rounded-full bg-white/20" />
-
+ 
                 {/* Logo principal — grande y prominente */}
                 <div className="relative mb-8">
                     <div className="w-40 h-40 rounded-full border-2 border-white/15 flex items-center justify-center bg-white/5 shadow-2xl">
                         <div className="w-32 h-32 rounded-full border border-white/10 flex items-center justify-center">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
-                                src="/Logo_MDUnion.svg"
+                                src={logoRuta}
                                 alt="Logo Municipalidad"
-                                className="w-24 h-24 drop-shadow-lg"
+                                className="w-24 h-24 drop-shadow-lg object-contain"
                             />
                         </div>
                     </div>
@@ -81,7 +87,7 @@ export default function LoginPage() {
                     {/* Logo visible solo en mobile */}
                     <div className="flex justify-center mb-8 lg:hidden">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src="/Logo_MDUnion.svg" alt="Logo" className="w-20 h-20" />
+                        <img src={logoRuta} alt="Logo" className="w-20 h-20 object-contain" />
                     </div>
                     <LoginForm />
                 </div>

@@ -7,6 +7,7 @@ import {
     ArrowLeft, FileText, User, Calendar, Hash,
     Banknote, UserCheck, Clock, Printer, AlertTriangle,
 } from "lucide-react";
+import { useLogosConfig, obtenerRutaLogoDinamica } from "@/lib/logo-institucional";
 
 interface ConstanciaVerificada {
     numero: string;
@@ -101,6 +102,8 @@ export default function VerificarPage() {
     const router = useRouter();
     const [result, setResult] = useState<VerificacionResult | null>(null);
     const [loading, setLoading] = useState(true);
+    const { logos: logosConfig } = useLogosConfig();
+    const logoRuta = obtenerRutaLogoDinamica("principal", logosConfig);
 
     useEffect(() => {
         const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
@@ -171,7 +174,7 @@ export default function VerificarPage() {
     <button type="button" class="primary" onclick="window.print()">Imprimir</button>
   </div>
   <div class="header">
-    <img src="${window.location.origin}/Logo_MDUnion.svg" alt="Logo" />
+    <img src="${window.location.origin}${logoRuta}" alt="Logo" />
     <div class="header-text">
       <p>República del Perú</p>
       <h1>Municipalidad Distrital de La Unión</h1>
@@ -248,7 +251,7 @@ export default function VerificarPage() {
                     <div className="absolute top-[55%] left-8 w-1 h-1 rounded-full bg-white/20" />
 
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/Logo_MDUnion.svg" alt="Logo" className="w-20 h-20 mx-auto mb-6 drop-shadow-lg relative" />
+                    <img src={logoRuta} alt="Logo" className="w-20 h-20 mx-auto mb-6 drop-shadow-lg relative object-contain" />
                     <h1 className="text-xl font-black uppercase tracking-widest leading-snug mb-2 relative">
                         Municipalidad Distrital<br />de La Unión
                     </h1>

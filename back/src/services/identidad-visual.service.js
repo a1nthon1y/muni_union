@@ -5,15 +5,22 @@ import { randomUUID } from "node:crypto";
 export const LOGOS = Object.freeze({
     principal: Object.freeze({
         clave: "logo_principal",
-        filename: "Logo_MDUnion.svg",
-        rutaPublica: "/Logo_MDUnion.svg",
+        basename: "Logo_MDUnion",
+        rutaPublica: "/Logo_MDUnion",
     }),
     blanco: Object.freeze({
         clave: "logo_blanco",
-        filename: "Logo_blanco.svg",
-        rutaPublica: "/Logo_blanco.svg",
+        basename: "Logo_blanco",
+        rutaPublica: "/Logo_blanco",
     }),
 });
+
+const EXTENSIONES_MIME = {
+    "image/svg+xml": ".svg",
+    "image/png": ".png",
+    "image/jpeg": ".jpg",
+    "image/jpg": ".jpg",
+};
 
 export const LOGOS_DIR = process.env.LOGOS_DIR
     || path.resolve(process.cwd(), "uploads/configuracion/logos");
@@ -39,6 +46,13 @@ const PATRONES_ACTIVOS = [
     /url\(\s*["']?\s*(?:https?:|\/\/|javascript:)/i,
 ];
 
+const FORMATOS_VALIDOS = new Set([
+    "image/svg+xml",
+    "image/png",
+    "image/jpeg",
+    "image/jpg",
+]);
+
 const obtenerDefinicion = (tipo) => {
     const logo = LOGOS[tipo];
     if (!logo) {
@@ -47,55 +61,64 @@ const obtenerDefinicion = (tipo) => {
     return logo;
 };
 
-export const validarLogoSvg = ({
+export const validarLogo = ({
     tipo,
-    originalname,
     mimetype,
     buffer,
 }) => {
     const logo = obtenerDefinicion(tipo);
 
-    if (originalname !== logo.filename) {
-        throw new LogoValidationError(`El archivo debe llamarse exactamente ${logo.filename}.`);
-    }
-    if (mimetype && mimetype !== "image/svg+xml") {
-        throw new LogoValidationError("Solo se acepta un archivo SVG con tipo image/svg+xml.");
+    if (mimetype && !FORMATOS_VALIDOS.has(mimetype)) {
+        throw new LogoValidationError(
+            "Solo se aceptan archivos SVG, PNG o JPEG.",
+        );
     }
     if (!Buffer.isBuffer(buffer) || buffer.length === 0) {
-        throw new LogoValidationError("El archivo SVG está vacío.");
+        throw new LogoValidationError("El archivo está vacío.");
     }
     if (buffer.length > MAX_LOGO_BYTES) {
-        throw new LogoValidationError("El archivo SVG no puede superar 2 MB.");
+        throw new LogoValidationError("El archivo no puede superar 2 MB.");
     }
 
-    const contenido = buffer.toString("utf8");
-    if (!/<svg(?:\s|>)/i.test(contenido)
-        || PATRONES_ACTIVOS.some((patron) => patron.test(contenido))) {
-        throw new LogoValidationError(
-            "SVG no permitido: contiene estructura inválida o contenido activo.",
-        );
+    // Solo validar contenido SVG para archivos SVG
+    if (mimetype === "image/svg+xml") {
+        const contenido = buffer.toString("utf8");
+        if (!/<svg(?:\s|>)/i.test(contenido)
+            || PATRONES_ACTIVOS.some((patron) => patron.test(contenido))) {
+            throw new LogoValidationError(
+                "SVG no permitido: contiene estructura inválida o contenido activo.",
+            );
+        }
     }
 
     return logo;
 };
 
+// Mantener el nombre anterior por compatibilidad
+export const validarLogoSvg = validarLogo;
+
 export const obtenerRutaLogo = (tipo, baseDir = LOGOS_DIR) => {
     const logo = obtenerDefinicion(tipo);
-    return path.join(baseDir, logo.filename);
+    // Por defecto busca la versión SVG, pero esto se podría extender
+    // para buscar cualquier formato disponible
+    return path.join(baseDir, `${logo.basename}.svg`);
 };
 
 export const guardarLogoAtomico = async ({
     tipo,
-    originalname,
     mimetype,
     buffer,
     baseDir = LOGOS_DIR,
 }) => {
-    const logo = validarLogoSvg({ tipo, originalname, mimetype, buffer });
+    const logo = validarLogo({ tipo, mimetype, buffer });
     await mkdir(baseDir, { recursive: true });
 
-    const destino = path.join(baseDir, logo.filename);
-    const temporal = path.join(baseDir, `.${logo.filename}.${randomUUID()}.tmp`);
+    // Determinar la extensión correcta según el tipo MIME
+    const extension = EXTENSIONES_MIME[mimetype] || ".svg";
+    const nombreArchivo = `${logo.basename}${extension}`;
+    
+    const destino = path.join(baseDir, nombreArchivo);
+    const temporal = path.join(baseDir, `.${nombreArchivo}.${randomUUID()}.tmp`);
 
     try {
         await writeFile(temporal, buffer, { mode: 0o644, flag: "wx" });

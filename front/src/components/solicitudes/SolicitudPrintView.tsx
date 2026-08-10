@@ -2,12 +2,14 @@
 
 import { Solicitud } from "@/types/solicitud";
 import { format } from "date-fns";
+import { useLogosConfig, obtenerRutaLogoDinamica } from "@/lib/logo-institucional";
 
 interface SolicitudPrintViewProps {
     solicitud: Solicitud;
 }
 
 export function SolicitudPrintView({ solicitud }: SolicitudPrintViewProps) {
+    const { logos: logosConfig } = useLogosConfig();
     const total = solicitud.detalles?.reduce((acc, curr) => acc + Number(curr.total), 0) || 0;
     const baseUrl = typeof window === "undefined" ? "" : window.location.origin;
 
@@ -22,8 +24,8 @@ export function SolicitudPrintView({ solicitud }: SolicitudPrintViewProps) {
 
                 {/* Header Compacto */}
                 <div className="flex flex-col items-center text-center space-y-1 border-b-2 border-slate-900 pb-3 mb-4">
-                    {/* eslint-disable-next-line @next/next/no-img-element -- debe consultar la ruta canónica sin optimización */}
-                    <img src="/Logo_MDUnion.svg" alt="Logo" className="w-16 h-16 mb-1" />
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={obtenerRutaLogoDinamica("principal", logosConfig)} alt="Logo" className="w-16 h-16 mb-1 object-contain" />
                     <h1 className="text-xl font-black uppercase tracking-widest text-slate-900">Municipalidad Distrital de La Unión</h1>
                     <h2 className="text-[11px] font-black uppercase tracking-[0.4em] text-slate-500">Constancia de Trámite Municipal</h2>
                     <div className="mt-2 px-4 py-1.5 bg-slate-900 text-white font-black text-sm tracking-[0.2em] rounded-full">

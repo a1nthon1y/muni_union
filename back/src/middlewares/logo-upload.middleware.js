@@ -8,11 +8,17 @@ const upload = multer({
         files: 1,
     },
     fileFilter: (_req, file, callback) => {
-        const nombreSvg = file.originalname?.toLowerCase().endsWith(".svg");
-        const tipoSvg = !file.mimetype || file.mimetype === "image/svg+xml";
-        if (!nombreSvg || !tipoSvg) {
+        // Validar solo por tipo MIME, no por nombre de archivo
+        const tipoValido = !file.mimetype || [
+            "image/svg+xml",
+            "image/png",
+            "image/jpeg",
+            "image/jpg",
+        ].includes(file.mimetype);
+        
+        if (!tipoValido) {
             return callback(
-                new LogoValidationError("Solo se acepta un archivo SVG."),
+                new LogoValidationError("Solo se aceptan archivos SVG, PNG o JPEG."),
                 false,
             );
         }
@@ -27,7 +33,7 @@ export const uploadLogo = (req, res, next) => {
         }
         if (error.code === "LIMIT_FILE_SIZE") {
             return res.status(413).json({
-                message: "El archivo SVG no puede superar 2 MB.",
+                message: "El archivo no puede superar 2 MB.",
             });
         }
         if (error instanceof LogoValidationError) {
