@@ -24,6 +24,14 @@ interface ResultadoFila {
     con_documento: boolean;
     error?: string;
     mensaje?: string;
+    fecha_fallecimiento_estado?:
+        | "FECHA_ACTUALIZADA"
+        | "FECHA_YA_REGISTRADA"
+        | "SIN_FECHA_EXCEL"
+        | "FECHA_CONFLICTO"
+        | "FECHA_NUEVA"
+        | "SIN_CAMBIO"
+        | null;
 }
 
 interface ResumenImportacion {
@@ -32,6 +40,11 @@ interface ResumenImportacion {
     omitidos: number;
     docs_vinculados: number;
     errores: number;
+    fechas_actualizadas?: number;
+    fechas_ya_registradas?: number;
+    sin_fecha_en_excel?: number;
+    fechas_conflicto?: number;
+    fechas_nuevas?: number;
     resultados: ResultadoFila[];
 }
 
@@ -96,12 +109,25 @@ export default function CargaMasivaPage() {
 
             setResumen(data);
 
-            if (data.errores === 0 && data.docs_vinculados === 0) {
-                toast.success(`✅ Importación completada: ${data.exitosos} actas nuevas, ${data.omitidos} omitidas.`);
+            const fechasActualizadas = data.fechas_actualizadas ?? 0;
+            const sinFechaEnExcel = data.sin_fecha_en_excel ?? 0;
+            const partes = [
+                `${data.total} filas procesadas`,
+                data.exitosos > 0 ? `${data.exitosos} actas nuevas` : null,
+                data.omitidos > 0 ? `${data.omitidos} ya existían` : null,
+                fechasActualizadas > 0 ? `${fechasActualizadas} fechas de fallecimiento actualizadas` : null,
+                sinFechaEnExcel > 0 ? `${sinFechaEnExcel} sin fecha en Excel` : null,
+                data.errores > 0 ? `${data.errores} errores` : null,
+            ].filter(Boolean);
+
+            if (data.errores > 0) {
+                toast.warning(`Importación: ${partes.join(" · ")}`);
+            } else if (fechasActualizadas > 0 || data.omitidos > 0) {
+                toast.success(`Importación completada: ${partes.join(" · ")}`);
             } else if (data.docs_vinculados > 0) {
                 toast.info(`📎 ${data.docs_vinculados} documentos vinculados a actas existentes sin PDF.`);
             } else {
-                toast.warning(`Importación: ${data.exitosos} nuevas, ${data.docs_vinculados} docs vinculados, ${data.errores} errores.`);
+                toast.success(`Importación completada: ${partes.join(" · ")}`);
             }
         } catch (error: any) {
             const msg = error?.response?.data?.message || "Error inesperado durante la importación.";
@@ -120,6 +146,7 @@ export default function CargaMasivaPage() {
             "ESTADO": r.estado,
             "ACTA": r.acta,
             "CIUDADANO": r.persona,
+            "FECHA FALLECIMIENTO": r.fecha_fallecimiento_estado ?? "",
             "VINCULO PDF": r.con_documento ? "SI" : "NO",
             "DETALLE/ERROR": r.error || r.mensaje || "Operación exitosa"
         }));
@@ -483,6 +510,55 @@ export default function CargaMasivaPage() {
                                 </div>
                             ))}
                         </div>
+
+                        {(resumen.fechas_actualizadas ?? 0) > 0
+                            || (resumen.sin_fecha_en_excel ?? 0) > 0
+                            || (resumen.fechas_ya_registradas ?? 0) > 0
+                            || (resumen.fechas_conflicto ?? 0) > 0) && (
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                {[
+                                    {
+                                        label: 'FECHAS ACTUALIZADAS',
+                                        value: resumen.fechas_actualizadas ?? 0,
+                                        color: 'emerald',
+                                        hint: 'Defunciones con fecha corregida por acta (código único)',
+                                    },
+                                    {
+                                        label: 'SIN FECHA EN EXCEL',
+                                        value: resumen.sin_fecha_en_excel ?? 0,
+                                        color: 'slate',
+                                        hint: 'Filas sin fecha_fallecimiento — no es error',
+                                    },
+                                    {
+                                        label: 'FECHA YA REGISTRADA',
+                                        value: resumen.fechas_ya_registradas ?? 0,
+                                        color: 'blue',
+                                        hint: 'El acta ya tenía esa fecha en BD',
+                                    },
+                                    {
+                                        label: 'CONFLICTO FECHAS',
+                                        value: resumen.fechas_conflicto ?? 0,
+                                        color: 'amber',
+                                        hint: 'Se conservó la fecha existente por inconsistencia',
+                                    },
+                                ].map((stat) => (
+                                    <div
+                                        key={stat.label}
+                                        className={cn(
+                                            "p-5 rounded-[24px] border flex flex-col gap-1",
+                                            stat.color === 'emerald' && "bg-emerald-50/50 border-emerald-100",
+                                            stat.color === 'slate' && "bg-white border-slate-100",
+                                            stat.color === 'blue' && "bg-blue-50/50 border-blue-100",
+                                            stat.color === 'amber' && "bg-amber-50/50 border-amber-100",
+                                        )}
+                                    >
+                                        <p className="text-3xl font-black text-slate-800">{stat.value}</p>
+                                        <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-500">{stat.label}</p>
+                                        <p className="text-[10px] text-slate-400 leading-snug">{stat.hint}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
 
                         {/* ESTADO FINAL DE LA CARGA */}
                         <div className="space-y-4 bg-white dark:bg-slate-800/50 p-6 rounded-[32px] border border-slate-100 shadow-inner">
