@@ -12,41 +12,6 @@ import { debeOmitirBusquedaPorNombre } from "./importacion-persona-identidad.js"
 
 const TIPOS_ACTA_VALIDOS = new Set(["NACIMIENTO", "MATRIMONIO", "DEFUNCION"]);
 
-const evaluarEstadoFechaFallecimiento = (fechaExcel, fechaAnterior, fechaResultante, huboConflicto) => {
-    if (!fechaExcel) return "SIN_FECHA_EXCEL";
-    if (huboConflicto) return "FECHA_CONFLICTO";
-    const ant = fechaAnterior ?? null;
-    const res = fechaResultante ?? null;
-    if (res && res !== ant) return "FECHA_ACTUALIZADA";
-    if (res && res === ant) return "FECHA_YA_REGISTRADA";
-    return "SIN_CAMBIO";
-};
-
-const estadoFechaDefuncionNueva = (tipoActa, fechaExcel) => {
-    if (tipoActa !== "DEFUNCION") return null;
-    if (!fechaExcel) return "SIN_FECHA_EXCEL";
-    return "FECHA_NUEVA";
-};
-
-const detalleFechaFallecimiento = (estado) => {
-    if (!estado) return null;
-    const map = {
-        FECHA_ACTUALIZADA: "Fecha de fallecimiento actualizada",
-        FECHA_YA_REGISTRADA: "Fecha de fallecimiento ya registrada (sin cambio)",
-        SIN_FECHA_EXCEL: "Sin fecha de fallecimiento en Excel",
-        FECHA_CONFLICTO: "Conflicto de fechas — se conservó la fecha existente",
-        FECHA_NUEVA: "Acta nueva con fecha de fallecimiento",
-        SIN_CAMBIO: "Sin cambio en fecha de fallecimiento",
-    };
-    return map[estado] ?? null;
-};
-
-const appendDetalleFecha = (mensaje, estado) => {
-    const detalle = detalleFechaFallecimiento(estado);
-    if (!detalle) return mensaje;
-    return mensaje ? `${mensaje} — ${detalle}` : detalle;
-};
-
 // Construye el número de acta: NAC-L1-45
 const buildNumeroActa = (tipo, libro, numero) => {
     const prefixes = { NACIMIENTO: "NAC", MATRIMONIO: "MAT", DEFUNCION: "DEF" };
@@ -151,7 +116,6 @@ export const importarActasMasivo = async (
         const rowNum = i + 1;
             let personaId = null;
             let actaId = null;
-            let fechaFallecimientoEstado = null;
 
         try {
             await client.query("BEGIN");
@@ -308,61 +272,57 @@ export const importarActasMasivo = async (
             }
 
             if (personaId && personaEncontrada) {
+                const esReimportacion = Boolean(actaExistenteRow);
                 const cambiosFechas = {};
                 if (fechaNacimiento) cambiosFechas.fecha_nacimiento = fechaNacimiento;
-                if (fechaFallecimiento) cambiosFechas.fecha_fallecimiento = fechaFallecimiento;
-
-                const fechaAnteriorFallecimiento = personaEncontrada.fecha_fallecimiento ?? null;
-                let huboConflictoFechas = false;
-                let fechas;
-                try {
-                    fechas = resolverFechasPersona(personaEncontrada, cambiosFechas);
-                } catch (e) {
-                    if (e instanceof FechaPersonaValidationError) {
-                        huboConflictoFechas = true;
-                        // Conflicto de fechas con datos ya guardados en BD
-                        // (homonimia o dato histórico inconsistente) — se conservan
-                        // las fechas existentes y se continúa vinculando el acta.
-                        logger.warn(
-                            { fila: rowNum, personaId, err: e.message },
-                            "Conflicto de fechas al actualizar persona existente — se conservan fechas actuales"
-                        );
-                        fechas = {
-                            fecha_nacimiento:    personaEncontrada.fecha_nacimiento    ?? null,
-                            fecha_fallecimiento: personaEncontrada.fecha_fallecimiento ?? null,
-                        };
-                    } else {
-                        throw e;
-                    }
+                // Reimportación: no sobrescribir fecha de fallecimiento ya registrada
+                if (fechaFallecimiento && !esReimportacion) {
+                    cambiosFechas.fecha_fallecimiento = fechaFallecimiento;
                 }
 
-                await client.query(
-                    `UPDATE personas SET
-                        dni                 = COALESCE($1, dni),
-                        tipo_documento_id   = CASE WHEN $1 IS NOT NULL THEN $2 ELSE tipo_documento_id END,
-                        fecha_fallecimiento = $3,
-                        fecha_nacimiento    = $4
-                     WHERE id = $5`,
-                    [
-                        dniNuevo,
-                        tipoDocId,
-                        fechas.fecha_fallecimiento,
-                        fechas.fecha_nacimiento,
-                        personaId,
-                    ]
-                );
-                if (tipoActa === "DEFUNCION") {
-                    fechaFallecimientoEstado = evaluarEstadoFechaFallecimiento(
-                        fechaFallecimiento,
-                        fechaAnteriorFallecimiento,
-                        fechas.fecha_fallecimiento,
-                        huboConflictoFechas,
+                const debeActualizarPersona = !esReimportacion
+                    || Boolean(dniNuevo)
+                    || Boolean(cambiosFechas.fecha_nacimiento);
+
+                if (debeActualizarPersona) {
+                    let fechas;
+                    try {
+                        fechas = resolverFechasPersona(personaEncontrada, cambiosFechas);
+                    } catch (e) {
+                        if (e instanceof FechaPersonaValidationError) {
+                            logger.warn(
+                                { fila: rowNum, personaId, err: e.message },
+                                "Conflicto de fechas al actualizar persona existente — se conservan fechas actuales"
+                            );
+                            fechas = {
+                                fecha_nacimiento:    personaEncontrada.fecha_nacimiento    ?? null,
+                                fecha_fallecimiento: personaEncontrada.fecha_fallecimiento ?? null,
+                            };
+                        } else {
+                            throw e;
+                        }
+                    }
+
+                    await client.query(
+                        `UPDATE personas SET
+                            dni                 = COALESCE($1, dni),
+                            tipo_documento_id   = CASE WHEN $1 IS NOT NULL THEN $2 ELSE tipo_documento_id END,
+                            fecha_fallecimiento = $3,
+                            fecha_nacimiento    = $4
+                         WHERE id = $5`,
+                        [
+                            dniNuevo,
+                            tipoDocId,
+                            fechas.fecha_fallecimiento,
+                            fechas.fecha_nacimiento,
+                            personaId,
+                        ]
+                    );
+                    logger.info(
+                        { fila: rowNum, personaId, dniNuevo, esReimportacion },
+                        "Datos actualizados para persona existente"
                     );
                 }
-                logger.info(
-                    { fila: rowNum, personaId, dniNuevo, fechaFallecimiento, fechaFallecimientoEstado },
-                    "Datos actualizados (DNI, fechas) para persona existente"
-                );
             }
 
             // 1c. Crear persona nueva (no encontrada, o homonimia detectada)
@@ -413,7 +373,6 @@ export const importarActasMasivo = async (
                     ]
                 );
                 personaId = r.rows[0].id;
-                fechaFallecimientoEstado = estadoFechaDefuncionNueva(tipoActa, fechaFallecimiento);
             }
 
             // ── 2. Persona secundaria para MATRIMONIO ─────────────────────────
@@ -602,25 +561,19 @@ export const importarActasMasivo = async (
                         fila: rowNum, estado: "OMITIDO_DOC", acta: fullNumeroActa,
                         persona: `${fila.apellido_paterno} ${fila.apellido_materno}, ${fila.nombres}`,
                         con_documento: true, acta_id: actaExistenteId,
-                        fecha_fallecimiento_estado: fechaFallecimientoEstado,
-                        mensaje: appendDetalleFecha(
-                            "Acta ya existía sin documento — se vinculó el PDF correctamente",
-                            fechaFallecimientoEstado,
-                        ),
+                        mensaje: "Acta ya existía sin documento — se vinculó el PDF correctamente",
                     });
                 } else {
                     await client.query("COMMIT");
-                    const baseMensaje = tieneDocumento
-                        ? "Acta ya registrada con documento — datos de persona actualizados si la fila los traía"
-                        : archivoParaVincular
-                            ? "Acta ya registrada — datos de persona actualizados si la fila los traía"
-                            : "Acta ya registrada sin documento — datos de persona actualizados si la fila los traía (PDF no vinculado)";
                     resultados.push({
                         fila: rowNum, estado: "OMITIDO", acta: fullNumeroActa,
                         persona: `${fila.apellido_paterno} ${fila.apellido_materno}, ${fila.nombres}`,
                         con_documento: tieneDocumento, acta_id: actaExistenteId,
-                        fecha_fallecimiento_estado: fechaFallecimientoEstado,
-                        mensaje: appendDetalleFecha(baseMensaje, fechaFallecimientoEstado),
+                        mensaje: tieneDocumento
+                            ? "Acta ya registrada con documento"
+                            : archivoParaVincular
+                                ? "Acta ya registrada"
+                                : "Acta ya registrada sin documento (PDF no vinculado)",
                     });
                 }
                 continue;
@@ -672,8 +625,6 @@ export const importarActasMasivo = async (
                 fila: rowNum, estado: "OK", acta: fullNumeroActa,
                 persona: `${fila.apellido_paterno} ${fila.apellido_materno}, ${fila.nombres}`,
                 con_documento: !!archivoEncontrado, persona_id: personaId, acta_id: actaId,
-                fecha_fallecimiento_estado: fechaFallecimientoEstado,
-                mensaje: appendDetalleFecha("Acta registrada correctamente", fechaFallecimientoEstado),
             });
 
         } catch (error) {

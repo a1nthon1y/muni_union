@@ -45,7 +45,18 @@ const crearDbImportacion = () => {
                 return { rows: [], rowCount: 1 };
             }
             if (/SELECT a\.id/.test(sql)) {
-                return { rows: [{ id: 99, tiene_documento: true }] };
+                return { rows: [{ id: 99, persona_principal_id: 31, tiene_documento: true }] };
+            }
+            if (/FROM personas\s+WHERE id = \$1/.test(sql)) {
+                return {
+                    rows: [{
+                        id: 31,
+                        dni: "12345678",
+                        tipo_documento_id: 1,
+                        fecha_nacimiento: "1950-01-01",
+                        fecha_fallecimiento: null,
+                    }],
+                };
             }
             if (/INSERT INTO actas/.test(sql)) {
                 return { rows: [{ id: 88 }] };
@@ -67,18 +78,15 @@ const crearDbImportacion = () => {
     };
 };
 
-test("acta duplicada conserva actualización de persona (backfill fechas)", async () => {
+test("acta duplicada no sobrescribe fecha_fallecimiento en reimportación", async () => {
     const db = crearDbImportacion();
 
     const resultado = await importarActasMasivo([
         {
-            dni: "12345678",
-            tipo_documento: "DNI",
             nombres: "ANA",
             apellido_paterno: "QUISPE",
             apellido_materno: "ROJAS",
             sexo: "F",
-            fecha_nacimiento: "1950-01-01",
             fecha_defuncion: "2020-04-03",
             tipo_acta: "DEFUNCION",
             fecha_acta: "2020-04-03",
@@ -87,11 +95,11 @@ test("acta duplicada conserva actualización de persona (backfill fechas)", asyn
     ], {}, {}, 7, db);
 
     assert.equal(resultado[0].estado, "OMITIDO");
-    const actualizacion = db.client.consultas.find(
-        ({ sql }) => /UPDATE personas SET/.test(sql),
+    assert.equal(
+        db.client.consultas.some(({ sql }) => /UPDATE personas SET/.test(sql)),
+        false,
+        "Reimportación no debe actualizar fechas de fallecimiento",
     );
-    assert.ok(actualizacion, "Debe actualizar persona aunque el acta ya exista");
-    assert.equal(actualizacion.params[2], "2020-04-03");
     assert.equal(
         db.client.consultas.some(({ sql }) => sql === "COMMIT"),
         true,
@@ -100,6 +108,6 @@ test("acta duplicada conserva actualización de persona (backfill fechas)", asyn
     assert.equal(
         db.client.consultas.some(({ sql }) => sql === "ROLLBACK"),
         false,
-        "No debe deshacer la actualización de persona",
+        "No debe deshacer la operación",
     );
 });

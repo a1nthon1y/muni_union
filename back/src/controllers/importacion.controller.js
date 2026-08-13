@@ -244,11 +244,6 @@ export const importarMasivo = async (req, res) => {
         const omitidos = resultados.filter(r => r.estado === "OMITIDO").length;
         const docsVinculados = resultados.filter(r => r.estado === "OMITIDO_DOC").length;
         const errores = resultados.filter(r => r.estado === "ERROR").length;
-        const fechasActualizadas = resultados.filter(r => r.fecha_fallecimiento_estado === "FECHA_ACTUALIZADA").length;
-        const fechasYaRegistradas = resultados.filter(r => r.fecha_fallecimiento_estado === "FECHA_YA_REGISTRADA").length;
-        const sinFechaEnExcel = resultados.filter(r => r.fecha_fallecimiento_estado === "SIN_FECHA_EXCEL").length;
-        const fechasConflicto = resultados.filter(r => r.fecha_fallecimiento_estado === "FECHA_CONFLICTO").length;
-        const fechasNuevas = resultados.filter(r => r.fecha_fallecimiento_estado === "FECHA_NUEVA").length;
 
         await registrarAccion({
             usuario_id: req.user.id,
@@ -256,7 +251,7 @@ export const importarMasivo = async (req, res) => {
             operacion: "IMPORT",
             registro_id: 0,
             ip: req.ip,
-            descripcion: `Carga masiva: ${exitosos} nuevas, ${omitidos} omitidas, ${fechasActualizadas} fechas actualizadas, ${sinFechaEnExcel} sin fecha en Excel, ${errores} errores (total ${filas.length})`
+            descripcion: `Carga masiva: ${exitosos} nuevas, ${docsVinculados} docs vinculados, ${omitidos} omitidas, ${errores} errores (total ${filas.length})`
         });
 
         return res.json({
@@ -265,11 +260,6 @@ export const importarMasivo = async (req, res) => {
             omitidos,
             docs_vinculados: docsVinculados,
             errores,
-            fechas_actualizadas: fechasActualizadas,
-            fechas_ya_registradas: fechasYaRegistradas,
-            sin_fecha_en_excel: sinFechaEnExcel,
-            fechas_conflicto: fechasConflicto,
-            fechas_nuevas: fechasNuevas,
             resultados
         });
 

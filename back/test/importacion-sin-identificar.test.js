@@ -107,7 +107,7 @@ test("importación crea una persona distinta por cada acta S/N S/A S/A sin DNI",
     assert.equal(db.personaInsertCount, 2);
 });
 
-test("reimportación actualiza la persona ya vinculada al acta existente", async () => {
+test("reimportación usa persona del acta existente sin actualizar fechas", async () => {
     const consultas = [];
     const client = {
         consultas,
@@ -174,8 +174,9 @@ test("reimportación actualiza la persona ya vinculada al acta existente", async
     ], {}, {}, 7, db);
 
     assert.equal(resultado[0].estado, "OMITIDO");
-    const actualizacion = consultas.find(({ sql }) => /UPDATE personas SET/.test(sql));
-    assert.ok(actualizacion, "Debe actualizar la persona del acta existente");
-    assert.equal(actualizacion.params.at(-1), 13861);
-    assert.equal(actualizacion.params[2], "1963-03-10");
+    assert.equal(
+        consultas.some(({ sql }) => /UPDATE personas SET/.test(sql)),
+        false,
+        "Reimportación no debe modificar fechas de la persona existente",
+    );
 });
