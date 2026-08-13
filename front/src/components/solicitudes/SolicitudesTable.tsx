@@ -38,6 +38,8 @@ import { Input } from "@/components/ui/input";
 import { useState } from "react";
 
 import { Pagination } from "@/components/shared/Pagination";
+import { useAuthStore } from "@/store/useAuthStore";
+import { isConsulta } from "@/lib/roles";
 
 interface SolicitudesTableProps {
     solicitudes: Solicitud[];
@@ -66,6 +68,8 @@ export function SolicitudesTable({
     onPageChange
 }: SolicitudesTableProps) {
 
+    const usuario = useAuthStore((state) => state.usuario);
+    const soloConsulta = isConsulta(usuario?.rol_id);
 
     const getStatusBadge = (estado: EstadoSolicitud) => {
         switch (estado) {
@@ -161,6 +165,8 @@ export function SolicitudesTable({
                                                 <DropdownMenuItem onClick={() => onView(solicitud)} className="cursor-pointer font-medium gap-2 py-2 rounded-lg text-xs">
                                                     <Eye className="icon-std" /> Ver Detalles
                                                 </DropdownMenuItem>
+                                                {!soloConsulta && (
+                                                <>
                                                 <DropdownMenuSeparator className="my-1" />
                                                 {solicitud.estado === 'PENDIENTE' && (
                                                     <DropdownMenuItem
@@ -185,6 +191,8 @@ export function SolicitudesTable({
                                                 >
                                                     <Trash2 className="h-4 w-4" /> Eliminar Registro
                                                 </DropdownMenuItem>
+                                                </>
+                                                )}
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </TableCell>

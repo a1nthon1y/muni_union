@@ -304,8 +304,8 @@ export const importarActasMasivo = async (
                 const r = await client.query(
                     `INSERT INTO personas
                        (dni, tipo_documento_id, nombres, apellido_paterno, apellido_materno,
-                        sexo, fecha_nacimiento, fecha_fallecimiento, telefono, observaciones, usuario_registro)
-                     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+                        sexo, fecha_nacimiento, fecha_fallecimiento, telefono, observaciones, usuario_registro, es_homonimo)
+                     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
                      RETURNING id`,
                     [
                         dniNuevo,
@@ -319,6 +319,8 @@ export const importarActasMasivo = async (
                         fila.telefono?.trim() || null,
                         fila.persona_observaciones?.trim() || null,
                         usuario_id,
+                        // Marcar homónimo si: se encontró persona por nombre PERO tiene DNI distinto al del Excel
+                        Boolean(personaEncontrada && dniNuevo && personaEncontrada.dni && personaEncontrada.dni !== dniNuevo)
                     ]
                 );
                 personaId = r.rows[0].id;
@@ -401,8 +403,8 @@ export const importarActasMasivo = async (
                         const r = await client.query(
                             `INSERT INTO personas
                                (dni, tipo_documento_id, nombres, apellido_paterno, apellido_materno,
-                                sexo, fecha_nacimiento, fecha_fallecimiento, usuario_registro)
-                             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+                                sexo, fecha_nacimiento, fecha_fallecimiento, usuario_registro, es_homonimo)
+                             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
                              RETURNING id`,
                             [
                                 fila.conyuge_dni?.trim() || null,
@@ -412,6 +414,8 @@ export const importarActasMasivo = async (
                                 fechasConyuge.fecha_nacimiento,
                                 fechasConyuge.fecha_fallecimiento,
                                 usuario_id,
+                                // Marcar homónimo cónyuge si: se encontró por nombre PERO tiene DNI distinto
+                                Boolean(personaSecundariaEncontrada && fila.conyuge_dni?.trim() && personaSecundariaEncontrada.dni && personaSecundariaEncontrada.dni !== fila.conyuge_dni.trim())
                             ]
                         );
                         personaSecundariaId = r.rows[0].id;

@@ -20,6 +20,7 @@ import {
 import { reportesService, DashboardResumen, ActaEvolucion, SolicitudEstado } from "@/services/reportes.service";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { isAdmin, isConsulta, isOperador } from "@/lib/roles";
 import {
     BarChart,
     Bar,
@@ -47,6 +48,8 @@ const ESTADO_COLORS: Record<string, string> = {
 
 export default function DashboardPage() {
     const usuario = useAuthStore((state) => state.usuario);
+    const soloConsulta = isConsulta(usuario?.rol_id);
+    const puedeOperar = isOperador(usuario?.rol_id);
     const [statsData, setStatsData] = useState<DashboardResumen | null>(null);
     const [evolucion, setEvolucion] = useState<ActaEvolucion[]>([]);
     const [solicitudesEstados, setSolicitudesEstados] = useState<SolicitudEstado[]>([]);
@@ -252,6 +255,8 @@ export default function DashboardPage() {
                         <CardTitle className="text-lg font-semibold text-foreground">Accesos Directos</CardTitle>
                     </CardHeader>
                     <CardContent className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {puedeOperar && (
+                        <>
                         <Link href="/dashboard/digitalizacion" className="p-4 rounded-2xl border border-border bg-card hover:border-primary hover:shadow-xl hover:shadow-primary/5 transition-all cursor-pointer group flex items-center gap-4">
                             <div className="h-12 w-12 rounded-xl bg-blue-50 dark:bg-blue-950/30 flex items-center justify-center group-hover:bg-primary transition-colors">
                                 <FileText className="h-6 w-6 text-blue-600 dark:text-blue-400 group-hover:text-white transition-colors" />
@@ -273,6 +278,13 @@ export default function DashboardPage() {
                             </div>
                             <ArrowRight className="h-4 w-4 text-muted-foreground/50 group-hover:text-primary transition-all group-hover:translate-x-1" />
                         </Link>
+                        </>
+                        )}
+                        {soloConsulta && (
+                        <div className="md:col-span-2 p-4 rounded-2xl border border-dashed border-border bg-muted/30 text-sm text-muted-foreground">
+                            Perfil de <strong>solo consulta</strong>. Use los atajos para buscar personas, actas o trámites.
+                        </div>
+                        )}
                     </CardContent>
                 </Card>
 
@@ -281,13 +293,21 @@ export default function DashboardPage() {
                         <CardTitle className="text-lg font-semibold text-foreground">Atajos Rápidos</CardTitle>
                     </CardHeader>
                     <CardContent className="p-4 space-y-2">
+                        {puedeOperar && (
                         <Button variant="outline" asChild className="w-full justify-start gap-2 border-border hover:bg-blue-50 dark:hover:bg-blue-950/20 hover:text-blue-600 hover:border-blue-200 dark:hover:border-blue-800 py-6 text-sm font-semibold rounded-xl">
-                            <Link href="/dashboard/actas"><FileText size={18} /> Ver Todas las Actas</Link>
+                            <Link href="/dashboard/digitalizacion"><FileText size={18} /> Nueva Digitalización</Link>
                         </Button>
+                        )}
                         <Button variant="outline" asChild className="w-full justify-start gap-2 border-border hover:bg-green-50 dark:hover:bg-green-950/20 hover:text-green-600 hover:border-green-200 dark:hover:border-green-800 py-6 text-sm font-semibold rounded-xl">
                             <Link href="/dashboard/personas"><Users size={18} /> Padrón de Personas</Link>
                         </Button>
-                        {usuario?.rol_id === 1 && (
+                        <Button variant="outline" asChild className="w-full justify-start gap-2 border-border hover:bg-blue-50 dark:hover:bg-blue-950/20 hover:text-blue-600 hover:border-blue-200 dark:hover:border-blue-800 py-6 text-sm font-semibold rounded-xl">
+                            <Link href="/dashboard/actas"><FileText size={18} /> Ver Todas las Actas</Link>
+                        </Button>
+                        <Button variant="outline" asChild className="w-full justify-start gap-2 border-border hover:bg-orange-50 dark:hover:bg-orange-950/20 hover:text-orange-600 hover:border-orange-200 dark:hover:border-orange-800 py-6 text-sm font-semibold rounded-xl">
+                            <Link href="/dashboard/solicitudes"><Calendar size={18} /> Trámites y Solicitudes</Link>
+                        </Button>
+                        {isAdmin(usuario?.rol_id) && (
                             <>
                                 <Button variant="outline" asChild className="w-full justify-start gap-2 border-border hover:bg-indigo-50 dark:hover:bg-indigo-950/20 hover:text-indigo-600 hover:border-indigo-200 dark:hover:border-indigo-800 py-6 text-sm font-semibold rounded-xl">
                                     <Link href="/dashboard/usuarios"><Users size={18} /> Gestión de Usuarios</Link>

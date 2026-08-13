@@ -13,6 +13,7 @@ export interface Persona {
     observaciones?: string;
     activo: boolean; // fecha_eliminacion es NULL
     fecha_registro: string;
+    es_homonimo?: boolean; // NUEVO: true = homónimo legítimo confirmado por oficial
 }
 
 export interface PersonaInput {
@@ -25,6 +26,7 @@ export interface PersonaInput {
     fecha_nacimiento?: string | null;
     fecha_fallecimiento?: string | null;
     telefono?: string | null;
-    direccion?: string;
+    direccion?: string | null;
     observaciones?: string;
+    es_homonimo?: boolean; // NUEVO
 }

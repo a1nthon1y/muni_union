@@ -241,7 +241,8 @@ CREATE INDEX IF NOT EXISTS idx_refresh_tokens_expires
 -- Roles
 INSERT INTO roles (id, nombre) VALUES
     (1, 'ADMIN'),
-    (2, 'USER')
+    (2, 'USER'),
+    (3, 'CONSULTA')
 ON CONFLICT (id) DO NOTHING;
 
 -- Tipos de documento de identidad

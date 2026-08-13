@@ -54,5 +54,10 @@ export const personasService = {
     async getTiposDocumento() {
         const { data } = await api.get<{ id: number, nombre: string }[]>("/personas/tipos-documento");
         return data;
+    },
+
+    async fusionar(homonimoId: number, maestroId: number) {
+        const { data } = await api.post(`/personas/${homonimoId}/fusionar`, { maestro_id: maestroId });
+        return data;
     }
 };

@@ -1,4 +1,5 @@
 import { pool } from "../config/db.js";
+import { ROL_ADMIN, ROL_CONSULTA } from "./role.middleware.js";
 
 /**
  * Middleware de permisos granulares por módulo.
@@ -16,8 +17,14 @@ import { pool } from "../config/db.js";
  */
 export const requirePermiso = (campo) => async (req, res, next) => {
     try {
+        if (req.user.rol_id === ROL_CONSULTA) {
+            return res.status(403).json({
+                message: "Su perfil es de solo consulta. No puede realizar esta operación.",
+            });
+        }
+
         // Admin siempre tiene todos los permisos
-        if (req.user.rol_id === 1) return next();
+        if (req.user.rol_id === ROL_ADMIN) return next();
 
         const { rows } = await pool.query(
             "SELECT actas_anular, actas_eliminar, actas_modificar, personas_eliminar, personas_modificar FROM usuario_permisos WHERE usuario_id = $1",

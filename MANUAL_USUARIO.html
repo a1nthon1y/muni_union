@@ -359,7 +359,19 @@
     }
 
     nav#TOC li {
-      margin: .2rem 0
+      margin: .2rem 0;
+      break-inside: avoid;
+      page-break-inside: avoid
+    }
+
+    h3#contenido {
+      break-after: avoid;
+      page-break-after: avoid
+    }
+
+    h3#contenido + ol {
+      break-inside: avoid;
+      page-break-inside: avoid
     }
 
     nav#TOC a {
@@ -579,7 +591,7 @@
     @media print {
       @page {
         size: A4;
-        margin: 1.55cm 1.35cm 1.8cm
+        margin: 1.55cm 1.35cm 2.5cm
       }
 
       html {
@@ -634,6 +646,23 @@
         font-size: 9.2pt
       }
 
+      ol,
+      ul {
+        orphans: 2;
+        widows: 2
+      }
+
+      nav#TOC li,
+      h3#contenido + ol li {
+        break-inside: avoid;
+        page-break-inside: avoid
+      }
+
+      blockquote {
+        break-inside: avoid;
+        page-break-inside: avoid
+      }
+
       table {
         font-size: 7.2pt
       }
@@ -665,7 +694,12 @@
       }
 
       .doc-classification {
-        display: block
+        display: block;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        margin: 0
       }
     }
 

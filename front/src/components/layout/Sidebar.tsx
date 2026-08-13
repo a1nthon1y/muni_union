@@ -20,6 +20,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useLogosConfig, obtenerRutaLogoDinamica } from "@/lib/logo-institucional";
 import { Usuario } from "@/types/auth";
+import { ROL_ADMIN, ROL_REGISTRADOR, ROL_CONSULTA } from "@/lib/roles";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -43,25 +44,25 @@ const navGroups: NavGroup[] = [
     {
         title: "Principal",
         items: [
-            { label: "Dashboard", href: "/dashboard", icon: Home, roles: [1, 2] },
+            { label: "Dashboard", href: "/dashboard", icon: Home, roles: [ROL_ADMIN, ROL_REGISTRADOR, ROL_CONSULTA] },
         ]
     },
     {
-        title: "Operaciones",
+        title: "Registro",
         items: [
-            { label: "Digitalización", href: "/dashboard/digitalizacion", icon: FileText, roles: [1, 2] },
-            { label: "Personas", href: "/dashboard/personas", icon: Users, roles: [1, 2] },
-            { label: "Actas", href: "/dashboard/actas", icon: FileText, roles: [1, 2] },
-            { label: "Solicitudes", href: "/dashboard/solicitudes", icon: ClipboardList, roles: [1, 2] },
+            { label: "Digitalización", href: "/dashboard/digitalizacion", icon: FileText, roles: [ROL_ADMIN, ROL_REGISTRADOR] },
+            { label: "Personas", href: "/dashboard/personas", icon: Users, roles: [ROL_ADMIN, ROL_REGISTRADOR, ROL_CONSULTA] },
+            { label: "Actas", href: "/dashboard/actas", icon: FileText, roles: [ROL_ADMIN, ROL_REGISTRADOR, ROL_CONSULTA] },
+            { label: "Solicitudes", href: "/dashboard/solicitudes", icon: ClipboardList, roles: [ROL_ADMIN, ROL_REGISTRADOR, ROL_CONSULTA] },
         ]
     },
     {
         title: "Sistema",
         items: [
-            { label: "Usuarios",  href: "/dashboard/usuarios",  icon: UserCircle2, roles: [1] },
-            { label: "Auditoría", href: "/dashboard/auditoria", icon: Activity,    roles: [1] },
-            { label: "Backup BD", href: "/dashboard/backup",    icon: Database,    roles: [1] },
-            { label: "Configuración", href: "/dashboard/configuracion", icon: Globe, roles: [1] },
+            { label: "Usuarios",  href: "/dashboard/usuarios",  icon: UserCircle2, roles: [ROL_ADMIN] },
+            { label: "Auditoría", href: "/dashboard/auditoria", icon: Activity,    roles: [ROL_ADMIN] },
+            { label: "Backup BD", href: "/dashboard/backup",    icon: Database,    roles: [ROL_ADMIN] },
+            { label: "Configuración", href: "/dashboard/configuracion", icon: Globe, roles: [ROL_ADMIN] },
         ]
     }
 ];

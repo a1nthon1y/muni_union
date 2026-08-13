@@ -1,6 +1,7 @@
 "use client";
 
-import { LogOut, Menu } from "lucide-react";
+import Link from "next/link";
+import { LogOut, Menu, User } from "lucide-react";
 import { useState } from "react";
 import {
     DropdownMenu,
@@ -194,6 +195,25 @@ export function Header() {
                                     </p>
                                 </div>
                             </DropdownMenuLabel>
+
+                            <DropdownMenuItem
+                                asChild
+                                className="
+                  cursor-pointer 
+                  rounded-xl 
+                  px-3 py-2.5
+                  text-sm
+                  hover:bg-muted/50
+                  transition-all
+                "
+                            >
+                                <Link href="/dashboard/perfil" className="flex items-center gap-2 w-full">
+                                    <User className="h-4 w-4" />
+                                    Mi Perfil
+                                </Link>
+                            </DropdownMenuItem>
+
+                            <DropdownMenuSeparator />
 
                             <DropdownMenuItem
                                 onClick={logout}

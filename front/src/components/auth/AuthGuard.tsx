@@ -5,10 +5,13 @@ import { useRouter, usePathname } from "next/navigation";
 import { useAuthStore } from "@/store/useAuthStore";
 import { Loader2 } from "lucide-react";
 import api from "@/utils/api";
+import { isConsulta, rutaBloqueadaParaConsulta } from "@/lib/roles";
 
 const rolePermissions: Record<string, number[]> = {
     "/dashboard/usuarios": [1],
     "/dashboard/auditoria": [1],
+    "/dashboard/backup": [1],
+    "/dashboard/configuracion": [1],
 };
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
@@ -20,7 +23,11 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         const checkAuth = async () => {
             if (isAuthenticated && usuario) {
-                // Ya tenemos usuario en sessionStorage — verificar permisos de ruta
+                if (isConsulta(usuario.rol_id) && rutaBloqueadaParaConsulta(pathname)) {
+                    router.push("/dashboard/personas");
+                    setIsChecking(false);
+                    return;
+                }
                 const requiredRoles = rolePermissions[pathname];
                 if (requiredRoles && !requiredRoles.includes(usuario.rol_id)) {
                     router.push("/dashboard");
@@ -29,10 +36,15 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
                 return;
             }
 
-            // No hay sesión local — preguntar al servidor si la cookie sigue válida
             try {
                 const { data } = await api.get("/auth/me");
                 login(data.usuario);
+
+                if (isConsulta(data.usuario.rol_id) && rutaBloqueadaParaConsulta(pathname)) {
+                    router.push("/dashboard/personas");
+                    setIsChecking(false);
+                    return;
+                }
 
                 const requiredRoles = rolePermissions[pathname];
                 if (requiredRoles && !requiredRoles.includes(data.usuario.rol_id)) {
@@ -50,7 +62,6 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [pathname]);
 
-    // Redirigir a /login cuando no está autenticado (dentro de useEffect — regla de React)
     useEffect(() => {
         if (!isChecking && !isAuthenticated) {
             router.push("/login");

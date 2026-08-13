@@ -16,7 +16,10 @@ import {
     Trash2,
     AlertCircle,
     Phone,
-    Heart
+    Heart,
+    AlertTriangle,
+    UserPlus,
+    XCircle,
 } from "lucide-react";
 import axios from "axios";
 import { toast } from "sonner";
@@ -26,6 +29,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+} from "@/components/ui/dialog";
 import {
     Form,
     FormControl,
@@ -137,6 +147,14 @@ export default function DigitalizacionPage() {
     const [conyugeModificado, setConyugeModificado] = useState(false);
     // Indica si el valor actual del campo fue puesto por la sugerencia automática (no por el usuario)
     const [esSugerencia, setEsSugerencia] = useState(false);
+
+    // --- NUEVO: Diálogo obligatorio para homonimia ---
+    const [dialogoHomonimia, setDialogoHomonimia] = useState<{
+        abierto: boolean;
+        personaExistente: Persona | null;
+        campo: 'principal' | 'conyuge';
+    }>({ abierto: false, personaExistente: null, campo: 'principal' });
+    const [esHomonimoConfirmado, setEsHomonimoConfirmado] = useState(false);
 
     useEffect(() => {
         personasService.getTiposDocumento()
@@ -316,22 +334,25 @@ export default function DigitalizacionPage() {
                         const p = personas[0];
                         if (p && (!personaEncontrada || p.id !== personaEncontrada.id)) {
                             const esDiferenteDni = dniValue && p.dni !== dniValue;
-
-                            toast.warning(
-                                esDiferenteDni ? "Posible Homonimia Detectada" : "Ciudadano ya registrado",
-                                {
-                                    description: esDiferenteDni
-                                        ? `Existe un ciudadano con los mismos nombres pero con DNI ${p.dni || "S/N"}. Verifique si se trata de la misma persona.`
-                                        : `El ciudadano ${p.apellido_paterno} ${p.apellido_materno}, ${p.nombres} ya existe en el sistema.`,
+                            if (esDiferenteDni && !dialogoHomonimia.abierto) {
+                                // Abrir diálogo obligatorio en lugar de toast
+                                setDialogoHomonimia({
+                                    abierto: true,
+                                    personaExistente: p,
+                                    campo: 'principal'
+                                });
+                            } else if (!esDiferenteDni) {
+                                toast.warning("Ciudadano ya registrado", {
+                                    description: `El ciudadano ${p.apellido_paterno} ${p.apellido_materno}, ${p.nombres} ya existe en el sistema.`,
                                     duration: 8000
-                                }
-                            );
+                                });
+                            }
                         }
                     });
             }, 1000);
             return () => clearTimeout(timer);
         }
-    }, [nombresValue, paternoValue, maternoValue, dniValue, personaEncontrada]);
+    }, [nombresValue, paternoValue, maternoValue, dniValue, personaEncontrada, dialogoHomonimia.abierto]);
 
     // Validación de Acta Duplicada por Número (Preventiva)
     useEffect(() => {
@@ -433,7 +454,8 @@ export default function DigitalizacionPage() {
                     fecha_nacimiento: normalizarFechaOpcional(values.fecha_nacimiento),
                     fecha_fallecimiento: normalizarFechaOpcional(values.fecha_fallecimiento),
                     telefono: values.telefono,
-                    observaciones: values.persona_observaciones
+                    observaciones: values.persona_observaciones,
+                    es_homonimo: esHomonimoConfirmado,
                 });
                 personaId = newPersona.id;
             }
@@ -534,43 +556,112 @@ export default function DigitalizacionPage() {
         }
     };
 
+    // --- Diálogo obligatorio para homonimia (fuera del formulario) ---
+    const p = dialogoHomonimia.personaExistente;
+    const dniActual = dialogoHomonimia.campo === 'principal' ? form.watch("dni") : form.watch("conyuge_dni");
+
+    // --- Diálogo obligatorio para homonimia ---
+    const dialogoHomonimiaJSX = dialogoHomonimia.abierto && p ? (
+        <Dialog open={true} onOpenChange={(open) => !open && setDialogoHomonimia({...dialogoHomonimia, abierto: false})}>
+            <DialogContent className="max-w-md">
+                <DialogHeader className="text-center">
+                    <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-3">
+                        <AlertTriangle className="h-6 w-6 text-amber-600" />
+                    </div>
+                    <DialogTitle className="text-lg">¿Es la misma persona?</DialogTitle>
+                    <DialogDescription>
+                        Encontramos un ciudadano con <strong>los mismos nombres y apellidos</strong> pero <strong>DNI diferente</strong>.
+                    </DialogDescription>
+                </DialogHeader>
+
+                <div className="p-4 bg-muted/50 rounded-xl mb-4 text-sm space-y-1">
+                    <p className="font-medium">Ciudadano en el sistema:</p>
+                    <p>{p.apellido_paterno} {p.apellido_materno}, {p.nombres}</p>
+                    <p className="font-mono text-primary">DNI: {p.dni || 'Sin DNI'}</p>
+                    <p className="font-mono">DNI ingresado: {dniActual || 'Sin DNI'}</p>
+                </div>
+
+                <p className="text-sm text-muted-foreground mb-4 text-center">
+                    ¿Se trata de la <strong>MISMA PERSONA</strong> (error de DNI) o una <strong>PERSONA DIFERENTE</strong> (homónimo)?
+                </p>
+
+                <div className="grid grid-cols-2 gap-3">
+                    <Button
+                        variant="default"
+                        className="h-12 text-sm"
+                        onClick={() => {
+                            // MISMA PERSONA → Usar registro existente
+                            if (dialogoHomonimia.campo === 'principal') {
+                                setPersonaEncontrada(p);
+                                form.setValue("dni", p.dni || dniActual);
+                            } else {
+                                setPersonaSecundariaEncontrada(p);
+                                form.setValue("conyuge_dni", p.dni || dniActual);
+                            }
+                            setEsHomonimoConfirmado(false);
+                            setDialogoHomonimia({...dialogoHomonimia, abierto: false});
+                        }}
+                    >
+                        <CheckCircle2 className="h-4 w-4 mr-2" />
+                        MISMA PERSONA
+                    </Button>
+
+                    <Button
+                        variant="outline"
+                        className="h-12 text-sm border-amber-500 text-amber-700 hover:bg-amber-50"
+                        onClick={() => {
+                            // HOMÓNIMO → Crear nuevo con es_homonimo=true
+                            setEsHomonimoConfirmado(true);
+                            setDialogoHomonimia({...dialogoHomonimia, abierto: false});
+                        }}
+                    >
+                        <UserPlus className="h-4 w-4 mr-2" />
+                        PERSONA DIFERENTE
+                    </Button>
+                </div>
+            </DialogContent>
+        </Dialog>
+    ) : null;
+
     return (
-        <div className="animate-in fade-in duration-500 pb-24">
+        <>
+            {dialogoHomonimiaJSX}
+            <div className="animate-in fade-in duration-500 pb-24">
 
-            {/* ── Header ─────────────────────────────────────────────────────── */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
-                <div className="flex items-center gap-3 text-foreground">
-                    <div className="bg-primary p-2.5 rounded-xl shadow-primary/20 shadow-lg shrink-0">
-                        <FileDigit className="h-5 w-5 text-white" />
+                {/* ── Header ─────────────────────────────────────────────────────── */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+                    <div className="flex items-center gap-3 text-foreground">
+                        <div className="bg-primary p-2.5 rounded-xl shadow-primary/20 shadow-lg shrink-0">
+                            <FileDigit className="h-5 w-5 text-white" />
+                        </div>
+                        <div>
+                            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight leading-none">
+                                Consola de Digitalización
+                            </h1>
+                            <p className="text-muted-foreground font-medium text-[11px] mt-0.5">
+                                Registro integral de actas y archivo digital
+                            </p>
+                        </div>
                     </div>
-                    <div>
-                        <h1 className="text-xl sm:text-2xl font-semibold tracking-tight leading-none">
-                            Consola de Digitalización
-                        </h1>
-                        <p className="text-muted-foreground font-medium text-[11px] mt-0.5">
-                            Registro integral de actas y archivo digital
-                        </p>
+                    {/* indicador compacto visible en tablet+ */}
+                    <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl border bg-card text-xs font-semibold">
+                        <div className={cn("h-2 w-2 rounded-full shrink-0", file ? "bg-emerald-500" : "bg-amber-400")} />
+                        {file ? `Archivo: ${file.name.slice(0, 22)}…` : "Sin documento adjunto"}
                     </div>
                 </div>
-                {/* indicador compacto visible en tablet+ */}
-                <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl border bg-card text-xs font-semibold">
-                    <div className={cn("h-2 w-2 rounded-full shrink-0", file ? "bg-emerald-500" : "bg-amber-400")} />
-                    {file ? `Archivo: ${file.name.slice(0, 22)}…` : "Sin documento adjunto"}
-                </div>
-            </div>
 
-            <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)}>
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)}>
 
-                    {/* ── Grid principal ─────────────────────────────────────────── */}
-                    {/*  mobile:  1 col stacked                                       */}
-                    {/*  md:      2 col — 7 + 5                                       */}
-                    {/*  xl:      3 col — 5 + 4 + 3  (ciudadano | acta | upload)      */}
-                    <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-start">
+                        {/* ── Grid principal ─────────────────────────────────────────── */}
+                        {/*  mobile:  1 col stacked                                       */}
+                        {/*  md:      2 col — 7 + 5                                       */}
+                        {/*  xl:      3 col — 5 + 4 + 3  (ciudadano | acta | upload)      */}
+                        <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-start">
 
-                        {/* ╔══════════════════════════════╗
-                            ║  1. INFORMACIÓN DEL CIUDADANO  ║  md:7  xl:5
-                            ╚══════════════════════════════╝ */}
+                            {/* ╔══════════════════════════════╗
+                                ║  1. INFORMACIÓN DEL CIUDADANO  ║  md:7  xl:5
+                                ╚══════════════════════════════╝ */}
                         <div className="md:col-span-7 xl:col-span-5 space-y-3">
                             <Card className="shadow-sm border-border rounded-2xl overflow-hidden bg-card py-0 gap-0">
                                 <CardHeader className="h-9 flex items-center px-4 border-b bg-muted/40 py-0! pb-0!">
@@ -1111,21 +1202,20 @@ export default function DigitalizacionPage() {
                                     )}
                                 </CardContent>
                             </Card>
+</div>
                         </div>
+                    </form>
+                </Form>
 
-                    </div>
-                </form>
-            </Form>
+                {/* ── BARRA FIJA INFERIOR ─────────────────────────────────────────── */}
+                <div className="fixed bottom-0 left-0 right-0 md:left-20 lg:left-64 z-40
+                                bg-background/85 backdrop-blur-md border-t border-border
+                                px-4 py-2.5 shadow-[0_-4px_20px_rgb(0,0,0,0.06)]
+                                animate-in slide-in-from-bottom-full duration-300">
+                    <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
 
-            {/* ── BARRA FIJA INFERIOR ─────────────────────────────────────────── */}
-            <div className="fixed bottom-0 left-0 right-0 md:left-20 lg:left-64 z-40
-                            bg-background/85 backdrop-blur-md border-t border-border
-                            px-4 py-2.5 shadow-[0_-4px_20px_rgb(0,0,0,0.06)]
-                            animate-in slide-in-from-bottom-full duration-300">
-                <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-
-                    {/* estado */}
-                    <div className="hidden sm:flex flex-col gap-0.5 min-w-0">
+                        {/* estado */}
+                        <div className="hidden sm:flex flex-col gap-0.5 min-w-0">
                         <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest leading-none">Estado</span>
                         <div className="flex items-center gap-1.5">
                             <div className={cn("h-2 w-2 rounded-full shrink-0", file ? "bg-emerald-500" : "bg-amber-400")} />
@@ -1153,5 +1243,6 @@ export default function DigitalizacionPage() {
                 </div>
             </div>
         </div>
+        </>
     );
 }

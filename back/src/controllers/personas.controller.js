@@ -131,3 +131,33 @@ export const listarTiposDocumento = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
+export const fusionarPersonas = async (req, res) => {
+    try {
+        const homonimoId = parseInt(req.params.id);
+        const { maestro_id } = req.body;
+
+        if (!maestro_id) {
+            return res.status(400).json({ message: "maestro_id es requerido" });
+        }
+
+        const maestroId = parseInt(maestro_id);
+
+        req.auditHandled = true;
+        const ip = req.ip || req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || "0.0.0.0";
+
+        const resultado = await personasService.fusionarPersonas(
+            homonimoId,
+            maestroId,
+            req.user.id,
+            undefined,
+            ip,
+        );
+        res.json(resultado);
+    } catch (error) {
+        if (error.message.includes("no encontrado") || error.message.includes("consigo mismo")) {
+            return res.status(400).json({ message: error.message });
+        }
+        res.status(500).json({ message: error.message });
+    }
+};

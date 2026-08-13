@@ -24,9 +24,13 @@ import { documentosService } from "@/services/documentos.service";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Upload, Loader2, CheckCircle2, Trash2 } from "lucide-react";
+import { useAuthStore } from "@/store/useAuthStore";
+import { isConsulta } from "@/lib/roles";
 
 export default function ActasPage() {
     const router = useRouter();
+    const usuario = useAuthStore((state) => state.usuario);
+    const soloConsulta = isConsulta(usuario?.rol_id);
     const searchParams = useSearchParams();
     const personaIdParam = Number.parseInt(searchParams.get("persona_id") || "", 10);
     const actaIdParam = Number.parseInt(searchParams.get("acta_id") || "", 10);
@@ -286,10 +290,13 @@ export default function ActasPage() {
                         <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">Registro de Actas</h1>
                     </div>
                     <p className="text-muted-foreground font-medium text-xs ml-1">
-                        Archivo digital y control de las actas registradas en el distrito.
+                        {soloConsulta
+                            ? "Consulta del archivo digital de actas (solo lectura)."
+                            : "Archivo digital y control de las actas registradas en el distrito."}
                     </p>
                 </div>
 
+                {!soloConsulta && (
                 <Button
                     onClick={() => router.push("/dashboard/digitalizacion")}
                     className="h-12 px-8 bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 text-white font-bold text-xs rounded-2xl transition-all active:scale-95 flex items-center gap-2"
@@ -297,6 +304,7 @@ export default function ActasPage() {
                     <Plus className="h-5 w-5" />
                     NUEVA DIGITALIZACIÓN
                 </Button>
+                )}
             </div>
 
             <ActasTable
@@ -305,7 +313,7 @@ export default function ActasPage() {
                 pagination={pagination}
                 onPageChange={handlePageChange}
                 onView={handleView}
-                onEdit={handleEdit}
+                onEdit={soloConsulta ? undefined : handleEdit}
                 onDelete={handleDelete}
                 onDeleteDoc={handleDeleteDoc}
                 onViewDoc={handleViewDoc}
@@ -328,7 +336,7 @@ export default function ActasPage() {
                 isOpen={isDetailOpen}
                 onClose={() => setIsDetailOpen(false)}
                 acta={selectedActa}
-                onEdit={handleEdit}
+                onEdit={soloConsulta ? undefined : handleEdit}
             />
 
             {/* Diálogo de ANULACIÓN con motivo */}

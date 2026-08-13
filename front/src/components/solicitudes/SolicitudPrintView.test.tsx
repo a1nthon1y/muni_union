@@ -19,7 +19,7 @@ describe("Constancia de solicitud", () => {
         render(<SolicitudPrintView solicitud={solicitud} />);
 
         expect(
-            screen.getByText("http://localhost:3000/verificar/000042"),
+            screen.getByText("Escanee el código QR para verificar la autenticidad"),
         ).toBeInTheDocument();
     });
 });

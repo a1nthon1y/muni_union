@@ -58,6 +58,24 @@ export default function SolicitudPrintPage() {
         );
     }
 
+    if (solicitud.estado === 'PENDIENTE') {
+        return (
+            <div className="h-screen flex flex-col items-center justify-center gap-4 bg-white">
+                <XCircle className="h-16 w-16 text-amber-500" />
+                <div className="text-center space-y-1">
+                    <p className="text-xl font-black text-amber-600 uppercase tracking-widest">Trámite Pendiente</p>
+                    <p className="text-sm font-bold text-slate-500">
+                        La solicitud <span className="font-mono">#{solicitud.id.toString().padStart(6, '0')}</span> está pendiente y no puede imprimirse.
+                    </p>
+                    <p className="text-xs text-slate-400 mt-2">Debe atender la solicitud antes de poder imprimir la constancia.</p>
+                </div>
+                <Button onClick={() => window.close()} variant="outline" className="mt-4 rounded-xl font-bold uppercase text-[10px] border-amber-200 text-amber-600 hover:bg-amber-50">
+                    Cerrar Ventana
+                </Button>
+            </div>
+        );
+    }
+
     if (solicitud.estado === 'ANULADO') {
         return (
             <div className="h-screen flex flex-col items-center justify-center gap-4 bg-white">

@@ -5,7 +5,9 @@ import {
     Trash2,
     MoreHorizontal,
     Phone,
-    Eye
+    Eye,
+    AlertTriangle,
+    Merge,
 } from "lucide-react";
 import { dateUtils } from "@/utils/dateUtils";
 import {
@@ -20,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Persona } from "@/types/persona";
 import { Badge } from "@/components/ui/badge";
 import { useAuthStore } from "@/store/useAuthStore";
+import { isAdmin, isConsulta } from "@/lib/roles";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -35,6 +38,7 @@ interface PersonasTableProps {
     onView: (persona: Persona) => void;
     onEdit: (persona: Persona) => void;
     onDelete: (id: number) => void;
+    onMerge?: (persona: Persona) => void;
     onReactivate: (id: number) => void;
     isLoading: boolean;
     pagination: {
@@ -51,14 +55,16 @@ export function PersonasTable({
     onView,
     onEdit,
     onDelete,
+    onMerge,
     isLoading,
     pagination,
     onPageChange
 }: PersonasTableProps) {
     const usuario = useAuthStore((state) => state.usuario);
-    const isAdmin      = usuario?.rol_id === 1;
-    const canModificar = isAdmin || (usuario?.permisos?.personas_modificar !== false);
-    const canEliminar  = isAdmin || !!usuario?.permisos?.personas_eliminar;
+    const soloConsulta = isConsulta(usuario?.rol_id);
+    const isAdminUser  = isAdmin(usuario?.rol_id);
+    const canModificar = !soloConsulta && (isAdminUser || (usuario?.permisos?.personas_modificar !== false));
+    const canEliminar  = !soloConsulta && (isAdminUser || !!usuario?.permisos?.personas_eliminar);
 
     return (
         <div className="space-y-4">
@@ -105,16 +111,24 @@ export function PersonasTable({
                                             )}
                                         </div>
                                     </TableCell>
-                                    <TableCell className="std-table-cell">
-                                        <div className="flex flex-col">
-                                            <span className="text-foreground/90 font-medium tracking-tight">
-                                                {persona.apellido_paterno} {persona.apellido_materno}, {persona.nombres}
-                                            </span>
-                                            <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
-                                                Ref: #{persona.id}
-                                            </span>
-                                        </div>
-                                    </TableCell>
+<TableCell className="std-table-cell">
+    <div className="flex flex-col">
+        <span className="text-foreground/90 font-medium tracking-tight">
+            {persona.apellido_paterno} {persona.apellido_materno}, {persona.nombres}
+        </span>
+        <div className="flex items-center gap-2 mt-0.5">
+            <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
+                Ref: #{persona.id}
+            </span>
+            {persona.es_homonimo && (
+                <Badge variant="secondary" className="h-4 px-1.5 text-[8px] gap-1 border-amber-300 text-amber-700 bg-amber-50 dark:border-amber-700 dark:text-amber-300 dark:bg-amber-950/30">
+                    <AlertTriangle className="h-2.5 w-2.5" />
+                    Homónimo
+                </Badge>
+            )}
+        </div>
+    </div>
+</TableCell>
                                     <TableCell className="std-table-cell text-center">
                                         <Badge
                                             variant={persona.sexo === 'M' ? 'info' : 'outline'}
@@ -174,6 +188,17 @@ export function PersonasTable({
                                                             className="text-rose-600 cursor-pointer font-medium gap-2 py-2.5 rounded-lg text-xs"
                                                         >
                                                             <Trash2 className="h-4 w-4" /> Eliminar Registro
+                                                        </DropdownMenuItem>
+                                                    </>
+                                                )}
+                                                {canModificar && onMerge && (
+                                                    <>
+                                                        <DropdownMenuSeparator className="my-1" />
+                                                        <DropdownMenuItem
+                                                            onClick={() => onMerge(persona)}
+                                                            className="text-blue-600 cursor-pointer font-medium gap-2 py-2.5 rounded-lg text-xs"
+                                                        >
+                                                            <Merge className="h-4 w-4" /> Fusionar duplicado
                                                         </DropdownMenuItem>
                                                     </>
                                                 )}

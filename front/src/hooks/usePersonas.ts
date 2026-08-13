@@ -64,6 +64,13 @@ export function usePersonas() {
 
     const updatePersona = async (id: number, data: Partial<PersonaInput>) => {
         try {
+            if (data.dni) {
+                const exists = await personasService.checkDni(data.dni);
+                if (exists && exists.id !== id) {
+                    toast.warning(`El DNI ${data.dni} ya está registrado a nombre de ${exists.nombres} ${exists.apellido_paterno}`);
+                    return null;
+                }
+            }
             const updated = await personasService.update(id, data);
             toast.success("Datos actualizados");
             fetchPersonas({ termino, page: pagination.page, limit: pagination.limit });

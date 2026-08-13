@@ -32,8 +32,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Usuario } from "@/types/auth";
-
 import { Pagination } from "@/components/shared/Pagination";
+import { etiquetaRol } from "@/lib/roles";
 
 interface UsuariosTableProps {
     usuarios: Usuario[];
@@ -62,11 +62,16 @@ export function UsuariosTable({
     onPageChange
 }: UsuariosTableProps) {
 
-    const getRolBadge = (rol: string) => {
-        const isAdm = rol.toUpperCase().includes('ADMIN');
+    const getRolBadge = (rol: string, rolId: number) => {
+        const label = etiquetaRol(rolId, rol);
+        const isAdm = rolId === 1;
+        const isConsultaRol = rolId === 3;
         return (
-            <Badge variant={isAdm ? 'default' : 'outline'} className="gap-1.5 shadow-sm">
-                <Shield className="h-3 w-3" /> {rol}
+            <Badge
+                variant={isAdm ? 'default' : 'outline'}
+                className={`gap-1.5 shadow-sm ${isConsultaRol ? 'border-sky-300 text-sky-700 bg-sky-50 dark:border-sky-700 dark:text-sky-300 dark:bg-sky-950/30' : ''}`}
+            >
+                <Shield className="h-3 w-3" /> {label}
             </Badge>
         );
     };
@@ -109,7 +114,7 @@ export function UsuariosTable({
                                             <span className="text-foreground font-semibold">
                                                 {u.username}
                                             </span>
-                                            {getRolBadge(u.rol)}
+                                            {getRolBadge(u.rol, u.rol_id)}
                                         </div>
                                     </TableCell>
                                     <TableCell className="std-table-cell">
@@ -152,7 +157,7 @@ export function UsuariosTable({
                                                 <DropdownMenuItem onClick={() => onEdit(u)} className="cursor-pointer font-medium gap-2 py-2 rounded-lg text-xs">
                                                     <Edit className="icon-std" /> Editar Perfil
                                                 </DropdownMenuItem>
-                                                {u.rol_id !== 1 && (
+                                                {u.rol_id === 2 && (
                                                     <DropdownMenuItem onClick={() => onPermisos(u)} className="cursor-pointer font-bold gap-2 py-2 rounded-lg text-xs text-primary">
                                                         <ShieldCheck className="h-4 w-4" /> Configurar Permisos
                                                     </DropdownMenuItem>

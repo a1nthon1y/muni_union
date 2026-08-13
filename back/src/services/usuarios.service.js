@@ -47,7 +47,8 @@ export const crearUsuario = async ({
 
   const usuario = rows[0];
 
-  // Crear fila de permisos con los valores del formulario
+  const esConsulta = parseInt(rol_id) === 3;
+
   await pool.query(
     `INSERT INTO usuario_permisos
        (usuario_id, actas_anular, actas_eliminar, actas_modificar, personas_eliminar, personas_modificar)
@@ -55,11 +56,11 @@ export const crearUsuario = async ({
      ON CONFLICT (usuario_id) DO NOTHING`,
     [
       usuario.id,
-      !!permisos.actas_anular,
-      !!permisos.actas_eliminar,
-      permisos.actas_modificar    !== false, // default true si no se especifica
-      !!permisos.personas_eliminar,
-      permisos.personas_modificar !== false, // default true si no se especifica
+      esConsulta ? false : !!permisos.actas_anular,
+      esConsulta ? false : !!permisos.actas_eliminar,
+      esConsulta ? false : (permisos.actas_modificar !== false),
+      esConsulta ? false : !!permisos.personas_eliminar,
+      esConsulta ? false : (permisos.personas_modificar !== false),
     ]
   );
 

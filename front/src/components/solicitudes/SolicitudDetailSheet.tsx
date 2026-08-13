@@ -39,6 +39,7 @@ interface SolicitudDetailSheetProps {
     onAnular: (id: number) => void;
     onDelete?: (id: number) => void;
     isLoadingActions?: boolean;
+    soloConsulta?: boolean;
 }
 
 export function SolicitudDetailSheet({
@@ -48,7 +49,8 @@ export function SolicitudDetailSheet({
     onAtender,
     onAnular,
     onDelete,
-    isLoadingActions = false
+    isLoadingActions = false,
+    soloConsulta = false,
 }: SolicitudDetailSheetProps) {
     if (!solicitud) return null;
 
@@ -269,8 +271,8 @@ export function SolicitudDetailSheet({
 
                 {/* Footer unificado */}
                 <div className="p-5 border-t bg-background space-y-3">
-                    {/* Botón de Impresión — solo para ATENDIDO y PENDIENTE */}
-                    {solicitud.estado !== 'ANULADO' && (
+                    {/* Botón de Impresión — solo para ATENDIDO */}
+                    {solicitud.estado === 'ATENDIDO' && (
                         <Button
                             variant="outline"
                             className="w-full h-11 rounded-xl font-bold uppercase text-[11px] tracking-widest text-slate-600 hover:bg-slate-50 border-slate-200"
@@ -281,7 +283,7 @@ export function SolicitudDetailSheet({
                     )}
 
                     <div className="flex gap-4">
-                        {solicitud.estado === 'PENDIENTE' && (
+                        {!soloConsulta && solicitud.estado === 'PENDIENTE' && (
                             <>
                                 <Button
                                     variant="outline"
@@ -301,7 +303,7 @@ export function SolicitudDetailSheet({
                             </>
                         )}
 
-                        {solicitud.estado !== 'PENDIENTE' && (
+                        {(soloConsulta || solicitud.estado !== 'PENDIENTE') && (
                             <div className="w-full text-center p-3 bg-muted rounded-xl border border-dashed border-border flex items-center justify-center gap-2">
                                 <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Trámite Finalizado:</span>
                                 {getStatusBadge(solicitud.estado)}

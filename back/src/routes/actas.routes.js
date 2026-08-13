@@ -11,7 +11,7 @@ import {
     siguienteNumero,
 } from "../controllers/actas.controller.js";
 import { auth } from "../middlewares/auth.middleware.js";
-import { allowRoles } from "../middlewares/role.middleware.js";
+import { allowRoles, requireOperador } from "../middlewares/role.middleware.js";
 import { requirePermiso } from "../middlewares/permisos.middleware.js";
 import { validate } from "../middlewares/validate.middleware.js";
 
@@ -48,17 +48,13 @@ const siguienteNumeroValidation = [
 // ── Rutas generales ───────────────────────────────────────────────────────────
 // IMPORTANTE: /siguiente-numero debe ir ANTES de /:id
 router.get("/siguiente-numero", siguienteNumeroValidation, validate, siguienteNumero);
-router.post("/",   crearActaValidation, validate, crearActa);
+router.post("/",   requireOperador, crearActaValidation, validate, crearActa);
 router.get("/",    listarActas);
 router.get("/:id", obtenerActa);
-router.put("/:id", requirePermiso("actas_modificar"), actualizarActa);
+router.put("/:id", requireOperador, requirePermiso("actas_modificar"), actualizarActa);
 
-// Rutas críticas — con permisos granulares
-// anular: admin o usuario con permiso actas_anular
-// reactivar: solo admin
-// eliminar: admin o usuario con permiso actas_eliminar
-router.patch("/:id/anular",    requirePermiso("actas_anular"),   anularActa);
-router.patch("/:id/reactivar", allowRoles(1),                    reactivarActa);
-router.delete("/:id",          requirePermiso("actas_eliminar"), eliminarActa);
+router.patch("/:id/anular",    requireOperador, requirePermiso("actas_anular"),   anularActa);
+router.patch("/:id/reactivar", allowRoles(1),                                    reactivarActa);
+router.delete("/:id",          requireOperador, requirePermiso("actas_eliminar"), eliminarActa);
 
 export default router;

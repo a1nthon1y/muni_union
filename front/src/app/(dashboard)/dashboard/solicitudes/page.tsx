@@ -41,10 +41,15 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { toast } from "sonner";
+import { useAuthStore } from "@/store/useAuthStore";
+import { isConsulta } from "@/lib/roles";
 
 type ViewState = 'LIST' | 'CREATE';
 
 export default function SolicitudesPage() {
+    const usuario = useAuthStore((state) => state.usuario);
+    const soloConsulta = isConsulta(usuario?.rol_id);
+
     const [solicitudes, setSolicitudes] = useState<Solicitud[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [view, setView] = useState<ViewState>('LIST');
@@ -200,7 +205,7 @@ export default function SolicitudesPage() {
         }
     };
 
-    if (view === 'CREATE') {
+    if (view === 'CREATE' && !soloConsulta) {
         return (
             <div className="space-y-6 animate-in fade-in duration-500">
                 <NuevaSolicitudForm
@@ -226,10 +231,13 @@ export default function SolicitudesPage() {
                         <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">Trámites y Certificados</h1>
                     </div>
                     <p className="text-muted-foreground font-medium text-xs ml-1">
-                        Expedición de copias certificadas y certificados oficiales.
+                        {soloConsulta
+                            ? "Consulta de trámites y certificados (solo lectura)."
+                            : "Expedición de copias certificadas y certificados oficiales."}
                     </p>
                 </div>
 
+                {!soloConsulta && (
                 <Button
                     onClick={() => setView('CREATE')}
                     className="h-12 px-8 bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 text-white font-bold text-xs rounded-2xl transition-all active:scale-95 flex items-center gap-2"
@@ -237,6 +245,7 @@ export default function SolicitudesPage() {
                     <Plus className="h-5 w-5" />
                     NUEVA SOLICITUD
                 </Button>
+                )}
             </div>
 
             {/* HERRAMIENTAS DE TABLA: FILTRO BUSCADOR */}
@@ -297,6 +306,7 @@ export default function SolicitudesPage() {
                     </Button>
                 </div>
 
+                {!soloConsulta && (
                 <Button
                     variant="outline"
                     disabled={isExporting}
@@ -306,6 +316,7 @@ export default function SolicitudesPage() {
                     {isExporting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Download className="h-5 w-5" />}
                     EXPORTAR
                 </Button>
+                )}
             </div>
 
             <SolicitudesTable
@@ -327,6 +338,7 @@ export default function SolicitudesPage() {
                 onAnular={handleAnularClick}
                 onDelete={handleEliminarClick}
                 isLoadingActions={isActionLoading}
+                soloConsulta={soloConsulta}
             />
 
             {/* Diálogo de Anulación */}

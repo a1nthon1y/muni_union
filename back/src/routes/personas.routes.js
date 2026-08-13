@@ -123,10 +123,11 @@ import {
     eliminarPersona,
     reactivarPersona,
     buscarDuplicados,
-    listarTiposDocumento
+    listarTiposDocumento,
+    fusionarPersonas
 } from "../controllers/personas.controller.js";
 import { auth } from "../middlewares/auth.middleware.js";
-import { allowRoles } from "../middlewares/role.middleware.js";
+import { allowRoles, requireOperador } from "../middlewares/role.middleware.js";
 import { requirePermiso } from "../middlewares/permisos.middleware.js";
 import { validate } from "../middlewares/validate.middleware.js";
 
@@ -161,14 +162,15 @@ const personaRules = [
 const router = Router();
 router.use(auth);
 
-router.post("/",    personaRules, validate, crearPersona);
+router.post("/",    requireOperador, personaRules, validate, crearPersona);
 router.get("/",     listarPersonas);
 router.get("/tipos-documento",  listarTiposDocumento);
 router.get("/buscar-duplicados", buscarDuplicados);
 router.get("/:id",  obtenerPersona);
-router.put("/:id",  requirePermiso("personas_modificar"), personaRules, validate, actualizarPersona);
+router.put("/:id",  requireOperador, requirePermiso("personas_modificar"), personaRules, validate, actualizarPersona);
 
 router.patch("/:id/reactivar", allowRoles(1),                      reactivarPersona);
-router.delete("/:id",          requirePermiso("personas_eliminar"), eliminarPersona);
+router.delete("/:id",          requireOperador, requirePermiso("personas_eliminar"), eliminarPersona);
+router.post("/:id/fusionar",   requireOperador, requirePermiso("personas_modificar"), fusionarPersonas);
 
 export default router;

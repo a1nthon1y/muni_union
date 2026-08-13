@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import QRCode from "qrcode";
 import { Solicitud } from "@/types/solicitud";
 import { format } from "date-fns";
 import { useLogosConfig, obtenerRutaLogoDinamica } from "@/lib/logo-institucional";
@@ -12,6 +14,14 @@ export function SolicitudPrintView({ solicitud }: SolicitudPrintViewProps) {
     const { logos: logosConfig } = useLogosConfig();
     const total = solicitud.detalles?.reduce((acc, curr) => acc + Number(curr.total), 0) || 0;
     const baseUrl = typeof window === "undefined" ? "" : window.location.origin;
+    const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
+
+    useEffect(() => {
+        const verificationUrl = `${baseUrl}/verificar/${solicitud.id.toString().padStart(6, "0")}`;
+        QRCode.toDataURL(verificationUrl, { width: 120, margin: 1 })
+            .then(url => setQrCodeUrl(url))
+            .catch(err => console.error("Error al generar QR:", err));
+    }, [baseUrl, solicitud.id]);
 
     return (
         <div className="print-container bg-white text-black p-0 font-serif leading-relaxed block overflow-visible">
@@ -135,16 +145,19 @@ export function SolicitudPrintView({ solicitud }: SolicitudPrintViewProps) {
                     </div>
                 </div>
 
-                <div className="mt-5 border-t border-slate-100 pt-4 text-center space-y-1.5">
-                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">
-                        Verifique la autenticidad de este documento en:
-                    </p>
-                    <p className="text-[10px] font-black text-slate-800 font-mono tracking-wider break-all">
-                        {baseUrl}/verificar/{solicitud.id.toString().padStart(6, "0")}
-                    </p>
-                    <p className="text-[8px] font-black uppercase tracking-[0.4em] text-slate-300 mt-2">
-                        Sistema Unificado · Unión V2.0 · {format(new Date(), "yyyy")}
-                    </p>
+                <div className="mt-5 border-t border-slate-100 pt-4 flex flex-col items-center justify-center space-y-2">
+                    {qrCodeUrl && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={qrCodeUrl} alt="Código QR de Verificación" className="w-24 h-24 border border-slate-200 p-1 bg-white" />
+                    )}
+                    <div className="text-center space-y-1">
+                        <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">
+                            Escanee el código QR para verificar la autenticidad
+                        </p>
+                        <p className="text-[8px] font-black uppercase tracking-[0.4em] text-slate-300 mt-2">
+                            Sistema Unificado · Unión V2.0 · {format(new Date(), "yyyy")}
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>

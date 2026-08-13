@@ -77,10 +77,10 @@ router.get("/solicitudes-estados", getEstadoSolicitudes);
 // Datos financieros (Solo ADMIN)
 router.get("/ingresos", allowRoles(1), getIngresos);
 
-// Rutas de Exportación EXCEL (Admin y Trabajador)
-router.get("/export/actas", exportActas);
-router.get("/export/personas", exportPersonas);
-router.get("/export/solicitudes", exportSolicitudes);
+// Rutas de Exportación EXCEL (Admin y Registrador — no CONSULTA)
+router.get("/export/actas", allowRoles(1, 2), exportActas);
+router.get("/export/personas", allowRoles(1, 2), exportPersonas);
+router.get("/export/solicitudes", allowRoles(1, 2), exportSolicitudes);
 
 // Exportación Auditoría (Solo ADMIN)
 router.get("/export/auditoria", allowRoles(1), exportAuditoria);

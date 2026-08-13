@@ -55,6 +55,7 @@ import {
 } from "@/components/ui/select";
 import { Acta } from "@/types/acta";
 import { useAuthStore } from "@/store/useAuthStore";
+import { isAdmin, isConsulta } from "@/lib/roles";
 
 interface ActasTableProps {
     actas: Acta[];
@@ -94,10 +95,11 @@ export function ActasTable({
     onSearch
 }: ActasTableProps) {
     const usuario = useAuthStore((state) => state.usuario);
-    const isAdmin    = usuario?.rol_id === 1;
-    const canModificar = isAdmin || (usuario?.permisos?.actas_modificar !== false);
-    const canAnular    = isAdmin || !!usuario?.permisos?.actas_anular;
-    const canEliminar  = isAdmin || !!usuario?.permisos?.actas_eliminar;
+    const soloConsulta = isConsulta(usuario?.rol_id);
+    const isAdminUser  = isAdmin(usuario?.rol_id);
+    const canModificar = !soloConsulta && (isAdminUser || (usuario?.permisos?.actas_modificar !== false));
+    const canAnular    = !soloConsulta && (isAdminUser || !!usuario?.permisos?.actas_anular);
+    const canEliminar  = !soloConsulta && (isAdminUser || !!usuario?.permisos?.actas_eliminar);
 
     // Helper para manejar boolean de PostgreSQL - Verificamos el campo correcto en 'Acta'
     const hasDoc = (acta: Acta) => !!acta.tiene_documento;
@@ -295,23 +297,27 @@ export function ActasTable({
                 </section>
 
                 <div className="flex flex-col justify-end gap-3 sm:flex-row">
-                    <Button
-                        variant="default"
-                        className="h-12 gap-2 rounded-2xl bg-emerald-600 px-7 text-xs font-bold text-white shadow-lg shadow-emerald-500/20 transition-all hover:bg-emerald-700 active:scale-95"
-                        onClick={() => window.location.href = "/dashboard/digitalizacion/carga-masiva"}
-                    >
-                        <FileSpreadsheet className="h-5 w-5" />
-                        IMPORTAR
-                    </Button>
-                    <Button
-                        variant="outline"
-                        disabled={exporting}
-                        className="h-12 gap-2 rounded-2xl px-7 text-xs font-bold shadow-sm transition-all active:scale-95"
-                        onClick={handleExport}
-                    >
-                        {exporting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Download className="h-5 w-5" />}
-                        EXPORTAR
-                    </Button>
+                    {isAdminUser && (
+                        <Button
+                            variant="default"
+                            className="h-12 gap-2 rounded-2xl bg-emerald-600 px-7 text-xs font-bold text-white shadow-lg shadow-emerald-500/20 transition-all hover:bg-emerald-700 active:scale-95"
+                            onClick={() => window.location.href = "/dashboard/digitalizacion/carga-masiva"}
+                        >
+                            <FileSpreadsheet className="h-5 w-5" />
+                            IMPORTAR
+                        </Button>
+                    )}
+                    {!soloConsulta && (
+                        <Button
+                            variant="outline"
+                            disabled={exporting}
+                            className="h-12 gap-2 rounded-2xl px-7 text-xs font-bold shadow-sm transition-all active:scale-95"
+                            onClick={handleExport}
+                        >
+                            {exporting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Download className="h-5 w-5" />}
+                            EXPORTAR
+                        </Button>
+                    )}
                 </div>
             </div>
 
@@ -434,7 +440,7 @@ export function ActasTable({
                                                                 <Ban className="h-4 w-4" /> Anular Registro
                                                             </DropdownMenuItem>
                                                         )}
-                                                        {isAdmin && acta.estado !== 'ACTIVO' && (
+                                                        {isAdminUser && acta.estado !== 'ACTIVO' && (
                                                             <DropdownMenuItem
                                                                 onClick={() => onReactivar?.(acta)}
                                                                 className="text-emerald-600 cursor-pointer font-medium gap-2 py-2.5 rounded-lg text-xs"

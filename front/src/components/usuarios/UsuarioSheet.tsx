@@ -176,16 +176,16 @@ export function UsuarioSheet({
                 return;
             }
 
-            const isRegistrador = parseInt(values.rol_id) !== 1;
+            const rolId = parseInt(values.rol_id);
+            const isRegistrador = rolId === 2;
 
             const input: any = {
                 nombres: values.nombres.toUpperCase(),
                 apellidos: values.apellidos.toUpperCase(),
-                rol_id: parseInt(values.rol_id),
+                rol_id: rolId,
                 telefono: values.telefono || undefined,
                 dni: values.dni || undefined,
                 password: values.password || undefined,
-                // Solo enviar permisos para usuarios REGISTRADOR
                 permisos: isRegistrador ? {
                     actas_anular:       values.permisos_actas_anular,
                     actas_eliminar:     values.permisos_actas_eliminar,
@@ -315,6 +315,7 @@ export function UsuarioSheet({
                                                 <SelectContent>
                                                     <SelectItem value="1" className="font-semibold">ADMIN</SelectItem>
                                                     <SelectItem value="2" className="font-semibold">REGISTRADOR</SelectItem>
+                                                    <SelectItem value="3" className="font-semibold">CONSULTA (solo lectura)</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                             <FormMessage />
@@ -364,7 +365,7 @@ export function UsuarioSheet({
                             />
 
                             {/* ── Permisos de módulo (solo para REGISTRADOR) ── */}
-                            {form.watch("rol_id") !== "1" && (
+                            {form.watch("rol_id") === "2" && (
                                 <>
                                     <div className="py-2">
                                         <Separator className="bg-border/50" />
