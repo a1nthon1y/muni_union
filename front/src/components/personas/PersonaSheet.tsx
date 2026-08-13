@@ -38,6 +38,18 @@ import {
     normalizarFechaOpcional,
     validarOrdenFechas,
 } from "@/lib/persona-fechas";
+import {
+    maxLengthDocumento,
+    sanitizarApellido,
+    sanitizarDocumento,
+    sanitizarNombres,
+    sanitizarSoloDigitos,
+    validarApellido,
+    validarDocumento,
+    validarFechaNoFutura,
+    validarNombres,
+    validarTelefono,
+} from "@/lib/form-validators";
 
 const sexoDesdePersona = (valor?: string | null): "M" | "F" => (
     valor === "F" ? "F" : "M"
@@ -45,23 +57,46 @@ const sexoDesdePersona = (valor?: string | null): "M" | "F" => (
 
 const personaSchema = z.object({
     tipo_documento: z.string().min(1, "Seleccione tipo"),
-    dni: z.string().max(15, "Máximo 15 caracteres").optional().or(z.literal("")),
-    nombres: z.string().min(2, "Nombres son obligatorios"),
-    apellido_paterno: z.string().min(2, "Apellido Paterno es obligatorio"),
-    apellido_materno: z.string().min(2, "Apellido Materno es obligatorio"),
+    dni: z.string().optional().or(z.literal("")),
+    nombres: z.string().min(1, "Nombres son obligatorios"),
+    apellido_paterno: z.string().min(1, "Apellido paterno es obligatorio"),
+    apellido_materno: z.string().min(1, "Apellido materno es obligatorio"),
     sexo: z.enum(["M", "F"], { message: "Seleccione sexo" }),
     fecha_nacimiento: z.string().optional().or(z.literal("")),
     fecha_fallecimiento: z.string().optional().or(z.literal("")),
-    telefono: z.string().max(9, "Max 9 dígitos").optional().or(z.literal("")),
-    direccion: z.string().optional().or(z.literal("")),
-    observaciones: z.string().optional().or(z.literal("")),
+    telefono: z.string().optional().or(z.literal("")),
+    direccion: z.string().max(200).optional().or(z.literal("")),
+    observaciones: z.string().max(500).optional().or(z.literal("")),
 }).superRefine((data, ctx) => {
+    const add = (path: string, message: string) => {
+        ctx.addIssue({ code: "custom", message, path: [path] });
+    };
+
+    for (const [valor, path, etiqueta] of [
+        [data.apellido_paterno, "apellido_paterno", "Ap. paterno"],
+        [data.apellido_materno, "apellido_materno", "Ap. materno"],
+    ] as const) {
+        const err = validarApellido(valor, etiqueta);
+        if (err) add(path, err);
+    }
+
+    const errNombres = validarNombres(data.nombres);
+    if (errNombres) add("nombres", errNombres);
+
+    const errDoc = validarDocumento(data.tipo_documento, data.dni);
+    if (errDoc) add("dni", errDoc);
+
+    const errTel = validarTelefono(data.telefono);
+    if (errTel) add("telefono", errTel);
+
+    const errFechaNac = validarFechaNoFutura(data.fecha_nacimiento, "F. nacimiento");
+    if (errFechaNac) add("fecha_nacimiento", errFechaNac);
+
+    const errFechaFall = validarFechaNoFutura(data.fecha_fallecimiento, "F. fallecimiento");
+    if (errFechaFall) add("fecha_fallecimiento", errFechaFall);
+
     if (!validarOrdenFechas(data.fecha_nacimiento, data.fecha_fallecimiento)) {
-        ctx.addIssue({
-            code: "custom",
-            message: MENSAJE_ORDEN_FECHAS,
-            path: ["fecha_fallecimiento"],
-        });
+        add("fecha_fallecimiento", MENSAJE_ORDEN_FECHAS);
     }
 });
 
@@ -99,6 +134,8 @@ export function PersonaSheet({
 
     const form = useForm<PersonaFormValues>({
         resolver: zodResolver(personaSchema),
+        mode: "onTouched",
+        reValidateMode: "onChange",
         defaultValues: {
             tipo_documento: "DNI",
             dni: "",
@@ -113,6 +150,8 @@ export function PersonaSheet({
             observaciones: "",
         },
     });
+
+    const tipoDocumentoValue = form.watch("tipo_documento");
 
     useEffect(() => {
         if (isOpen) {
@@ -254,8 +293,12 @@ export function PersonaSheet({
                                                 <Input
                                                     {...field}
                                                     placeholder="NÚMERO"
-                                                    maxLength={15}
+                                                    maxLength={maxLengthDocumento(tipoDocumentoValue) || 15}
+                                                    disabled={tipoDocumentoValue.toUpperCase().includes("SIN DOCUMENTO")}
                                                     className="std-input h-10 font-bold bg-muted/20"
+                                                    onChange={(e) => field.onChange(
+                                                        sanitizarDocumento(e.target.value, tipoDocumentoValue),
+                                                    )}
                                                 />
                                             </FormControl>
                                             <FormMessage />
@@ -318,6 +361,7 @@ export function PersonaSheet({
                                                 {...field}
                                                 placeholder="NOMBRES"
                                                 className="std-input h-10 font-semibold uppercase"
+                                                onChange={(e) => field.onChange(sanitizarNombres(e.target.value))}
                                             />
                                         </FormControl>
                                         <FormMessage />
@@ -335,8 +379,9 @@ export function PersonaSheet({
                                             <FormControl>
                                                 <Input
                                                     {...field}
-                                                    placeholder="PATERNO"
+                                                    placeholder="PATERNO o S/A"
                                                     className="std-input h-10 font-semibold uppercase"
+                                                    onChange={(e) => field.onChange(sanitizarApellido(e.target.value))}
                                                 />
                                             </FormControl>
                                             <FormMessage />
@@ -352,8 +397,9 @@ export function PersonaSheet({
                                             <FormControl>
                                                 <Input
                                                     {...field}
-                                                    placeholder="MATERNO"
+                                                    placeholder="MATERNO o S/A"
                                                     className="std-input h-10 font-semibold uppercase"
+                                                    onChange={(e) => field.onChange(sanitizarApellido(e.target.value))}
                                                 />
                                             </FormControl>
                                             <FormMessage />
@@ -395,7 +441,9 @@ export function PersonaSheet({
                                                     {...field}
                                                     placeholder="999..."
                                                     maxLength={9}
+                                                    inputMode="numeric"
                                                     className="std-input h-10 font-semibold"
+                                                    onChange={(e) => field.onChange(sanitizarSoloDigitos(e.target.value, 9))}
                                                 />
                                             </FormControl>
                                             <FormMessage />

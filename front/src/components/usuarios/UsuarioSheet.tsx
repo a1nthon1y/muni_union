@@ -34,20 +34,48 @@ import { Loader2, Save, UserPlus, Fingerprint, ShieldCheck } from "lucide-react"
 import { toast } from "sonner";
 import { Usuario } from "@/types/auth";
 import { UsuarioInput } from "@/types/usuario";
+import {
+    sanitizarApellido,
+    sanitizarDocumento,
+    sanitizarNombres,
+    sanitizarSoloDigitos,
+    validarApellido,
+    validarDocumento,
+    validarNombres,
+    validarTelefono,
+} from "@/lib/form-validators";
 
 const usuarioSchema = z.object({
     username: z.string().optional().or(z.literal("")),
-    nombres: z.string().min(2, "Nombres son obligatorios"),
-    apellidos: z.string().min(2, "Apellidos son obligatorios"),
+    nombres: z.string().min(1, "Nombres son obligatorios"),
+    apellidos: z.string().min(1, "Apellidos son obligatorios"),
     rol_id: z.string().min(1, "Debe seleccionar un rol"),
     telefono: z.string().optional().nullable().or(z.literal("")),
-    dni: z.string().min(8, "DNI debe tener al menos 8 caracteres").max(15).optional().or(z.literal("")),
+    dni: z.string().optional().or(z.literal("")),
     password: z.string().optional().or(z.literal("")),
     permisos_actas_anular: z.boolean(),
     permisos_actas_eliminar: z.boolean(),
     permisos_actas_modificar: z.boolean(),
     permisos_personas_eliminar: z.boolean(),
     permisos_personas_modificar: z.boolean(),
+}).superRefine((data, ctx) => {
+    const add = (path: string, message: string) => {
+        ctx.addIssue({ code: "custom", message, path: [path] });
+    };
+
+    const errNombres = validarNombres(data.nombres);
+    if (errNombres) add("nombres", errNombres);
+
+    const errApellidos = validarApellido(data.apellidos, "Apellidos");
+    if (errApellidos) add("apellidos", errApellidos);
+
+    if (data.dni?.trim()) {
+        const errDni = validarDocumento("DNI", data.dni);
+        if (errDni) add("dni", errDni);
+    }
+
+    const errTel = validarTelefono(data.telefono ?? undefined);
+    if (errTel) add("telefono", errTel);
 });
 
 type UsuarioFormValues = z.infer<typeof usuarioSchema>;
@@ -80,6 +108,8 @@ export function UsuarioSheet({
 
     const form = useForm<UsuarioFormValues>({
         resolver: zodResolver(usuarioSchema),
+        mode: "onTouched",
+        reValidateMode: "onChange",
         defaultValues: {
             username: "",
             nombres: "",
@@ -172,7 +202,12 @@ export function UsuarioSheet({
 
             // Validar que si es nuevo usuario, el password sea obligatorio
             if (!usuario && !values.password) {
-                toast.error("La contraseña es obligatoria para nuevos usuarios");
+                form.setError("password", { message: "La contraseña es obligatoria para nuevos usuarios" });
+                return;
+            }
+
+            if (!usuario && values.password && values.password.length < 6) {
+                form.setError("password", { message: "La contraseña debe tener al menos 6 caracteres" });
                 return;
             }
 
@@ -273,6 +308,7 @@ export function UsuarioSheet({
                                                 value={field.value || ""}
                                                 placeholder="NOMBRES"
                                                 className="std-input h-10 font-semibold uppercase"
+                                                onChange={(e) => field.onChange(sanitizarNombres(e.target.value))}
                                             />
                                         </FormControl>
                                         <FormMessage />
@@ -292,6 +328,7 @@ export function UsuarioSheet({
                                                 value={field.value || ""}
                                                 placeholder="APELLIDOS"
                                                 className="std-input h-10 font-semibold uppercase"
+                                                onChange={(e) => field.onChange(sanitizarApellido(e.target.value))}
                                             />
                                         </FormControl>
                                         <FormMessage />
@@ -335,7 +372,9 @@ export function UsuarioSheet({
                                                     value={field.value || ""}
                                                     placeholder="999..."
                                                     maxLength={9}
+                                                    inputMode="numeric"
                                                     className="std-input h-10 font-semibold"
+                                                    onChange={(e) => field.onChange(sanitizarSoloDigitos(e.target.value, 9))}
                                                 />
                                             </FormControl>
                                             <FormMessage />
@@ -354,9 +393,11 @@ export function UsuarioSheet({
                                             <Input
                                                 {...field}
                                                 value={field.value || ""}
-                                                placeholder="Número de documento..."
-                                                maxLength={15}
+                                                placeholder="8 dígitos"
+                                                maxLength={8}
+                                                inputMode="numeric"
                                                 className="std-input h-10 font-bold tracking-widest"
+                                                onChange={(e) => field.onChange(sanitizarDocumento(e.target.value, "DNI"))}
                                             />
                                         </FormControl>
                                         <FormMessage />

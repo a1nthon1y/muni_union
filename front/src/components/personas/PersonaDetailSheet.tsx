@@ -58,6 +58,21 @@ const tipoConfig: Record<TipoActa, {
     },
 };
 
+const ordenTipoActa: Record<TipoActa, number> = {
+    NACIMIENTO: 1,
+    MATRIMONIO: 2,
+    DEFUNCION: 3,
+};
+
+const ordenarActasVinculadas = (actas: Acta[]) =>
+    [...actas].sort((a, b) => {
+        const porTipo = ordenTipoActa[a.tipo_acta] - ordenTipoActa[b.tipo_acta];
+        if (porTipo !== 0) return porTipo;
+        const porFecha = (a.fecha_acta ?? "").localeCompare(b.fecha_acta ?? "");
+        if (porFecha !== 0) return porFecha;
+        return a.id - b.id;
+    });
+
 const getFileUrl = (ruta: string) => {
     const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
     return `${apiBase.replace(/\/api\/?$/, "")}/${ruta.replace(/^\//, "")}`;
@@ -85,7 +100,7 @@ export function PersonaDetailSheet({
                 page: 1,
                 limit: 50,
             });
-            setActas(response.data);
+            setActas(ordenarActasVinculadas(response.data));
             setTotal(response.pagination.total);
         } catch {
             setActas([]);
@@ -139,6 +154,9 @@ export function PersonaDetailSheet({
                                 Datos del ciudadano
                             </h3>
                         </div>
+                        <p className="text-xs text-muted-foreground -mt-2">
+                            Fechas del ciudadano en el padrón. La fecha de inscripción de cada acta se muestra abajo, en actas vinculadas.
+                        </p>
                         <div className="bg-muted rounded-lg p-4 border border-border grid gap-3 sm:grid-cols-2">
                             <div>
                                 <p className="text-[11px] font-medium text-muted-foreground">Documento</p>
@@ -192,7 +210,7 @@ export function PersonaDetailSheet({
                                         Actas vinculadas
                                     </h3>
                                     <p className="mt-0.5 text-xs text-muted-foreground">
-                                        Titular o cónyuge
+                                        Titular o cónyuge · nacimiento → matrimonio → defunción · la fecha es del acta (inscripción)
                                     </p>
                                 </div>
                             </div>
@@ -248,8 +266,14 @@ export function PersonaDetailSheet({
                                                     <p className="font-mono text-sm font-bold text-primary">
                                                         {acta.numero_acta}
                                                     </p>
-                                                    <p className="mt-1 text-xs text-muted-foreground">
-                                                        {config.label} · {acta.anio} · {dateUtils.formatDisplayDate(acta.fecha_acta)}
+                                                    <p className="mt-1 text-xs font-medium text-foreground/80">
+                                                        {config.label} · Año registral {acta.anio}
+                                                    </p>
+                                                    <p className="mt-0.5 text-[11px] text-muted-foreground">
+                                                        Fecha del acta:{" "}
+                                                        <span className="font-medium text-foreground/70">
+                                                            {dateUtils.formatDisplayDate(acta.fecha_acta)}
+                                                        </span>
                                                     </p>
                                                 </div>
                                                 <div className="flex flex-wrap gap-1.5">

@@ -37,7 +37,21 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           {children}
-          <Toaster position="top-right" richColors closeButton />
+          <Toaster
+            position="top-right"
+            richColors
+            closeButton
+            expand
+            visibleToasts={4}
+            gap={12}
+            toastOptions={{
+              classNames: {
+                toast: "group toast !min-h-[52px] items-start",
+                title: "text-sm font-semibold leading-snug",
+                description: "text-xs leading-relaxed",
+              },
+            }}
+          />
         </ThemeProvider>
       </body>
     </html>

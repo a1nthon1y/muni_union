@@ -327,7 +327,12 @@ export function ActasTable({
                         <TableRow>
                             <TableHead className="std-table-head">Tipo / N° Acta</TableHead>
                             <TableHead className="std-table-head">Titular de Datos</TableHead>
-                            <TableHead className="std-table-head">Fecha / Año</TableHead>
+                            <TableHead className="std-table-head">
+                                <span className="block">Fecha del acta</span>
+                                <span className="block text-[9px] font-normal normal-case tracking-normal text-muted-foreground/80">
+                                    inscripción registral
+                                </span>
+                            </TableHead>
                             <TableHead className="std-table-head text-center">Documento</TableHead>
                             <TableHead className="std-table-head">Estado</TableHead>
                             <TableHead className="std-table-head text-right">Acciones</TableHead>
@@ -358,9 +363,13 @@ export function ActasTable({
                                         </div>
                                     </TableCell>
                                     <TableCell className="std-table-cell">
-                                        <div className="flex flex-col">
-                                            <span className="text-xs text-foreground/80 font-medium">{dateUtils.formatDisplayDate(acta.fecha_acta)}</span>
-                                            <span className="text-[10px] font-medium text-muted-foreground/60 uppercase tracking-wider">{acta.anio}</span>
+                                        <div className="flex flex-col gap-0.5">
+                                            <span className="text-xs text-foreground/80 font-medium">
+                                                {dateUtils.formatDisplayDate(acta.fecha_acta)}
+                                            </span>
+                                            <span className="text-[10px] font-medium text-muted-foreground/60">
+                                                Año registral {acta.anio}
+                                            </span>
                                         </div>
                                     </TableCell>
                                     <TableCell className="std-table-cell text-center">

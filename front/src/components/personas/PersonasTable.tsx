@@ -76,7 +76,12 @@ export function PersonasTable({
                             <TableHead className="std-table-head">DNI</TableHead>
                             <TableHead className="std-table-head">Ciudadano / Datos Personales</TableHead>
                             <TableHead className="std-table-head text-center">Sexo</TableHead>
-                            <TableHead className="std-table-head text-center">Fechas</TableHead>
+                            <TableHead className="std-table-head text-center">
+                                <span className="block">Fechas del ciudadano</span>
+                                <span className="block text-[9px] font-normal normal-case tracking-normal text-muted-foreground/80">
+                                    padrón, no del acta
+                                </span>
+                            </TableHead>
                             <TableHead className="std-table-head text-right">Contacto</TableHead>
                             <TableHead className="std-table-head text-right">Acciones</TableHead>
                         </TableRow>
@@ -140,11 +145,11 @@ export function PersonasTable({
                                     <TableCell className="std-table-cell text-center">
                                         <div className="flex flex-col items-center">
                                             <span className="text-xs text-foreground/80">
-                                                Nac.: {dateUtils.formatDisplayDate(persona.fecha_nacimiento)}
+                                                Nacimiento: {dateUtils.formatDisplayDate(persona.fecha_nacimiento)}
                                             </span>
                                             {persona.fecha_fallecimiento && (
                                                 <span className="text-[10px] font-semibold text-rose-600 dark:text-rose-400">
-                                                    Fall.: {dateUtils.formatDisplayDate(persona.fecha_fallecimiento)}
+                                                    Fallecimiento: {dateUtils.formatDisplayDate(persona.fecha_fallecimiento)}
                                                 </span>
                                             )}
                                         </div>

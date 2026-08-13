@@ -99,6 +99,12 @@ export function AuditoriaTable({ logs, isLoading, pagination, onPageChange }: Au
                     icon: <Plus className="h-3 w-3" />,
                     variant: 'success' as const
                 };
+            case 'MERGE':
+                return {
+                    label: 'Fusión',
+                    icon: <RefreshCcw className="h-3 w-3" />,
+                    variant: 'warning' as const
+                };
             default:
                 return {
                     label: op,
@@ -124,15 +130,15 @@ export function AuditoriaTable({ logs, isLoading, pagination, onPageChange }: Au
     return (
         <div className="space-y-4 animate-in fade-in slide-in-from-bottom-3 duration-700">
             <div className="std-table-container">
-                <Table>
+                <Table className="table-fixed">
                     <TableHeader className="std-table-header">
                         <TableRow className="border-b border-border/50">
-                            <TableHead className="std-table-head">Tipo de Evento</TableHead>
-                            <TableHead className="std-table-head">Responsable</TableHead>
-                            <TableHead className="std-table-head">Descripción de Actividad</TableHead>
-                            <TableHead className="std-table-head">Referencia / Módulo</TableHead>
-                            <TableHead className="std-table-head">Cronología</TableHead>
-                            <TableHead className="std-table-head text-right">Dirección IP</TableHead>
+                            <TableHead className="std-table-head w-[11%]">Tipo de Evento</TableHead>
+                            <TableHead className="std-table-head w-[14%]">Responsable</TableHead>
+                            <TableHead className="std-table-head w-[34%]">Descripción de Actividad</TableHead>
+                            <TableHead className="std-table-head w-[15%]">Referencia / Módulo</TableHead>
+                            <TableHead className="std-table-head w-[13%]">Cronología</TableHead>
+                            <TableHead className="std-table-head w-[13%] text-right">Dirección IP</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -161,7 +167,7 @@ export function AuditoriaTable({ logs, isLoading, pagination, onPageChange }: Au
                                 const op = getOperacionStyles(log.operacion);
                                 return (
                                     <TableRow key={log.id} className="std-table-row group">
-                                        <TableCell className="std-table-cell">
+                                        <TableCell className="std-table-cell align-top">
                                             <div className="flex flex-col gap-2">
                                                 <Badge
                                                     variant={op.variant}
@@ -177,7 +183,7 @@ export function AuditoriaTable({ logs, isLoading, pagination, onPageChange }: Au
                                                 </span>
                                             </div>
                                         </TableCell>
-                                        <TableCell className="std-table-cell">
+                                        <TableCell className="std-table-cell align-top">
                                             <div className="flex items-center gap-2.5">
                                                 <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20">
                                                     <User size={14} className="text-primary" />
@@ -190,12 +196,15 @@ export function AuditoriaTable({ logs, isLoading, pagination, onPageChange }: Au
                                                 </div>
                                             </div>
                                         </TableCell>
-                                        <TableCell className="std-table-cell max-w-[320px]">
-                                            <p className="text-[11px] text-foreground/75 leading-relaxed font-medium">
+                                        <TableCell className="std-table-cell align-top !whitespace-normal min-w-0">
+                                            <p
+                                                className="text-[11px] text-foreground/75 leading-relaxed font-medium break-words [overflow-wrap:anywhere]"
+                                                title={log.descripcion || undefined}
+                                            >
                                                 {log.descripcion}
                                             </p>
                                         </TableCell>
-                                        <TableCell className="std-table-cell">
+                                        <TableCell className="std-table-cell align-top">
                                             <div className="flex flex-col gap-1.5">
                                                 <div className="flex items-center gap-2 bg-secondary/50 text-secondary-foreground px-2.5 py-1 rounded-lg border border-border w-fit transition-all group-hover:border-primary/30">
                                                     <div className="text-primary/70">{getTablaIcon(log.tabla_afectada)}</div>
@@ -210,7 +219,7 @@ export function AuditoriaTable({ logs, isLoading, pagination, onPageChange }: Au
                                                 )}
                                             </div>
                                         </TableCell>
-                                        <TableCell className="std-table-cell">
+                                        <TableCell className="std-table-cell align-top">
                                             <div className="flex flex-col">
                                                 <span className="text-xs text-foreground/80 font-bold tracking-tight">
                                                     {dateUtils.formatDisplayTimestamp(log.fecha).split(' ')[0]}
@@ -220,7 +229,7 @@ export function AuditoriaTable({ logs, isLoading, pagination, onPageChange }: Au
                                                 </span>
                                             </div>
                                         </TableCell>
-                                        <TableCell className="std-table-cell text-right">
+                                        <TableCell className="std-table-cell text-right align-top">
                                             <div className="flex items-center justify-end gap-2 text-[10px] font-bold text-muted-foreground group-hover:text-primary transition-colors">
                                                 <Globe size={11} className="opacity-30" />
                                                 <span className="font-mono tracking-tighter">{log.ip || 'INTERNAL'}</span>

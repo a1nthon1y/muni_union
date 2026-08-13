@@ -182,6 +182,88 @@
     @apply text-[11px] font-bold uppercase text-muted-foreground/90 tracking-wider ml-1 mb-1 block;
   }
 
+  /* Campos de la consola de digitalización — compacto, sin saltos al validar */
+  .dig-grid-2 {
+    @apply grid gap-2 min-w-0 w-full grid-cols-2;
+  }
+
+  .dig-grid-2 > *,
+  .dig-grid-3 > * {
+    @apply min-w-0;
+  }
+
+  .dig-grid-3 {
+    @apply grid gap-2 min-w-0 w-full grid-cols-3;
+  }
+
+  .dig-grid-4 {
+    @apply grid gap-2 min-w-0 w-full grid-cols-2 xl:grid-cols-4;
+  }
+
+  .dig-field {
+    @apply grid gap-0.5 content-start min-w-0 w-full;
+  }
+
+  .dig-field-head {
+    @apply min-h-[16px] flex flex-col justify-end min-w-0 overflow-hidden;
+  }
+
+  .dig-field-head--hint {
+    @apply min-h-[26px];
+  }
+
+  .dig-field-label {
+    @apply text-[10px] font-bold uppercase text-muted-foreground/90 tracking-wide leading-none block mb-0 truncate;
+  }
+
+  .dig-field-hint {
+    @apply text-[9px] font-normal text-muted-foreground/70 normal-case tracking-normal mt-0.5 h-[11px] leading-none truncate;
+  }
+
+  .dig-field-option {
+    @apply flex items-center gap-1 shrink-0 text-[8px] text-muted-foreground cursor-pointer select-none leading-none;
+  }
+
+  .dig-field-msg {
+    @apply min-h-[11px] text-[9px] leading-none text-destructive;
+  }
+
+  .dig-input {
+    @apply box-border !h-8 !min-h-8 !max-h-8 w-full min-w-0 rounded-lg border border-border/50 bg-background/50 px-2.5 !py-0 text-xs !leading-8 focus:bg-background focus:border-primary/50 focus:ring-2 focus:ring-primary/5 transition-all;
+  }
+
+  .dig-input[type="date"] {
+    @apply appearance-none !leading-8;
+  }
+
+  .dig-input[type="date"]::-webkit-date-and-time-value {
+    @apply min-h-0 !leading-8;
+  }
+
+  .dig-input[type="date"]::-webkit-calendar-picker-indicator {
+    @apply size-3.5 cursor-pointer opacity-60;
+  }
+
+  .dig-select-trigger {
+    @apply box-border !h-8 !min-h-8 !max-h-8 w-full min-w-0 rounded-lg border border-border/50 bg-background/50 px-2.5 !py-0 text-xs font-semibold !leading-none focus:bg-background focus:border-primary/50 focus:ring-2 focus:ring-primary/5 transition-all data-[size=default]:!h-8 data-[size=sm]:!h-8 [&>span]:truncate [&>span]:min-w-0 [&>span]:text-left [&_svg]:size-3.5;
+  }
+
+  .dig-card-header {
+    @apply !flex !items-center !h-9 min-h-9 w-full px-3.5 border-b bg-muted/40 !py-0 gap-2;
+  }
+
+  .dig-card-title {
+    @apply text-xs font-bold uppercase tracking-widest text-muted-foreground/80 leading-none;
+  }
+
+  .dig-card-icon {
+    @apply size-3.5 text-primary shrink-0;
+  }
+
+  .dig-card-body {
+    @apply px-3 py-2.5 space-y-2;
+  }
+
   .std-input {
     @apply h-11 rounded-xl border border-border/50 bg-background/50 focus:bg-background focus:border-primary/50 focus:ring-4 focus:ring-primary/5 transition-all duration-300 text-sm;
   }

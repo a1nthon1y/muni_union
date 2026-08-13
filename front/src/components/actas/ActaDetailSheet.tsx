@@ -89,10 +89,15 @@ export function ActaDetailSheet({ isOpen, onClose, acta, onEdit }: ActaDetailShe
                     {/* Titular */}
                     <div className="space-y-4">
                         <div className="flex items-center gap-2">
-                            <User className="h-4 w-4 text-primary" />
-                            <h3 className="font-semibold text-sm text-foreground uppercase tracking-wide">
-                                {acta.tipo_acta === 'MATRIMONIO' ? 'Contrayente 1' : 'Titular'}
-                            </h3>
+                            <User className="h-4 w-4 text-primary shrink-0" />
+                            <div>
+                                <h3 className="font-semibold text-sm text-foreground uppercase tracking-wide">
+                                    {acta.tipo_acta === 'MATRIMONIO' ? 'Contrayente 1' : 'Titular'}
+                                </h3>
+                                <p className="text-[10px] text-muted-foreground normal-case tracking-normal">
+                                    Datos del ciudadano en el padrón
+                                </p>
+                            </div>
                         </div>
 
                         <div className="bg-muted rounded-lg p-4 space-y-3 border border-border">

@@ -37,6 +37,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Acta, TipoActa } from "@/types/acta";
 import { actasService } from "@/services/actas.service";
 import { dateUtils } from "@/utils/dateUtils";
+import {
+    sanitizarSoloDigitos,
+    validarFechaNoFutura,
+    validarLibro,
+    validarNumeroActa,
+} from "@/lib/form-validators";
 
 const actaSchema = z.object({
     tipo_acta: z.enum(['NACIMIENTO', 'MATRIMONIO', 'DEFUNCION']),
@@ -45,15 +51,22 @@ const actaSchema = z.object({
     numero_acta: z.string().min(1, "Número obligatorio"),
     anio: z.coerce.number().min(1900).max(Number(new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Lima', year: 'numeric' }).format(new Date())) + 1),
     fecha_acta: z.string().min(1, "Fecha obligatoria"),
-    observaciones: z.string().optional(),
-}).refine((data) => {
-    if (data.modo === "CLASICO" && (!data.libro || data.libro.trim() === "")) {
-        return false;
+    observaciones: z.string().max(500).optional(),
+}).superRefine((data, ctx) => {
+    const add = (path: string, message: string) => {
+        ctx.addIssue({ code: "custom", message, path: [path] });
+    };
+
+    const errNum = validarNumeroActa(data.modo, data.numero_acta);
+    if (errNum) add("numero_acta", errNum);
+
+    if (data.modo === "CLASICO") {
+        const errLibro = validarLibro(data.libro);
+        if (errLibro) add("libro", errLibro);
     }
-    return true;
-}, {
-    message: "Libro es obligatorio en modo clásico",
-    path: ["libro"]
+
+    const errFecha = validarFechaNoFutura(data.fecha_acta, "Fecha del acta");
+    if (errFecha) add("fecha_acta", errFecha);
 });
 
 type ActaFormData = z.infer<typeof actaSchema>;
@@ -87,6 +100,8 @@ export function ActaEditSheet({ isOpen, onClose, onSuccess, acta }: ActaEditShee
 
     const form = useForm<ActaFormData>({
         resolver: zodResolver(actaSchema) as any,
+        mode: "onTouched",
+        reValidateMode: "onChange",
         defaultValues: {
             tipo_acta: (acta?.tipo_acta as 'NACIMIENTO' | 'MATRIMONIO' | 'DEFUNCION') || 'NACIMIENTO',
             modo: initialParsed.modo,
@@ -288,7 +303,13 @@ export function ActaEditSheet({ isOpen, onClose, onSuccess, acta }: ActaEditShee
                                                 <FormItem>
                                                     <FormLabel className="std-label mb-1.5">Libro</FormLabel>
                                                     <FormControl>
-                                                        <Input {...field} className="std-input h-10 font-bold bg-primary/5 text-center" />
+                                                        <Input
+                                                            {...field}
+                                                            inputMode="numeric"
+                                                            maxLength={4}
+                                                            className="std-input h-10 font-bold bg-primary/5 text-center"
+                                                            onChange={(e) => field.onChange(sanitizarSoloDigitos(e.target.value, 4))}
+                                                        />
                                                     </FormControl>
                                                     <FormMessage />
                                                 </FormItem>
@@ -313,7 +334,19 @@ export function ActaEditSheet({ isOpen, onClose, onSuccess, acta }: ActaEditShee
                                                     )}
                                                 </div>
                                                 <FormControl>
-                                                    <Input {...field} className="std-input h-10 font-bold tracking-widest uppercase" />
+                                                    <Input
+                                                        {...field}
+                                                        inputMode="numeric"
+                                                        maxLength={modoValue === "CLASICO" ? 6 : 12}
+                                                        placeholder={modoValue === "CLASICO" ? "Número" : "6-12 dígitos"}
+                                                        className="std-input h-10 font-bold tracking-widest uppercase"
+                                                        onChange={(e) => field.onChange(
+                                                            sanitizarSoloDigitos(
+                                                                e.target.value,
+                                                                modoValue === "CLASICO" ? 6 : 12,
+                                                            ),
+                                                        )}
+                                                    />
                                                 </FormControl>
                                                 <FormMessage />
                                             </FormItem>

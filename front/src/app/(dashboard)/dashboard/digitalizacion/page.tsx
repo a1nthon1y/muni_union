@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useForm, type Resolver } from "react-hook-form";
+import { useEffect, useState, type ReactNode } from "react";
+import { useForm, type FieldErrors, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import {
@@ -14,7 +14,6 @@ import {
     Loader2,
     CheckCircle2,
     Trash2,
-    AlertCircle,
     Phone,
     Heart,
     AlertTriangle,
@@ -28,7 +27,6 @@ import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import {
     Dialog,
     DialogContent,
@@ -42,7 +40,7 @@ import {
     FormField,
     FormItem,
     FormLabel,
-    FormMessage,
+    useFormField,
 } from "@/components/ui/form";
 import {
     Select,
@@ -51,6 +49,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 
 import { personasService } from "@/services/personas.service";
@@ -68,71 +67,186 @@ import {
     normalizarFechaOpcional,
     validarOrdenFechas,
 } from "@/lib/persona-fechas";
+import {
+    esSinApellido,
+    esSinNombre,
+    maxLengthDocumento,
+    sanitizarApellido,
+    sanitizarDocumento,
+    sanitizarNombres,
+    sanitizarSoloDigitos,
+    SIN_APELLIDO,
+    SIN_NOMBRE,
+    validarApellido,
+    validarDocumento,
+    validarFechaNoFutura,
+    validarLibro,
+    validarNombres,
+    validarNumeroActa,
+    validarTelefono,
+} from "@/lib/form-validators";
 
 const formSchema = z.object({
     // Persona principal
-    tipo_documento: z.string().min(1, "Seleccione tipo"),
-    dni: z.string().max(15, "Máximo 15 caracteres").optional().or(z.literal("")),
-    nombres: z.string().min(2, "Min. 2 caracteres").regex(/^[A-ZÁÉÍÓÚÑ ]+$/i, "Solo letras y espacios").transform(v => v.toUpperCase()),
-    apellido_paterno: z.string().min(2, "Min. 2 caracteres").regex(/^[A-ZÁÉÍÓÚÑ ]+$/i, "Solo letras y espacios").transform(v => v.toUpperCase()),
-    apellido_materno: z.string().min(2, "Min. 2 caracteres").regex(/^[A-ZÁÉÍÓÚÑ ]+$/i, "Solo letras y espacios").transform(v => v.toUpperCase()),
+    tipo_documento: z.string().min(1, "Seleccione tipo de documento"),
+    dni: z.string().optional().or(z.literal("")),
+    nombres: z.string().min(1, "Nombres son obligatorios"),
+    apellido_paterno: z.string().min(1, "Apellido paterno es obligatorio"),
+    apellido_materno: z.string().min(1, "Apellido materno es obligatorio"),
     sexo: z.enum(["M", "F"]),
-    fecha_nacimiento: z.string().optional(),
-    fecha_fallecimiento: z.string().optional(),
-    telefono: z.string().optional(),
-    persona_observaciones: z.string().optional(),
+    fecha_nacimiento: z.string().optional().or(z.literal("")),
+    fecha_fallecimiento: z.string().optional().or(z.literal("")),
+    telefono: z.string().optional().or(z.literal("")),
+    persona_observaciones: z.string().max(500, "Máximo 500 caracteres").optional().or(z.literal("")),
 
     // Cónyuge (solo para MATRIMONIO)
     conyuge_tipo_documento: z.string().optional(),
-    conyuge_dni: z.string().max(15).optional().or(z.literal("")),
-    conyuge_nombres: z.string().optional().transform(v => v?.toUpperCase() ?? ""),
-    conyuge_apellido_paterno: z.string().optional().transform(v => v?.toUpperCase() ?? ""),
-    conyuge_apellido_materno: z.string().optional().transform(v => v?.toUpperCase() ?? ""),
+    conyuge_dni: z.string().optional().or(z.literal("")),
+    conyuge_nombres: z.string().optional().or(z.literal("")),
+    conyuge_apellido_paterno: z.string().optional().or(z.literal("")),
+    conyuge_apellido_materno: z.string().optional().or(z.literal("")),
     conyuge_sexo: z.enum(["M", "F"]).optional(),
-    conyuge_fecha_nacimiento: z.string().optional(),
-    conyuge_fecha_fallecimiento: z.string().optional(),
+    conyuge_fecha_nacimiento: z.string().optional().or(z.literal("")),
+    conyuge_fecha_fallecimiento: z.string().optional().or(z.literal("")),
 
     // Acta
     modo: z.enum(["CLASICO", "CUI"]),
     tipo_acta: z.enum(["NACIMIENTO", "MATRIMONIO", "DEFUNCION"]),
-    libro: z.string().optional(),
+    libro: z.string().optional().or(z.literal("")),
     numero_acta: z.string().min(1, "Campo obligatorio"),
-    anio: z.coerce.number().min(1900),
-    fecha_acta: z.string().min(1, "Obligatorio"),
-    acta_observaciones: z.string().optional(),
-}).refine((data) => {
-    if (data.modo === "CLASICO" && (!data.libro || data.libro.trim() === "")) return false;
-    return true;
-}, { message: "Libro es obligatorio en modo clásico", path: ["libro"] })
-.refine((data) => {
-    if (data.tipo_acta !== "MATRIMONIO") return true;
-    return !!(data.conyuge_nombres?.trim() && data.conyuge_apellido_paterno?.trim() && data.conyuge_apellido_materno?.trim());
-}, { message: "Los datos del cónyuge son obligatorios para matrimonios", path: ["conyuge_nombres"] })
-.superRefine((data, ctx) => {
-    if (!validarOrdenFechas(data.fecha_nacimiento, data.fecha_fallecimiento)) {
-        ctx.addIssue({
-            code: "custom",
-            message: MENSAJE_ORDEN_FECHAS,
-            path: ["fecha_fallecimiento"],
-        });
+    anio: z.coerce.number().min(1900, "Año inválido").max(2100, "Año inválido"),
+    fecha_acta: z.string().min(1, "Fecha de registro obligatoria"),
+    acta_observaciones: z.string().max(500, "Máximo 500 caracteres").optional().or(z.literal("")),
+}).superRefine((data, ctx) => {
+    const add = (path: string, message: string) => {
+        ctx.addIssue({ code: "custom", message, path: [path] });
+    };
+
+    for (const [valor, path, etiqueta] of [
+        [data.apellido_paterno, "apellido_paterno", "Ap. paterno"],
+        [data.apellido_materno, "apellido_materno", "Ap. materno"],
+    ] as const) {
+        const err = validarApellido(valor, etiqueta);
+        if (err) add(path, err);
     }
 
-    if (
-        data.tipo_acta === "MATRIMONIO"
-        && !validarOrdenFechas(
-            data.conyuge_fecha_nacimiento,
-            data.conyuge_fecha_fallecimiento,
-        )
-    ) {
-        ctx.addIssue({
-            code: "custom",
-            message: MENSAJE_ORDEN_FECHAS,
-            path: ["conyuge_fecha_fallecimiento"],
-        });
+    const errNombres = validarNombres(data.nombres);
+    if (errNombres) add("nombres", errNombres);
+
+    const errDoc = validarDocumento(data.tipo_documento, data.dni);
+    if (errDoc) add("dni", errDoc);
+
+    const errTel = validarTelefono(data.telefono);
+    if (errTel) add("telefono", errTel);
+
+    const errFechaActa = validarFechaNoFutura(data.fecha_acta, "F. registro");
+    if (errFechaActa) add("fecha_acta", errFechaActa);
+
+    const errFechaNac = validarFechaNoFutura(data.fecha_nacimiento, "F. nacimiento");
+    if (errFechaNac) add("fecha_nacimiento", errFechaNac);
+
+    const errFechaFall = validarFechaNoFutura(data.fecha_fallecimiento, "F. fallecimiento");
+    if (errFechaFall) add("fecha_fallecimiento", errFechaFall);
+
+    if (!validarOrdenFechas(data.fecha_nacimiento, data.fecha_fallecimiento)) {
+        add("fecha_fallecimiento", MENSAJE_ORDEN_FECHAS);
+    }
+
+    const errNumActa = validarNumeroActa(data.modo, data.numero_acta);
+    if (errNumActa) add("numero_acta", errNumActa);
+
+    if (data.modo === "CLASICO") {
+        const errLibro = validarLibro(data.libro);
+        if (errLibro) add("libro", errLibro);
+    }
+
+    if (data.tipo_acta === "MATRIMONIO") {
+        for (const [valor, path, etiqueta] of [
+            [data.conyuge_apellido_paterno, "conyuge_apellido_paterno", "Ap. paterno del cónyuge"],
+            [data.conyuge_apellido_materno, "conyuge_apellido_materno", "Ap. materno del cónyuge"],
+        ] as const) {
+            const err = validarApellido(valor, etiqueta);
+            if (err) add(path, err);
+        }
+
+        const errConNombres = validarNombres(data.conyuge_nombres);
+        if (errConNombres) add("conyuge_nombres", errConNombres);
+
+        const errConDoc = validarDocumento(
+            data.conyuge_tipo_documento || data.tipo_documento,
+            data.conyuge_dni,
+        );
+        if (errConDoc) add("conyuge_dni", errConDoc);
+
+        if (!validarOrdenFechas(data.conyuge_fecha_nacimiento, data.conyuge_fecha_fallecimiento)) {
+            add("conyuge_fecha_fallecimiento", MENSAJE_ORDEN_FECHAS);
+        }
     }
 });
 
 type FormValues = z.infer<typeof formSchema>;
+
+function DigLabel({
+    children,
+    hint,
+    title,
+    option,
+}: {
+    children: ReactNode;
+    hint?: string;
+    title?: string;
+    option?: ReactNode;
+}) {
+    const labelText = typeof children === "string" ? children : undefined;
+    return (
+        <div className={cn("dig-field-head", hint && "dig-field-head--hint")}>
+            <div className="flex items-center justify-between gap-1 min-w-0">
+                <FormLabel className="dig-field-label min-w-0" title={title ?? labelText}>
+                    {children}
+                </FormLabel>
+                {option}
+            </div>
+            {hint ? <p className="dig-field-hint" title={hint}>{hint}</p> : null}
+        </div>
+    );
+}
+
+function DigInlineCheck({
+    checked,
+    onCheckedChange,
+    label,
+    title,
+}: {
+    checked: boolean;
+    onCheckedChange: (checked: boolean) => void;
+    label: string;
+    title?: string;
+}) {
+    return (
+        <label className="dig-field-option" title={title ?? label}>
+            <Checkbox
+                className="size-3"
+                checked={checked}
+                onCheckedChange={(value) => onCheckedChange(value === true)}
+            />
+            <span>{label}</span>
+        </label>
+    );
+}
+
+function DigFormMessage() {
+    const { error, formMessageId } = useFormField();
+    const message = error ? String(error.message ?? "") : "";
+    return (
+        <p
+            id={formMessageId}
+            role={message ? "alert" : undefined}
+            className={cn("dig-field-msg", !message && "invisible")}
+        >
+            {message || "\u00A0"}
+        </p>
+    );
+}
 
 export default function DigitalizacionPage() {
     const [loading, setLoading] = useState(false);
@@ -155,6 +269,15 @@ export default function DigitalizacionPage() {
         campo: 'principal' | 'conyuge';
     }>({ abierto: false, personaExistente: null, campo: 'principal' });
     const [esHomonimoConfirmado, setEsHomonimoConfirmado] = useState(false);
+    const [sinApPaterno, setSinApPaterno] = useState(false);
+    const [sinApMaterno, setSinApMaterno] = useState(false);
+    const [sinNombres, setSinNombres] = useState(false);
+
+    const sincronizarFlagsNombre = (nombres: string, paterno: string, materno: string) => {
+        setSinNombres(esSinNombre(nombres));
+        setSinApPaterno(esSinApellido(paterno));
+        setSinApMaterno(esSinApellido(materno));
+    };
 
     useEffect(() => {
         personasService.getTiposDocumento()
@@ -164,8 +287,10 @@ export default function DigitalizacionPage() {
 
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema) as Resolver<FormValues>,
+        mode: "onTouched",
+        reValidateMode: "onChange",
         defaultValues: {
-            tipo_documento: "DNI",
+            tipo_documento: "SIN DOCUMENTO",
             dni: "",
             nombres: "",
             apellido_paterno: "",
@@ -176,7 +301,7 @@ export default function DigitalizacionPage() {
             telefono: "",
             persona_observaciones: "",
             tipo_acta: "NACIMIENTO",
-            modo: "CLASICO",
+            modo: "CUI",
             libro: "",
             numero_acta: "",
             anio: Number(new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Lima', year: 'numeric' }).format(new Date())),
@@ -194,6 +319,7 @@ export default function DigitalizacionPage() {
     });
 
     const modoValue = form.watch("modo");
+    const tipoDocumentoValue = form.watch("tipo_documento");
 
     const dniValue      = form.watch("dni");
     const conygeDniValue = form.watch("conyuge_dni");
@@ -216,20 +342,19 @@ export default function DigitalizacionPage() {
         }
     }, [fechaActaValue, form]);
 
-    // Auto-fill del siguiente número de acta
+    // Auto-fill del siguiente folio solo en modo Libro Clásico (CUI se ingresa manual desde RENIEC)
     const anioValue = form.watch("anio");
     useEffect(() => {
         const readyClasico = modoValue === "CLASICO" && tipoActaValue && anioValue >= 1900 && libroValue?.trim();
-        const readyCui     = modoValue === "CUI"     && tipoActaValue && anioValue >= 1900;
-        if (!readyClasico && !readyCui) return;
+        if (!readyClasico) return;
 
         const timer = setTimeout(async () => {
             try {
                 const res = await actasService.getSiguienteNumero({
                     tipo_acta: tipoActaValue,
                     anio:      anioValue,
-                    modo:      modoValue,
-                    libro:     modoValue === "CLASICO" ? libroValue : undefined,
+                    modo:      "CLASICO",
+                    libro:     libroValue,
                 });
                 // Auto-fill: solo si el campo está vacío o si el valor actual era la sugerencia anterior
                 if (res.siguiente !== null) {
@@ -258,15 +383,19 @@ export default function DigitalizacionPage() {
                     form.setValue("nombres", p.nombres);
                     form.setValue("apellido_paterno", p.apellido_paterno);
                     form.setValue("apellido_materno", p.apellido_materno);
-                    form.setValue("sexo", p.sexo);
+                    form.setValue("sexo", p.sexo === "F" ? "F" : "M");
                     form.setValue("fecha_nacimiento", dateUtils.formatInputDate(p.fecha_nacimiento));
                     form.setValue("fecha_fallecimiento", dateUtils.formatInputDate(p.fecha_fallecimiento));
                     form.setValue("telefono", p.telefono || "");
                     form.setValue("persona_observaciones", p.observaciones || "");
+                    sincronizarFlagsNombre(p.nombres, p.apellido_paterno, p.apellido_materno);
                     toast.info("Ciudadano identificado.");
                 } else {
                     setPersonaEncontrada(null);
                     setPersonaModificada(false);
+                    setSinApPaterno(false);
+                    setSinApMaterno(false);
+                    setSinNombres(false);
                     form.setValue("nombres", "");
                     form.setValue("apellido_paterno", "");
                     form.setValue("apellido_materno", "");
@@ -404,7 +533,7 @@ export default function DigitalizacionPage() {
 
 
 
-    const resetAll = () => {
+    const resetAll = (silent = false) => {
         form.reset();
         setFile(null);
         setPersonaEncontrada(null);
@@ -412,7 +541,20 @@ export default function DigitalizacionPage() {
         setConyugeModificado(false);
         setActaEncontrada(null);
         setEsSugerencia(false);
-        toast.info("Formulario reiniciado");
+        setEsHomonimoConfirmado(false);
+        setSinApPaterno(false);
+        setSinApMaterno(false);
+        setSinNombres(false);
+        if (!silent) {
+            toast.info("Formulario reiniciado");
+        }
+    };
+
+    const onInvalid = (errors: FieldErrors<FormValues>) => {
+        const first = Object.values(errors).find((e) => e?.message);
+        toast.error("Revise los datos del formulario", {
+            description: first?.message ? String(first.message) : "Hay campos con formato inválido.",
+        });
     };
 
     const onSubmit = async (values: FormValues) => {
@@ -532,19 +674,35 @@ export default function DigitalizacionPage() {
                 currentActaId = newActa.id;
             }
 
-            // 3. Subir Documento si hay
+            // 4. Subir documento
+            const personaActualizada = Boolean(personaEncontrada?.id);
+            const actaActualizada = Boolean(actaVigente);
+            let mensajeExito = personaActualizada
+                ? actaActualizada
+                    ? "Ciudadano y acta actualizados correctamente."
+                    : "Ciudadano actualizado y acta registrada correctamente."
+                : actaActualizada
+                    ? "Acta actualizada correctamente."
+                    : "Ciudadano y acta registrados correctamente.";
+
             if (file) {
                 try {
                     await documentosService.upload(currentActaId, file);
-                    toast.success("Operación exitosa: Datos y documento actualizados.");
+                    toast.success(mensajeExito, {
+                        description: "Documento digitalizado y vinculado al acta.",
+                    });
                 } catch {
-                    toast.warning("Datos guardados, pero falló la subida del archivo.");
+                    toast.warning("Datos guardados correctamente", {
+                        description: personaActualizada
+                            ? "El ciudadano fue actualizado, pero falló la subida del archivo."
+                            : "El registro se guardó, pero falló la subida del archivo.",
+                    });
                 }
             } else {
-                toast.success(actaVigente ? "Acta actualizada con éxito." : "Nueva acta registrada con éxito.");
+                toast.success(mensajeExito);
             }
 
-            resetAll();
+            resetAll(true);
         } catch (error: unknown) {
             const apiMessage = axios.isAxiosError(error)
                 && typeof error.response?.data?.message === "string"
@@ -626,19 +784,19 @@ export default function DigitalizacionPage() {
     return (
         <>
             {dialogoHomonimiaJSX}
-            <div className="animate-in fade-in duration-500 pb-24">
+            <div className="animate-in fade-in duration-500 pb-16">
 
                 {/* ── Header ─────────────────────────────────────────────────────── */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
-                    <div className="flex items-center gap-3 text-foreground">
-                        <div className="bg-primary p-2.5 rounded-xl shadow-primary/20 shadow-lg shrink-0">
-                            <FileDigit className="h-5 w-5 text-white" />
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                    <div className="flex items-center gap-2.5 text-foreground">
+                        <div className="bg-primary p-2 rounded-lg shadow-primary/20 shadow shrink-0">
+                            <FileDigit className="h-4 w-4 text-white" />
                         </div>
                         <div>
-                            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight leading-none">
+                            <h1 className="text-lg font-semibold tracking-tight leading-none">
                                 Consola de Digitalización
                             </h1>
-                            <p className="text-muted-foreground font-medium text-[11px] mt-0.5">
+                            <p className="text-muted-foreground text-[10px] mt-0.5">
                                 Registro integral de actas y archivo digital
                             </p>
                         </div>
@@ -651,199 +809,272 @@ export default function DigitalizacionPage() {
                 </div>
 
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)}>
+                    <form onSubmit={form.handleSubmit(onSubmit, onInvalid)}>
 
                         {/* ── Grid principal ─────────────────────────────────────────── */}
                         {/*  mobile:  1 col stacked                                       */}
                         {/*  md:      2 col — 7 + 5                                       */}
                         {/*  xl:      3 col — 5 + 4 + 3  (ciudadano | acta | upload)      */}
-                        <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-start">
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 items-start">
 
-                            {/* ╔══════════════════════════════╗
-                                ║  1. INFORMACIÓN DEL CIUDADANO  ║  md:7  xl:5
-                                ╚══════════════════════════════╝ */}
-                        <div className="md:col-span-7 xl:col-span-5 space-y-3">
-                            <Card className="shadow-sm border-border rounded-2xl overflow-hidden bg-card py-0 gap-0">
-                                <CardHeader className="h-9 flex items-center px-4 border-b bg-muted/40 py-0! pb-0!">
-                                    <div className="flex items-center gap-2">
-                                        <User size={13} className="text-primary shrink-0" />
-                                        <CardTitle className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/80 leading-none">
-                                            1. Información del Ciudadano
-                                        </CardTitle>
-                                    </div>
+                            {/* 1. CIUDADANO — lg:5 */}
+                        <div className="lg:col-span-5 space-y-2">
+                            <Card className="shadow-sm border-border rounded-xl overflow-hidden bg-card py-0 gap-0">
+                                <CardHeader className="dig-card-header border-b">
+                                    <User className="dig-card-icon" />
+                                    <CardTitle className="dig-card-title">
+                                        1. Ciudadano
+                                    </CardTitle>
                                 </CardHeader>
-                                <CardContent className="px-4 py-4 space-y-3">
+                                <CardContent className="dig-card-body">
 
-                                    {/* Fila 1: Tipo(3) | N°Doc(4) | F.Nac(3) | Sexo(2) = 12 cols */}
-                                    <div className="grid grid-cols-12 gap-2">
-                                        <div className="col-span-3">
-                                            <FormField control={form.control} name="tipo_documento" render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel className="std-label">Tipo Doc.</FormLabel>
-                                                    <Select
-                                                        onValueChange={(v) => { setPersonaModificada(true); field.onChange(v); }}
-                                                        value={field.value}
-                                                    >
-                                                        <FormControl>
-                                                            <SelectTrigger className={cn("std-input h-9 text-xs font-semibold", !!personaEncontrada && !personaModificada && "border-amber-400 bg-amber-50/50 dark:bg-amber-950/20")}>
-                                                                <SelectValue placeholder="—" />
-                                                            </SelectTrigger>
-                                                        </FormControl>
-                                                        <SelectContent>
-                                                            {tiposDocumento.length > 0
-                                                                ? tiposDocumento.map(t => <SelectItem key={t.id} value={t.nombre} className="font-semibold text-xs">{t.nombre}</SelectItem>)
-                                                                : <SelectItem value="DNI" className="font-semibold text-xs">DNI</SelectItem>}
-                                                        </SelectContent>
-                                                    </Select>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )} />
-                                        </div>
-
-                                        <div className="col-span-4">
-                                            <FormField control={form.control} name="dni" render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel className="std-label">N° Documento</FormLabel>
+                                    {/* Fila 1: tipo + documento */}
+                                    <div className="dig-grid-2">
+                                        <FormField control={form.control} name="tipo_documento" render={({ field }) => (
+                                            <FormItem className="dig-field">
+                                                <DigLabel>Tipo Doc.</DigLabel>
+                                                <Select
+                                                    onValueChange={(v) => {
+                                                        setPersonaModificada(true);
+                                                        field.onChange(v);
+                                                        if (v.toUpperCase().includes("SIN DOCUMENTO")) {
+                                                            form.setValue("dni", "");
+                                                        }
+                                                    }}
+                                                    value={field.value}
+                                                >
                                                     <FormControl>
-                                                        <Input
-                                                            {...field}
-                                                            onChange={(event) => {
-                                                                setActaEncontrada(null);
-                                                                field.onChange(event);
-                                                            }}
-                                                            maxLength={15}
-                                                            placeholder="Número..."
-                                                            className="std-input h-9 text-sm font-semibold tracking-widest" />
+                                                        <SelectTrigger className={cn("dig-select-trigger", !!personaEncontrada && !personaModificada && "border-amber-400 bg-amber-50/50 dark:bg-amber-950/20")}>
+                                                            <SelectValue placeholder="—" />
+                                                        </SelectTrigger>
                                                     </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )} />
-                                        </div>
-
-                                        <div className="col-span-3">
-                                            <FormField control={form.control} name="fecha_nacimiento" render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel className="std-label">F. Nacimiento</FormLabel>
-                                                    <FormControl>
-                                                        <Input type="date" {...field}
-                                                            className={cn("std-input h-9 text-xs", !!personaEncontrada && !personaModificada && "border-amber-400 bg-amber-50/50 dark:bg-amber-950/20")}
-                                                            onChange={(e) => { setPersonaModificada(true); field.onChange(e.target.value); }}
-                                                             />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )} />
-                                        </div>
-
-                                        <div className="col-span-2">
-                                            <FormField control={form.control} name="sexo" render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel className="std-label">Sexo</FormLabel>
-                                                    <Select
-                                                        onValueChange={(v) => { setPersonaModificada(true); field.onChange(v); }}
-                                                        value={field.value}
-                                                    >
-                                                        <FormControl>
-                                                            <SelectTrigger className={cn("std-input h-9 font-bold text-xs justify-center gap-1 px-2 [&>span]:flex-none", !!personaEncontrada && !personaModificada && "border-amber-400 bg-amber-50/50 dark:bg-amber-950/20")}>
-                                                                <span className="font-bold">{field.value || "—"}</span>
-                                                            </SelectTrigger>
-                                                        </FormControl>
-                                                        <SelectContent>
-                                                            <SelectItem value="M" className="font-semibold text-xs">M — Masculino</SelectItem>
-                                                            <SelectItem value="F" className="font-semibold text-xs">F — Femenino</SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )} />
-                                        </div>
-                                    </div>
-
-                                    {/* Fila 2: apellidos y nombres — orden: Paterno · Materno · Nombres */}
-                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                                        <FormField control={form.control} name="apellido_paterno" render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel className="std-label">Ap. Paterno</FormLabel>
-                                                <FormControl>
-                                                    <Input {...field} placeholder="PATERNO"
-                                                        className={cn("std-input h-9 font-semibold uppercase text-xs", !!personaEncontrada && !personaModificada && "border-amber-400 bg-amber-50/50 dark:bg-amber-950/20")}
-                                                        onChange={(e) => { setPersonaModificada(true); field.onChange(e.target.value.toUpperCase()); }} />
-                                                </FormControl>
-                                                <FormMessage />
+                                                    <SelectContent>
+                                                        {tiposDocumento.length > 0
+                                                            ? tiposDocumento.map(t => <SelectItem key={t.id} value={t.nombre} className="font-semibold text-xs">{t.nombre}</SelectItem>)
+                                                            : <SelectItem value="DNI" className="font-semibold text-xs">DNI</SelectItem>}
+                                                    </SelectContent>
+                                                </Select>
+                                                <DigFormMessage />
                                             </FormItem>
                                         )} />
-                                        <FormField control={form.control} name="apellido_materno" render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel className="std-label">Ap. Materno</FormLabel>
+
+                                        <FormField control={form.control} name="dni" render={({ field }) => (
+                                            <FormItem className="dig-field">
+                                                <DigLabel hint="Opc." title="Opcional en nacimientos">N° Documento</DigLabel>
                                                 <FormControl>
-                                                    <Input {...field} placeholder="MATERNO"
-                                                        className={cn("std-input h-9 font-semibold uppercase text-xs", !!personaEncontrada && !personaModificada && "border-amber-400 bg-amber-50/50 dark:bg-amber-950/20")}
-                                                        onChange={(e) => { setPersonaModificada(true); field.onChange(e.target.value.toUpperCase()); }} />
+                                                    <Input
+                                                        {...field}
+                                                        onChange={(event) => {
+                                                            setActaEncontrada(null);
+                                                            setPersonaModificada(true);
+                                                            field.onChange(
+                                                                sanitizarDocumento(event.target.value, tipoDocumentoValue),
+                                                            );
+                                                        }}
+                                                        maxLength={maxLengthDocumento(tipoDocumentoValue) || 15}
+                                                        disabled={tipoDocumentoValue.toUpperCase().includes("SIN DOCUMENTO")}
+                                                        placeholder={tipoDocumentoValue === "DNI" ? "8 dígitos" : "Número..."}
+                                                        className="dig-input font-semibold tracking-wide" />
                                                 </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )} />
-                                        <FormField control={form.control} name="nombres" render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel className="std-label">Nombres</FormLabel>
-                                                <FormControl>
-                                                    <Input {...field} placeholder="NOMBRES"
-                                                        className={cn("std-input h-9 font-semibold uppercase text-xs", !!personaEncontrada && !personaModificada && "border-amber-400 bg-amber-50/50 dark:bg-amber-950/20")}
-                                                        onChange={(e) => { setPersonaModificada(true); field.onChange(e.target.value.toUpperCase()); }} />
-                                                </FormControl>
-                                                <FormMessage />
+                                                <DigFormMessage />
                                             </FormItem>
                                         )} />
                                     </div>
 
-                                    {/* Fila 3: F. Fallecimiento + teléfono + observaciones */}
-                                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
-                                        <FormField control={form.control} name="fecha_fallecimiento" render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel className="std-label">F. Fallecimiento</FormLabel>
+                                    {/* Fila 2: nacimiento + sexo */}
+                                    <div className="dig-grid-2">
+                                        <FormField control={form.control} name="fecha_nacimiento" render={({ field }) => (
+                                            <FormItem className="dig-field">
+                                                <DigLabel>F. Nacimiento</DigLabel>
                                                 <FormControl>
                                                     <Input type="date" {...field}
-                                                        className={cn("std-input h-9 text-xs", !!personaEncontrada && !personaModificada && "border-amber-400 bg-amber-50/50 dark:bg-amber-950/20")}
+                                                        className={cn("dig-input", !!personaEncontrada && !personaModificada && "border-amber-400 bg-amber-50/50 dark:bg-amber-950/20")}
                                                         onChange={(e) => { setPersonaModificada(true); field.onChange(e.target.value); }}
                                                          />
                                                 </FormControl>
-                                                <FormMessage />
+                                                <DigFormMessage />
                                             </FormItem>
                                         )} />
-                                        <FormField control={form.control} name="telefono" render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel className="std-label">Teléfono</FormLabel>
-                                                <FormControl>
-                                                    <div className="relative">
-                                                        <Input {...field} placeholder="Opcional"
-                                                            className={cn("std-input h-9 pl-8 text-xs", !!personaEncontrada && !personaModificada && "border-amber-400 bg-amber-50/50 dark:bg-amber-950/20")}
-                                                            onChange={(e) => { setPersonaModificada(true); field.onChange(e.target.value); }} />
-                                                        <Phone size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/40 pointer-events-none" />
-                                                    </div>
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )} />
-                                        <FormField control={form.control} name="persona_observaciones" render={({ field }) => (
-                                            <FormItem className="sm:col-span-2">
-                                                <FormLabel className="std-label">Observaciones</FormLabel>
-                                                <FormControl>
-                                                    <Textarea {...field} placeholder="Aclaraciones adicionales..."
-                                                        className={cn("std-input min-h-9 py-2 resize-none text-xs", !!personaEncontrada && !personaModificada && "border-amber-400 bg-amber-50/50 dark:bg-amber-950/20")}
-                                                        onChange={(e) => { setPersonaModificada(true); field.onChange(e.target.value); }}
-                                                        rows={1} />
-                                                </FormControl>
-                                                <FormMessage />
+
+                                        <FormField control={form.control} name="sexo" render={({ field }) => (
+                                            <FormItem className="dig-field">
+                                                <DigLabel>Sexo</DigLabel>
+                                                <Select
+                                                    onValueChange={(v) => { setPersonaModificada(true); field.onChange(v); }}
+                                                    value={field.value}
+                                                >
+                                                    <FormControl>
+                                                        <SelectTrigger className={cn("dig-select-trigger font-bold", !!personaEncontrada && !personaModificada && "border-amber-400 bg-amber-50/50 dark:bg-amber-950/20")}>
+                                                            <SelectValue placeholder="—" />
+                                                        </SelectTrigger>
+                                                    </FormControl>
+                                                    <SelectContent position="popper" className="z-[100]">
+                                                        <SelectItem value="M" className="font-semibold text-xs">M — Masculino</SelectItem>
+                                                        <SelectItem value="F" className="font-semibold text-xs">F — Femenino</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                                <DigFormMessage />
                                             </FormItem>
                                         )} />
                                     </div>
 
-                                    {/* Persona identificada */}
+                                    {/* Nombres: 3 columnas iguales */}
+                                    <div className="dig-grid-3">
+                                        <FormField control={form.control} name="apellido_paterno" render={({ field }) => (
+                                            <FormItem className="dig-field">
+                                                <DigLabel
+                                                    option={
+                                                        <DigInlineCheck
+                                                            checked={sinApPaterno}
+                                                            label="S/A"
+                                                            title="Sin apellido (S/A)"
+                                                            onCheckedChange={(activo) => {
+                                                                setSinApPaterno(activo);
+                                                                setPersonaModificada(true);
+                                                                if (activo) {
+                                                                    form.setValue("apellido_paterno", SIN_APELLIDO);
+                                                                } else if (esSinApellido(field.value)) {
+                                                                    form.setValue("apellido_paterno", "");
+                                                                }
+                                                            }}
+                                                        />
+                                                    }
+                                                >
+                                                    Ap. Paterno
+                                                </DigLabel>
+                                                <FormControl>
+                                                    <Input {...field} placeholder="PATERNO o S/A"
+                                                        disabled={sinApPaterno}
+                                                        className={cn("dig-input font-semibold uppercase", sinApPaterno && "bg-muted/60 text-muted-foreground", !!personaEncontrada && !personaModificada && "border-amber-400 bg-amber-50/50 dark:bg-amber-950/20")}
+                                                        onChange={(e) => {
+                                                            setPersonaModificada(true);
+                                                            setSinApPaterno(false);
+                                                            field.onChange(sanitizarApellido(e.target.value));
+                                                        }} />
+                                                </FormControl>
+                                                <DigFormMessage />
+                                            </FormItem>
+                                        )} />
+                                        <FormField control={form.control} name="apellido_materno" render={({ field }) => (
+                                            <FormItem className="dig-field">
+                                                <DigLabel
+                                                    option={
+                                                        <DigInlineCheck
+                                                            checked={sinApMaterno}
+                                                            label="S/A"
+                                                            title="Sin apellido (S/A)"
+                                                            onCheckedChange={(activo) => {
+                                                                setSinApMaterno(activo);
+                                                                setPersonaModificada(true);
+                                                                if (activo) {
+                                                                    form.setValue("apellido_materno", SIN_APELLIDO);
+                                                                } else if (esSinApellido(field.value)) {
+                                                                    form.setValue("apellido_materno", "");
+                                                                }
+                                                            }}
+                                                        />
+                                                    }
+                                                >
+                                                    Ap. Materno
+                                                </DigLabel>
+                                                <FormControl>
+                                                    <Input {...field} placeholder="MATERNO o S/A"
+                                                        disabled={sinApMaterno}
+                                                        className={cn("dig-input font-semibold uppercase", sinApMaterno && "bg-muted/60 text-muted-foreground", !!personaEncontrada && !personaModificada && "border-amber-400 bg-amber-50/50 dark:bg-amber-950/20")}
+                                                        onChange={(e) => {
+                                                            setPersonaModificada(true);
+                                                            setSinApMaterno(false);
+                                                            field.onChange(sanitizarApellido(e.target.value));
+                                                        }} />
+                                                </FormControl>
+                                                <DigFormMessage />
+                                            </FormItem>
+                                        )} />
+                                        <FormField control={form.control} name="nombres" render={({ field }) => (
+                                            <FormItem className="dig-field">
+                                                <DigLabel
+                                                    option={
+                                                        <DigInlineCheck
+                                                            checked={sinNombres}
+                                                            label="S/N"
+                                                            title="Sin nombre (S/N)"
+                                                            onCheckedChange={(activo) => {
+                                                                setSinNombres(activo);
+                                                                setPersonaModificada(true);
+                                                                if (activo) {
+                                                                    form.setValue("nombres", SIN_NOMBRE);
+                                                                } else if (esSinNombre(field.value)) {
+                                                                    form.setValue("nombres", "");
+                                                                }
+                                                            }}
+                                                        />
+                                                    }
+                                                >
+                                                    Nombres
+                                                </DigLabel>
+                                                <FormControl>
+                                                    <Input {...field} placeholder="NOMBRES o S/N"
+                                                        disabled={sinNombres}
+                                                        className={cn("dig-input font-semibold uppercase", sinNombres && "bg-muted/60 text-muted-foreground", !!personaEncontrada && !personaModificada && "border-amber-400 bg-amber-50/50 dark:bg-amber-950/20")}
+                                                        onChange={(e) => {
+                                                            setPersonaModificada(true);
+                                                            setSinNombres(false);
+                                                            field.onChange(sanitizarNombres(e.target.value));
+                                                        }} />
+                                                </FormControl>
+                                                <DigFormMessage />
+                                            </FormItem>
+                                        )} />
+                                    </div>
+
+                                    <div className="dig-grid-3">
+                                        <FormField control={form.control} name="fecha_fallecimiento" render={({ field }) => (
+                                            <FormItem className="dig-field">
+                                                <DigLabel>F. Fallec.</DigLabel>
+                                                <FormControl>
+                                                    <Input type="date" {...field}
+                                                        className={cn("dig-input", !!personaEncontrada && !personaModificada && "border-amber-400 bg-amber-50/50 dark:bg-amber-950/20")}
+                                                        onChange={(e) => { setPersonaModificada(true); field.onChange(e.target.value); }}
+                                                         />
+                                                </FormControl>
+                                                <DigFormMessage />
+                                            </FormItem>
+                                        )} />
+                                        <FormField control={form.control} name="telefono" render={({ field }) => (
+                                            <FormItem className="dig-field">
+                                                <DigLabel hint="Opc.">Teléfono</DigLabel>
+                                                <FormControl>
+                                                    <div className="relative min-w-0">
+                                                        <Input {...field} placeholder="9 dígitos"
+                                                            maxLength={9}
+                                                            inputMode="numeric"
+                                                            className={cn("dig-input pl-8", !!personaEncontrada && !personaModificada && "border-amber-400 bg-amber-50/50 dark:bg-amber-950/20")}
+                                                            onChange={(e) => { setPersonaModificada(true); field.onChange(sanitizarSoloDigitos(e.target.value, 9)); }} />
+                                                        <Phone size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/40 pointer-events-none" />
+                                                    </div>
+                                                </FormControl>
+                                                <DigFormMessage />
+                                            </FormItem>
+                                        )} />
+                                        <FormField control={form.control} name="persona_observaciones" render={({ field }) => (
+                                            <FormItem className="dig-field">
+                                                <DigLabel hint="Opc.">Observ.</DigLabel>
+                                                <FormControl>
+                                                    <Input {...field} placeholder="Notas..."
+                                                        maxLength={500}
+                                                        className={cn("dig-input", !!personaEncontrada && !personaModificada && "border-amber-400 bg-amber-50/50 dark:bg-amber-950/20")}
+                                                        onChange={(e) => { setPersonaModificada(true); field.onChange(e.target.value); }} />
+                                                </FormControl>
+                                                <DigFormMessage />
+                                            </FormItem>
+                                        )} />
+                                    </div>
+
                                     {personaEncontrada && (
-                                        <div className="flex items-center gap-2 px-3 py-2 bg-emerald-50 dark:bg-emerald-950/20 rounded-xl border border-emerald-200 dark:border-emerald-900/30">
-                                            <CheckCircle2 size={13} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
-                                            <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide">
-                                                Ciudadano identificado — ID #{personaEncontrada.id}
+                                        <div className="flex items-center gap-1.5 px-2 py-1 bg-emerald-50 dark:bg-emerald-950/20 rounded-lg border border-emerald-200 dark:border-emerald-900/30">
+                                            <CheckCircle2 size={11} className="text-emerald-600 shrink-0" />
+                                            <span className="text-[9px] font-bold text-emerald-700 dark:text-emerald-400 uppercase">
+                                                ID #{personaEncontrada.id}
                                             </span>
                                         </div>
                                     )}
@@ -852,98 +1083,98 @@ export default function DigitalizacionPage() {
 
                             {/* ── CÓNYUGE: en mobile/md debajo del ciudadano; en xl debajo también ── */}
                             {esMatrimonio && (
-                                <Card className="shadow-sm border-purple-200 dark:border-purple-900/40 rounded-2xl overflow-hidden bg-card py-0 gap-0">
-                                    <CardHeader className="h-9 flex items-center px-4 border-b bg-purple-50/60 dark:bg-purple-950/20 py-0! pb-0!">
-                                        <div className="flex items-center gap-2">
-                                            <Heart size={13} className="text-purple-500 shrink-0" />
-                                            <CardTitle className="text-[11px] font-bold uppercase tracking-widest text-purple-600 dark:text-purple-400 leading-none">
-                                                Cónyuge — Obligatorio en Matrimonio
-                                            </CardTitle>
-                                        </div>
+                                <Card className="shadow-sm border-purple-200 dark:border-purple-900/40 rounded-xl overflow-hidden bg-card py-0 gap-0">
+                                    <CardHeader className="dig-card-header border-b bg-purple-50/60 dark:bg-purple-950/20">
+                                        <Heart className="dig-card-icon text-purple-500" />
+                                        <CardTitle className="dig-card-title text-purple-600 dark:text-purple-400">
+                                            Cónyuge
+                                        </CardTitle>
                                     </CardHeader>
-                                    <CardContent className="px-4 py-4 space-y-3">
-                                        {/* N° documento cónyuge — búsqueda automática al tipear ≥8 caracteres */}
+                                    <CardContent className="dig-card-body">
                                         <FormField control={form.control} name="conyuge_dni" render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel className="std-label">N° Documento Cónyuge</FormLabel>
+                                            <FormItem className="dig-field">
+                                                <DigLabel hint="Opcional">N° Documento Cónyuge</DigLabel>
                                                 <FormControl>
                                                     <Input
                                                         {...field}
                                                         onChange={(event) => {
                                                             setActaEncontrada(null);
-                                                            field.onChange(event);
+                                                            setConyugeModificado(true);
+                                                            field.onChange(
+                                                                sanitizarDocumento(
+                                                                    event.target.value,
+                                                                    form.getValues("conyuge_tipo_documento") || tipoDocumentoValue,
+                                                                ),
+                                                            );
                                                         }}
                                                         maxLength={15}
+                                                        inputMode="text"
                                                         placeholder="Número de documento..."
                                                         className={cn(
-                                                            "std-input h-9 text-sm font-semibold tracking-widest",
+                                                            "dig-input font-semibold tracking-wide",
                                                             personaSecundariaEncontrada && "border-purple-300 dark:border-purple-700"
                                                         )} />
                                                 </FormControl>
+                                                <DigFormMessage />
                                             </FormItem>
                                         )} />
 
-                                        {/* nombres cónyuge — orden: Paterno · Materno · Nombres */}
-                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                                        <div className="dig-grid-3">
                                             <FormField control={form.control} name="conyuge_apellido_paterno" render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel className="std-label">Ap. Paterno</FormLabel>
-                                                    <FormControl><Input {...field} placeholder="PATERNO" className={cn("std-input h-9 text-xs uppercase", !!personaSecundariaEncontrada && !conyugeModificado && "border-amber-400 bg-amber-50/50 dark:bg-amber-950/20")} onChange={(e) => { setConyugeModificado(true); field.onChange(e.target.value.toUpperCase()); }} /></FormControl>
-                                                    <FormMessage />
+                                                <FormItem className="dig-field">
+                                                    <DigLabel>Ap. Paterno</DigLabel>
+                                                    <FormControl><Input {...field} placeholder="PATERNO" className={cn("dig-input uppercase", !!personaSecundariaEncontrada && !conyugeModificado && "border-amber-400 bg-amber-50/50 dark:bg-amber-950/20")} onChange={(e) => { setConyugeModificado(true); field.onChange(sanitizarApellido(e.target.value)); }} /></FormControl>
+                                                    <DigFormMessage />
                                                 </FormItem>
                                             )} />
                                             <FormField control={form.control} name="conyuge_apellido_materno" render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel className="std-label">Ap. Materno</FormLabel>
-                                                    <FormControl><Input {...field} placeholder="MATERNO" className={cn("std-input h-9 text-xs uppercase", !!personaSecundariaEncontrada && !conyugeModificado && "border-amber-400 bg-amber-50/50 dark:bg-amber-950/20")} onChange={(e) => { setConyugeModificado(true); field.onChange(e.target.value.toUpperCase()); }} /></FormControl>
-                                                    <FormMessage />
+                                                <FormItem className="dig-field">
+                                                    <DigLabel>Ap. Materno</DigLabel>
+                                                    <FormControl><Input {...field} placeholder="MATERNO" className={cn("dig-input uppercase", !!personaSecundariaEncontrada && !conyugeModificado && "border-amber-400 bg-amber-50/50 dark:bg-amber-950/20")} onChange={(e) => { setConyugeModificado(true); field.onChange(sanitizarApellido(e.target.value)); }} /></FormControl>
+                                                    <DigFormMessage />
                                                 </FormItem>
                                             )} />
                                             <FormField control={form.control} name="conyuge_nombres" render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel className="std-label">Nombres</FormLabel>
-                                                    <FormControl><Input {...field} placeholder="NOMBRES" className={cn("std-input h-9 text-xs uppercase", !!personaSecundariaEncontrada && !conyugeModificado && "border-amber-400 bg-amber-50/50 dark:bg-amber-950/20")} onChange={(e) => { setConyugeModificado(true); field.onChange(e.target.value.toUpperCase()); }} /></FormControl>
-                                                    <FormMessage />
+                                                <FormItem className="dig-field">
+                                                    <DigLabel>Nombres</DigLabel>
+                                                    <FormControl><Input {...field} placeholder="NOMBRES" className={cn("dig-input uppercase", !!personaSecundariaEncontrada && !conyugeModificado && "border-amber-400 bg-amber-50/50 dark:bg-amber-950/20")} onChange={(e) => { setConyugeModificado(true); field.onChange(sanitizarNombres(e.target.value)); }} /></FormControl>
+                                                    <DigFormMessage />
                                                 </FormItem>
                                             )} />
                                         </div>
 
-                                        {/* Sexo (2/12) + F.Nacimiento (5/12) + F.Fallecimiento (5/12) */}
-                                        <div className="grid grid-cols-12 gap-2">
-                                            <div className="col-span-2">
-                                                <FormField control={form.control} name="conyuge_sexo" render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel className="std-label">Sexo</FormLabel>
-                                                        <Select onValueChange={field.onChange} value={field.value} defaultValue="F">
-                                                            <FormControl>
-                                                                <SelectTrigger className="std-input h-9 font-bold text-xs justify-center gap-1 px-2 [&>span]:flex-none">
-                                                                    <span className="font-bold">{field.value || "—"}</span>
-                                                                </SelectTrigger>
-                                                            </FormControl>
-                                                            <SelectContent>
-                                                                <SelectItem value="M" className="font-semibold text-xs">M — Masculino</SelectItem>
-                                                                <SelectItem value="F" className="font-semibold text-xs">F — Femenino</SelectItem>
-                                                            </SelectContent>
-                                                        </Select>
-                                                    </FormItem>
-                                                )} />
-                                            </div>
-                                            <div className="col-span-5">
-                                                <FormField control={form.control} name="conyuge_fecha_nacimiento" render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel className="std-label">F. Nacimiento</FormLabel>
-                                                        <FormControl><Input type="date" {...field} className="std-input h-9 text-xs" /></FormControl>
-                                                    </FormItem>
-                                                )} />
-                                            </div>
-                                            <div className="col-span-5">
-                                                <FormField control={form.control} name="conyuge_fecha_fallecimiento" render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel className="std-label">F. Fallecimiento</FormLabel>
-                                                        <FormControl><Input type="date" {...field} className="std-input h-9 text-xs" /></FormControl>
-                                                    </FormItem>
-                                                )} />
-                                            </div>
+                                        <div className="dig-grid-3">
+                                            <FormField control={form.control} name="conyuge_sexo" render={({ field }) => (
+                                                <FormItem className="dig-field">
+                                                    <DigLabel>Sexo</DigLabel>
+                                                    <Select onValueChange={field.onChange} value={field.value} defaultValue="F">
+                                                        <FormControl>
+                                                            <SelectTrigger className="dig-select-trigger font-bold">
+                                                                <SelectValue placeholder="—" />
+                                                            </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent position="popper" className="z-[100]">
+                                                            <SelectItem value="M" className="font-semibold text-xs">M — Masculino</SelectItem>
+                                                            <SelectItem value="F" className="font-semibold text-xs">F — Femenino</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <DigFormMessage />
+                                                </FormItem>
+                                            )} />
+                                            <FormField control={form.control} name="conyuge_fecha_nacimiento" render={({ field }) => (
+                                                <FormItem className="dig-field">
+                                                    <DigLabel>F. Nacimiento</DigLabel>
+                                                    <FormControl><Input type="date" {...field} className="dig-input" /></FormControl>
+                                                    <DigFormMessage />
+                                                </FormItem>
+                                            )} />
+                                            <FormField control={form.control} name="conyuge_fecha_fallecimiento" render={({ field }) => (
+                                                <FormItem className="dig-field">
+                                                    <DigLabel>F. Fallecimiento</DigLabel>
+                                                    <FormControl><Input type="date" {...field} className="dig-input" /></FormControl>
+                                                    <DigFormMessage />
+                                                </FormItem>
+                                            )} />
                                         </div>
 
                                         {personaSecundariaEncontrada && (
@@ -962,17 +1193,15 @@ export default function DigitalizacionPage() {
                         {/* ╔════════════════╗
                             ║  2. ACTA + FILE  ║  md:5  xl:4
                             ╚════════════════╝ */}
-                        <div className="md:col-span-5 xl:col-span-4 space-y-3">
-                            <Card className="shadow-sm border-border rounded-2xl overflow-hidden bg-card py-0 gap-0">
-                                <CardHeader className="h-9 flex items-center px-4 border-b bg-muted/40 py-0! pb-0!">
-                                    <div className="flex items-center gap-2">
-                                        <FileText size={13} className="text-primary shrink-0" />
-                                        <CardTitle className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/80 leading-none">
-                                            2. Especificaciones del Acta
-                                        </CardTitle>
-                                    </div>
+                        <div className="lg:col-span-4 space-y-2">
+                            <Card className="shadow-sm border-border rounded-xl overflow-hidden bg-card py-0 gap-0">
+                                <CardHeader className="dig-card-header border-b">
+                                    <FileText className="dig-card-icon" />
+                                    <CardTitle className="dig-card-title">
+                                        2. Acta
+                                    </CardTitle>
                                 </CardHeader>
-                                <CardContent className="px-4 py-4 space-y-3">
+                                <CardContent className="dig-card-body">
 
                                     {/* Toggle libro / CUI */}
                                     <div className="flex p-1 bg-muted/60 rounded-xl w-fit">
@@ -981,6 +1210,8 @@ export default function DigitalizacionPage() {
                                             onClick={() => {
                                                 setActaEncontrada(null);
                                                 form.setValue("modo", "CLASICO");
+                                                form.setValue("numero_acta", "");
+                                                setEsSugerencia(false);
                                             }}>
                                             Libro Clásico
                                         </Button>
@@ -989,16 +1220,18 @@ export default function DigitalizacionPage() {
                                             onClick={() => {
                                                 setActaEncontrada(null);
                                                 form.setValue("modo", "CUI");
+                                                form.setValue("numero_acta", "");
+                                                setEsSugerencia(false);
                                             }}>
                                             RENIEC (CUI)
                                         </Button>
                                     </div>
 
-                                    {/* tipo acta + fecha */}
-                                    <div className="grid grid-cols-2 gap-2.5">
+                                    {/* Fila 1: tipo + fecha */}
+                                    <div className="dig-grid-2">
                                         <FormField control={form.control} name="tipo_acta" render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel className="std-label">Tipo de Acta</FormLabel>
+                                            <FormItem className="dig-field">
+                                                <DigLabel>Tipo de Acta</DigLabel>
                                                 <Select
                                                     onValueChange={(value) => {
                                                         setActaEncontrada(null);
@@ -1007,7 +1240,7 @@ export default function DigitalizacionPage() {
                                                     value={field.value}
                                                 >
                                                     <FormControl>
-                                                        <SelectTrigger className={cn("std-input h-9 font-bold text-xs", !!actaEncontrada && "border-rose-400 bg-rose-50/50 dark:bg-rose-950/20")}>
+                                                        <SelectTrigger className={cn("dig-select-trigger font-bold", !!actaEncontrada && "border-rose-400 bg-rose-50/50 dark:bg-rose-950/20")}>
                                                             <SelectValue />
                                                         </SelectTrigger>
                                                     </FormControl>
@@ -1017,103 +1250,101 @@ export default function DigitalizacionPage() {
                                                         <SelectItem value="DEFUNCION" className="font-semibold text-xs">Defunción</SelectItem>
                                                     </SelectContent>
                                                 </Select>
+                                                <DigFormMessage />
                                             </FormItem>
                                         )} />
 
                                         <FormField control={form.control} name="fecha_acta" render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel className="std-label">F. Registro</FormLabel>
+                                            <FormItem className="dig-field">
+                                                <DigLabel>F. Registro</DigLabel>
                                                 <FormControl>
-                                                    <Input type="date" {...field} className={cn("std-input h-9 text-xs font-semibold", !!actaEncontrada && "border-rose-400 bg-rose-50/50 dark:bg-rose-950/20")} />
+                                                    <Input type="date" {...field} className={cn("dig-input font-semibold", !!actaEncontrada && "border-rose-400 bg-rose-50/50 dark:bg-rose-950/20")} />
                                                 </FormControl>
-                                                <FormMessage />
+                                                <DigFormMessage />
                                             </FormItem>
                                         )} />
                                     </div>
 
-                                    {/* libro / n° acta / año */}
-                                    <div className="grid grid-cols-12 gap-2">
-                                        {modoValue === 'CLASICO' && (
-                                            <div className="col-span-4">
-                                                <FormField control={form.control} name="libro" render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel className="std-label">Libro N°</FormLabel>
-                                                        <FormControl>
-                                                            <Input
-                                                                {...field}
-                                                                onChange={(event) => {
-                                                                    setActaEncontrada(null);
-                                                                    field.onChange(event);
-                                                                }}
-                                                                placeholder="N°"
-                                                                className={cn("std-input h-9 font-bold text-center text-sm", !!actaEncontrada && "border-rose-400 bg-rose-50/50 dark:bg-rose-950/20")} />
-                                                        </FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )} />
-                                            </div>
-                                        )}
-                                        <div className={cn(modoValue === 'CLASICO' ? "col-span-5" : "col-span-9")}>
-                                            <FormField control={form.control} name="numero_acta" render={({ field }) => (
-                                                <FormItem>
-                                                    <div className="flex items-center justify-between mb-1">
-                                                        <div className="flex items-center gap-1.5">
-                                                            <FormLabel className="std-label m-0 leading-none">
-                                                                {modoValue === 'CLASICO' ? 'N° Acta' : 'CUI / ID'}
-                                                            </FormLabel>
-                                                            {esSugerencia && numActaValue && (
-                                                                <span className="text-[9px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 px-1 py-0.5 rounded">
-                                                                    AUTO
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                        {modoValue === 'CLASICO' && (libroValue || numActaValue) && (
-                                                            <Badge variant="outline" className="h-4 px-1 text-[8px] bg-primary/5 text-primary border-primary/20 font-bold shrink-0">
-                                                                {tipoActaValue.substring(0, 3)}-L{libroValue || '?'}-{numActaValue || '?'}
-                                                            </Badge>
-                                                        )}
-                                                    </div>
+                                    {/* Fila 2: numeración */}
+                                    <div className={modoValue === "CLASICO" ? "dig-grid-3" : "dig-grid-2"}>
+                                        {modoValue === "CLASICO" && (
+                                            <FormField control={form.control} name="libro" render={({ field }) => (
+                                                <FormItem className="dig-field">
+                                                    <DigLabel>Libro</DigLabel>
                                                     <FormControl>
                                                         <Input
                                                             {...field}
-                                                            placeholder={modoValue === 'CLASICO' ? "Número" : "Código CUI"}
-                                                            className={cn(
-                                                                "std-input h-9 font-black uppercase text-sm tracking-widest",
-                                                                esSugerencia && numActaValue && "border-emerald-300 dark:border-emerald-700",
-                                                                !!actaEncontrada && "border-rose-400 bg-rose-50/50 dark:bg-rose-950/20"
-                                                            )}
-                                                            onChange={(e) => {
+                                                            onChange={(event) => {
                                                                 setActaEncontrada(null);
-                                                                field.onChange(e.target.value.toUpperCase());
-                                                                setEsSugerencia(false);
+                                                                field.onChange(sanitizarSoloDigitos(event.target.value, 4));
                                                             }}
-                                                        />
+                                                            inputMode="numeric"
+                                                            maxLength={4}
+                                                            placeholder="N°"
+                                                            className={cn("dig-input font-bold text-center", !!actaEncontrada && "border-rose-400 bg-rose-50/50 dark:bg-rose-950/20")} />
                                                     </FormControl>
-                                                    <FormMessage />
+                                                    <DigFormMessage />
                                                 </FormItem>
                                             )} />
-                                        </div>
-                                        <div className="col-span-3">
-                                            <FormField control={form.control} name="anio" render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel className="std-label">Año</FormLabel>
-                                                    <FormControl>
-                                                        <Input type="number" {...field} disabled
-                                                            className="std-input h-9 bg-muted/50 text-muted-foreground font-bold text-xs text-center" />
-                                                    </FormControl>
-                                                </FormItem>
-                                            )} />
-                                        </div>
+                                        )}
+
+                                        <FormField control={form.control} name="numero_acta" render={({ field }) => (
+                                            <FormItem className="dig-field">
+                                                <DigLabel
+                                                    hint={modoValue === "CUI" ? "6-12 díg." : undefined}
+                                                    option={
+                                                        modoValue === "CLASICO" && esSugerencia && numActaValue ? (
+                                                            <span className="shrink-0 text-[8px] font-black uppercase text-emerald-600 bg-emerald-50 border border-emerald-200 px-1 rounded">
+                                                                AUTO
+                                                            </span>
+                                                        ) : undefined
+                                                    }
+                                                >
+                                                    {modoValue === "CLASICO" ? "N° Acta" : "CUI / ID"}
+                                                </DigLabel>
+                                                <FormControl>
+                                                    <Input
+                                                        {...field}
+                                                        placeholder={modoValue === "CLASICO" ? "Número" : "6-12 dígitos"}
+                                                        inputMode="numeric"
+                                                        maxLength={modoValue === "CLASICO" ? 6 : 12}
+                                                        className={cn(
+                                                            "dig-input font-black uppercase tracking-wide",
+                                                            modoValue === "CLASICO" && esSugerencia && numActaValue && "border-emerald-300 dark:border-emerald-700",
+                                                            !!actaEncontrada && "border-rose-400 bg-rose-50/50 dark:bg-rose-950/20"
+                                                        )}
+                                                        onChange={(e) => {
+                                                            setActaEncontrada(null);
+                                                            const maxLen = modoValue === "CLASICO" ? 6 : 12;
+                                                            field.onChange(sanitizarSoloDigitos(e.target.value, maxLen));
+                                                            setEsSugerencia(false);
+                                                        }}
+                                                    />
+                                                </FormControl>
+                                                <DigFormMessage />
+                                            </FormItem>
+                                        )} />
+
+                                        <FormField control={form.control} name="anio" render={({ field }) => (
+                                            <FormItem className="dig-field">
+                                                <DigLabel hint="Auto">Año</DigLabel>
+                                                <FormControl>
+                                                    <Input type="number" {...field} disabled
+                                                        className="dig-input bg-muted/50 text-muted-foreground font-bold text-center" />
+                                                </FormControl>
+                                            </FormItem>
+                                        )} />
                                     </div>
 
                                     <FormField control={form.control} name="acta_observaciones" render={({ field }) => (
-                                        <FormItem>
-                                                    <FormLabel className="std-label">Observaciones</FormLabel>
-                                                    <FormControl>
-                                                        <Textarea {...field} disabled={!!actaEncontrada} placeholder="Notas adicionales del acta..."
-                                                            className="std-input min-h-9 py-2 resize-none text-xs" rows={1} />
+                                        <FormItem className="dig-field">
+                                            <DigLabel hint="Opc.">Observ.</DigLabel>
+                                            <FormControl>
+                                                <Input {...field} disabled={!!actaEncontrada} placeholder="Notas del acta..."
+                                                    maxLength={500}
+                                                    className="dig-input" />
                                             </FormControl>
-                                            <FormMessage />
+                                            <DigFormMessage />
                                         </FormItem>
                                     )} />
                                 </CardContent>
@@ -1123,17 +1354,15 @@ export default function DigitalizacionPage() {
                         {/* ╔══════════════════╗
                             ║  3. ARCHIVO FILE   ║  md:full-row en mobile/md, xl:3
                             ╚══════════════════╝ */}
-                        <div className="md:col-span-12 xl:col-span-3 space-y-3">
-                            <Card className="shadow-sm border-border rounded-2xl overflow-hidden bg-card py-0 gap-0 h-full">
-                                <CardHeader className="h-9 flex items-center px-4 border-b bg-muted/40 py-0! pb-0!">
-                                    <div className="flex items-center gap-2">
-                                        <Upload size={13} className="text-primary shrink-0" />
-                                        <CardTitle className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/80 leading-none">
-                                            3. Archivo Digitalizado
-                                        </CardTitle>
-                                    </div>
+                        <div className="lg:col-span-3">
+                            <Card className="shadow-sm border-border rounded-xl overflow-hidden bg-card py-0 gap-0 h-full">
+                                <CardHeader className="dig-card-header border-b">
+                                    <Upload className="dig-card-icon" />
+                                    <CardTitle className="dig-card-title">
+                                        3. Archivo
+                                    </CardTitle>
                                 </CardHeader>
-                                <CardContent className="px-4 py-4 flex flex-col gap-3">
+                                <CardContent className="dig-card-body">
 
                                     {/* input siempre en DOM — permite reemplazar archivo */}
                                     <input
@@ -1147,11 +1376,11 @@ export default function DigitalizacionPage() {
                                     {/* zona drag-and-drop */}
                                     <div
                                         className={cn(
-                                            "border-2 border-dashed rounded-2xl transition-all cursor-pointer group",
-                                            "flex xl:flex-col items-center gap-3 xl:justify-center p-4 xl:py-6 xl:min-h-35",
+                                            "border-2 border-dashed rounded-lg transition-all cursor-pointer group",
+                                            "flex items-center gap-2.5 p-2.5 min-h-[72px]",
                                             file
                                                 ? "border-primary/60 bg-primary/5"
-                                                : "border-border/70 hover:border-primary/50 hover:bg-muted/20 dark:border-border"
+                                                : "border-border/70 hover:border-primary/50 hover:bg-muted/20"
                                         )}
                                         onDragOver={(e) => e.preventDefault()}
                                         onDrop={(e) => {
@@ -1161,44 +1390,31 @@ export default function DigitalizacionPage() {
                                         onClick={() => document.getElementById('file-upload-main')?.click()}
                                     >
                                         {file ? (
-                                            <div className="bg-primary/20 p-2.5 rounded-full group-hover:scale-110 transition-transform shrink-0">
-                                                <CheckCircle2 className="h-5 w-5 text-primary" />
+                                            <div className="bg-primary/20 p-2 rounded-full shrink-0">
+                                                <CheckCircle2 className="h-4 w-4 text-primary" />
                                             </div>
                                         ) : (
-                                            <div className="bg-muted/80 p-2.5 rounded-full group-hover:scale-110 transition-transform shrink-0">
-                                                <Upload className="h-5 w-5 text-muted-foreground/50" />
+                                            <div className="bg-muted/80 p-2 rounded-full shrink-0">
+                                                <Upload className="h-4 w-4 text-muted-foreground/50" />
                                             </div>
                                         )}
 
-                                        <div className="flex flex-col xl:items-center xl:text-center gap-0.5 min-w-0">
-                                            <span className="font-bold text-foreground text-xs uppercase tracking-tight leading-tight truncate max-w-full">
-                                                {file ? file.name : "Arrastra o haz clic"}
+                                        <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+                                            <span className="font-bold text-foreground text-[10px] uppercase tracking-tight truncate">
+                                                {file ? file.name : "Arrastra o haz clic · PDF/JPG"}
                                             </span>
-                                            <span className="text-[10px] text-muted-foreground/60 font-semibold uppercase">
-                                                {file ? `${(file.size / 1024 / 1024).toFixed(2)} MB — listo` : "PDF · JPG · PNG · máx 20 MB"}
+                                            <span className="text-[9px] text-muted-foreground/70">
+                                                {file ? `${(file.size / 1024 / 1024).toFixed(2)} MB` : "Requerido · máx 20 MB"}
                                             </span>
                                         </div>
                                     </div>
 
-                                    {/* acciones de archivo */}
-                                    {file ? (
+                                    {file && (
                                         <Button variant="ghost" size="sm" type="button"
                                             onClick={() => setFile(null)}
-                                            className="w-full text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 font-bold uppercase text-[10px] tracking-wider h-8 rounded-xl border border-rose-100 dark:border-rose-900/30">
-                                            <Trash2 size={13} className="mr-1.5" /> Quitar Archivo
+                                            className="w-full h-7 text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 font-bold uppercase text-[9px] rounded-lg border border-rose-100 dark:border-rose-900/30">
+                                            <Trash2 size={12} className="mr-1" /> Quitar
                                         </Button>
-                                    ) : (
-                                        <>
-                                            <Button type="button" variant="outline"
-                                                className="w-full border-border h-9 rounded-xl font-bold uppercase text-[10px] tracking-widest"
-                                                onClick={() => document.getElementById('file-upload-main')?.click()}>
-                                                Examinar Archivos
-                                            </Button>
-                                            <div className="flex items-start gap-2 p-2.5 bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 text-[10px] font-bold uppercase rounded-xl border border-amber-100 dark:border-amber-900/30 tracking-tight leading-snug">
-                                                <AlertCircle size={13} className="shrink-0 mt-px" />
-                                                <span>Documento requerido para procesar.</span>
-                                            </div>
-                                        </>
                                     )}
                                 </CardContent>
                             </Card>
@@ -1227,11 +1443,11 @@ export default function DigitalizacionPage() {
 
                     {/* acciones */}
                     <div className="flex gap-2.5 w-full sm:w-auto">
-                        <Button variant="outline" onClick={resetAll} disabled={loading}
+                        <Button variant="outline" onClick={() => resetAll()} disabled={loading}
                             className="flex-1 sm:flex-none h-10 px-6 border-border bg-card hover:bg-muted font-bold text-xs rounded-xl shadow-sm active:scale-95 transition-all flex items-center gap-2">
                             <RefreshCw size={14} /> Reiniciar
                         </Button>
-                        <Button onClick={form.handleSubmit(onSubmit)} disabled={loading}
+                        <Button onClick={form.handleSubmit(onSubmit, onInvalid)} disabled={loading}
                             className="flex-1 sm:flex-none h-10 px-6 bg-primary hover:bg-primary/90 shadow-primary/25 shadow-lg text-white font-bold text-xs rounded-xl active:scale-95 transition-all flex items-center gap-2">
                             {loading ? (
                                 <><Loader2 className="h-4 w-4 animate-spin" /> Procesando…</>

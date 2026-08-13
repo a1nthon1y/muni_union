@@ -37,13 +37,18 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+    sanitizarNombre,
+    sanitizarSoloDigitos,
+    validarTelefono,
+} from "@/lib/form-validators";
 
 const solicitudSchema = z.object({
-    dni_solicitante: z.string().length(8, "DNI del solicitante debe tener 8 dígitos").regex(/^\d+$/, "Solo números"),
-    nombres_solicitante: z.string().min(2, "Nombres son obligatorios").regex(/^[A-ZÁÉÍÓÚÑ ]+$/i, "Solo letras y espacios").transform(v => v.toUpperCase()),
-    apellidos_solicitante: z.string().min(2, "Apellidos son obligatorios").regex(/^[A-ZÁÉÍÓÚÑ ]+$/i, "Solo letras y espacios").transform(v => v.toUpperCase()),
-    telefono_solicitante: z.string().max(9, "El teléfono no puede tener más de 9 dígitos").optional().or(z.literal("")),
-    direccion_solicitante: z.string().optional().or(z.literal("")),
+    dni_solicitante: z.string().min(1, "DNI es obligatorio"),
+    nombres_solicitante: z.string().min(1, "Nombres son obligatorios"),
+    apellidos_solicitante: z.string().min(1, "Apellidos son obligatorios"),
+    telefono_solicitante: z.string().optional().or(z.literal("")),
+    direccion_solicitante: z.string().max(200).optional().or(z.literal("")),
     tipo_solicitud: z.string().min(2, "Tipo de solicitud es obligatorio"),
     observaciones: z.string().default(""),
     detalles: z.array(z.object({
@@ -54,6 +59,26 @@ const solicitudSchema = z.object({
         cantidad: z.number().min(1),
         precio_unitario: z.number().min(0),
     })).min(1, "Debe agregar al menos un acta"),
+}).superRefine((data, ctx) => {
+    const add = (path: string, message: string) => {
+        ctx.addIssue({ code: "custom", message, path: [path] });
+    };
+
+    const dni = data.dni_solicitante.trim();
+    if (!/^\d{8}$/.test(dni)) {
+        add("dni_solicitante", "El DNI debe tener exactamente 8 dígitos");
+    }
+
+    if (!/^[A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ ]*$/i.test(data.nombres_solicitante.trim()) || data.nombres_solicitante.trim().length < 2) {
+        add("nombres_solicitante", "Nombres: solo letras, mínimo 2 caracteres");
+    }
+
+    if (!/^[A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ ]*$/i.test(data.apellidos_solicitante.trim()) || data.apellidos_solicitante.trim().length < 2) {
+        add("apellidos_solicitante", "Apellidos: solo letras, mínimo 2 caracteres");
+    }
+
+    const errTel = validarTelefono(data.telefono_solicitante);
+    if (errTel) add("telefono_solicitante", errTel);
 });
 
 type SolicitudFormValues = z.infer<typeof solicitudSchema>;
@@ -75,6 +100,8 @@ export function NuevaSolicitudForm({
 
     const form = useForm<SolicitudFormValues>({
         resolver: zodResolver(solicitudSchema) as any,
+        mode: "onTouched",
+        reValidateMode: "onChange",
         defaultValues: {
             dni_solicitante: "",
             nombres_solicitante: "",
@@ -247,7 +274,9 @@ export function NuevaSolicitudForm({
                                                         placeholder="8 DÍGITOS"
                                                         {...field}
                                                         maxLength={8}
+                                                        inputMode="numeric"
                                                         className="font-mono h-10 border-border bg-muted/30 focus:bg-card focus:border-primary focus:ring-primary/10 rounded-lg transition-all"
+                                                        onChange={(e) => field.onChange(sanitizarSoloDigitos(e.target.value, 8))}
                                                     />
                                                     {loadingSolicitante && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-blue-400" size={16} />}
                                                 </div>
@@ -263,7 +292,7 @@ export function NuevaSolicitudForm({
                                         <FormItem>
                                             <FormLabel className="text-xs font-bold text-muted-foreground uppercase">Teléfono (Opcional)</FormLabel>
                                             <FormControl>
-                                                <Input placeholder="999..." {...field} maxLength={9} className="h-10 rounded-lg border-border focus:border-primary focus:ring-primary/10 transition-all font-mono" />
+                                                <Input placeholder="999..." {...field} maxLength={9} inputMode="numeric" className="h-10 rounded-lg border-border focus:border-primary focus:ring-primary/10 transition-all font-mono" onChange={(e) => field.onChange(sanitizarSoloDigitos(e.target.value, 9))} />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
@@ -280,7 +309,7 @@ export function NuevaSolicitudForm({
                                                     placeholder="NOMBRES"
                                                     {...field}
                                                     className="uppercase h-10 rounded-lg border-border shadow-sm font-semibold focus:border-primary focus:ring-primary/10"
-                                                    onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+                                                    onChange={(e) => field.onChange(sanitizarNombre(e.target.value))}
                                                 />
                                             </FormControl>
                                             <FormMessage />
@@ -298,7 +327,7 @@ export function NuevaSolicitudForm({
                                                     placeholder="APELLIDOS"
                                                     {...field}
                                                     className="uppercase h-10 rounded-lg border-border shadow-sm font-semibold focus:border-primary focus:ring-primary/10"
-                                                    onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+                                                    onChange={(e) => field.onChange(sanitizarNombre(e.target.value))}
                                                 />
                                             </FormControl>
                                             <FormMessage />
