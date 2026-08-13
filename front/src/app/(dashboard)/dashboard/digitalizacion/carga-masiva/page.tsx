@@ -511,7 +511,7 @@ export default function CargaMasivaPage() {
                             ))}
                         </div>
 
-                        {(resumen.fechas_actualizadas ?? 0) > 0
+                        {((resumen.fechas_actualizadas ?? 0) > 0
                             || (resumen.sin_fecha_en_excel ?? 0) > 0
                             || (resumen.fechas_ya_registradas ?? 0) > 0
                             || (resumen.fechas_conflicto ?? 0) > 0) && (
