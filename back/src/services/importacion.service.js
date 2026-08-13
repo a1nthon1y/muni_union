@@ -7,6 +7,7 @@ import {
     resolverFechasPersona,
     FechaPersonaValidationError,
 } from "./persona-fechas.service.js";
+import { normalizarColumnasImportacion } from "./importacion-columns.js";
 
 const TIPOS_ACTA_VALIDOS = new Set(["NACIMIENTO", "MATRIMONIO", "DEFUNCION"]);
 
@@ -110,7 +111,7 @@ export const importarActasMasivo = async (
     const tiposDocMap = await cargarTiposDocumento(client);
 
     for (let i = 0; i < filas.length; i++) {
-        const fila = filas[i];
+        const fila = normalizarColumnasImportacion(filas[i]);
         const rowNum = i + 1;
         let personaId = null;
         let actaId = null;
@@ -518,14 +519,16 @@ export const importarActasMasivo = async (
                         mensaje: "Acta ya existía sin documento — se vinculó el PDF correctamente",
                     });
                 } else {
-                    await client.query("ROLLBACK");
+                    await client.query("COMMIT");
                     resultados.push({
                         fila: rowNum, estado: "OMITIDO", acta: fullNumeroActa,
                         persona: `${fila.apellido_paterno} ${fila.apellido_materno}, ${fila.nombres}`,
                         con_documento: tieneDocumento, acta_id: actaExistenteId,
                         mensaje: tieneDocumento
-                            ? "Acta ya registrada con documento — omitida"
-                            : "Acta ya registrada sin documento (no se encontró PDF en el ZIP)",
+                            ? "Acta ya registrada con documento — datos de persona actualizados si la fila los traía"
+                            : archivoParaVincular
+                                ? "Acta ya registrada — datos de persona actualizados si la fila los traía"
+                                : "Acta ya registrada sin documento — datos de persona actualizados si la fila los traía (PDF no vinculado)",
                     });
                 }
                 continue;

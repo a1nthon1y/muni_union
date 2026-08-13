@@ -7,6 +7,7 @@ import unzipper from "unzipper";
 import multer from "multer";
 import crypto from "crypto";
 import logger from "../config/logger.js";
+import { normalizarColumnasImportacion } from "./importacion-columns.js";
 
 const uploadDir = "uploads/documentos";
 const tempDir = "uploads/temp_import";
@@ -96,6 +97,7 @@ const parsearExcel = (rutaArchivo) => {
             return obj;
         })
         .filter(f => f.nombres || f.apellido_paterno)
+        .map(f => normalizarColumnasImportacion(f))
         .map(f => {
             if (f.tipo_acta) f.tipo_acta = f.tipo_acta.toUpperCase().trim();
             if (f.sexo) f.sexo = f.sexo.toUpperCase().trim();

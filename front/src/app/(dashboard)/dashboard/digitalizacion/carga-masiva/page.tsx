@@ -243,6 +243,7 @@ export default function CargaMasivaPage() {
                             </li>
                             <li className="flex flex-col">
                                 <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">dni / tipo_documento / sexo / fecha_nacimiento / fecha_fallecimiento</span>
+                                <span className="text-[10px] text-muted-foreground block mt-0.5">Alias aceptados: fecha_defuncion, f_fallecimiento</span>
                                 <span className="text-[9px] text-slate-500">Datos adicionales. tipo_documento: DNI, CARNET EXTR., PASAPORTE, etc.</span>
                             </li>
                         </ul>
