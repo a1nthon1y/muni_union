@@ -7,7 +7,7 @@ import unzipper from "unzipper";
 import multer from "multer";
 import crypto from "crypto";
 import logger from "../config/logger.js";
-import { normalizarColumnasImportacion } from "./importacion-columns.js";
+import { normalizarColumnasImportacion } from "../services/importacion-columns.js";
 
 const uploadDir = "uploads/documentos";
 const tempDir = "uploads/temp_import";
