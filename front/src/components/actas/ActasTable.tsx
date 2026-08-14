@@ -55,7 +55,7 @@ import {
 } from "@/components/ui/select";
 import { Acta } from "@/types/acta";
 import { useAuthStore } from "@/store/useAuthStore";
-import { isAdmin, isConsulta } from "@/lib/roles";
+import { isAdmin, isConsulta, isOperador } from "@/lib/roles";
 
 interface ActasTableProps {
     actas: Acta[];
@@ -97,6 +97,7 @@ export function ActasTable({
     const usuario = useAuthStore((state) => state.usuario);
     const soloConsulta = isConsulta(usuario?.rol_id);
     const isAdminUser  = isAdmin(usuario?.rol_id);
+    const canImportar  = isOperador(usuario?.rol_id);
     const canModificar = !soloConsulta && (isAdminUser || (usuario?.permisos?.actas_modificar !== false));
     const canAnular    = !soloConsulta && (isAdminUser || !!usuario?.permisos?.actas_anular);
     const canEliminar  = !soloConsulta && (isAdminUser || !!usuario?.permisos?.actas_eliminar);
@@ -297,7 +298,7 @@ export function ActasTable({
                 </section>
 
                 <div className="flex flex-col justify-end gap-3 sm:flex-row">
-                    {isAdminUser && (
+                    {canImportar && (
                         <Button
                             variant="default"
                             className="h-12 gap-2 rounded-2xl bg-emerald-600 px-7 text-xs font-bold text-white shadow-lg shadow-emerald-500/20 transition-all hover:bg-emerald-700 active:scale-95"
