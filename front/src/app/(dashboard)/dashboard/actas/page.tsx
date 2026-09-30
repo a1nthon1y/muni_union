@@ -207,13 +207,6 @@ export default function ActasPage() {
         if (!actaToUpload || !uploadFile) return;
         setUploading(true);
         try {
-            // Si ya tiene documento, eliminar el anterior primero
-            if (hasDoc(actaToUpload)) {
-                const docs = await documentosService.getByActa(actaToUpload.id);
-                for (const doc of docs) {
-                    await documentosService.delete(doc.id);
-                }
-            }
             await documentosService.upload(actaToUpload.id, uploadFile);
             toast.success(
                 hasDoc(actaToUpload) ? "Documento reemplazado correctamente" : "Documento adjuntado correctamente",
@@ -337,6 +330,7 @@ export default function ActasPage() {
                 onClose={() => setIsDetailOpen(false)}
                 acta={selectedActa}
                 onEdit={soloConsulta ? undefined : handleEdit}
+                onActaUpdated={fetchActas}
             />
 
             {/* Diálogo de ANULACIÓN con motivo */}

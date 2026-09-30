@@ -201,12 +201,15 @@ function DigLabel({
     return (
         <div className={cn("dig-field-head", hint && "dig-field-head--hint")}>
             <div className="flex items-center justify-between gap-1 min-w-0">
-                <FormLabel className="dig-field-label min-w-0" title={title ?? labelText}>
+                <FormLabel
+                    className="dig-field-label !text-slate-900 dark:!text-slate-100 !font-black !text-[11px] uppercase tracking-wider block mb-0 truncate min-w-0"
+                    title={title ?? labelText}
+                >
                     {children}
                 </FormLabel>
                 {option}
             </div>
-            {hint ? <p className="dig-field-hint" title={hint}>{hint}</p> : null}
+            {hint ? <p className="dig-field-hint !text-slate-600 dark:!text-slate-400 !font-bold" title={hint}>{hint}</p> : null}
         </div>
     );
 }
@@ -223,7 +226,7 @@ function DigInlineCheck({
     title?: string;
 }) {
     return (
-        <label className="dig-field-option" title={title ?? label}>
+        <label className="dig-field-option !text-slate-800 dark:!text-slate-200 !font-bold" title={title ?? label}>
             <Checkbox
                 className="size-3"
                 checked={checked}
@@ -822,7 +825,7 @@ export default function DigitalizacionPage() {
                             <Card className="shadow-sm border-border rounded-xl overflow-hidden bg-card py-0 gap-0">
                                 <CardHeader className="dig-card-header border-b">
                                     <User className="dig-card-icon" />
-                                    <CardTitle className="dig-card-title">
+                                    <CardTitle className="dig-card-title !text-slate-900 dark:!text-white !font-black">
                                         1. Ciudadano
                                     </CardTitle>
                                 </CardHeader>
@@ -1197,7 +1200,7 @@ export default function DigitalizacionPage() {
                             <Card className="shadow-sm border-border rounded-xl overflow-hidden bg-card py-0 gap-0">
                                 <CardHeader className="dig-card-header border-b">
                                     <FileText className="dig-card-icon" />
-                                    <CardTitle className="dig-card-title">
+                                    <CardTitle className="dig-card-title !text-slate-900 dark:!text-white !font-black">
                                         2. Acta
                                     </CardTitle>
                                 </CardHeader>
@@ -1358,7 +1361,7 @@ export default function DigitalizacionPage() {
                             <Card className="shadow-sm border-border rounded-xl overflow-hidden bg-card py-0 gap-0 h-full">
                                 <CardHeader className="dig-card-header border-b">
                                     <Upload className="dig-card-icon" />
-                                    <CardTitle className="dig-card-title">
+                                    <CardTitle className="dig-card-title !text-slate-900 dark:!text-white !font-black">
                                         3. Archivo
                                     </CardTitle>
                                 </CardHeader>

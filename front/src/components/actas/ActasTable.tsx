@@ -16,7 +16,8 @@ import {
     Baby,
     Heart,
     Ban,
-    RotateCcw
+    RotateCcw,
+    History
 } from "lucide-react";
 import { Pagination } from "@/components/shared/Pagination";
 import { useState, useEffect } from "react";
@@ -375,15 +376,43 @@ export function ActasTable({
                                     </TableCell>
                                     <TableCell className="std-table-cell text-center">
                                         {hasDoc(acta) ? (
-                                            <div className="flex items-center justify-center gap-2">
-                                                <div className="flex items-center gap-1.5 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 px-2.5 py-1 rounded-full border border-blue-100 dark:border-blue-900/50 shadow-sm transition-all hover:bg-blue-100 dark:hover:bg-blue-900/50">
+                                            <div className="flex items-center justify-center gap-1.5">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => onViewDoc?.(acta)}
+                                                    title={
+                                                        (acta.cantidad_historial && acta.cantidad_historial > 0)
+                                                            ? `Versión vigente v${acta.total_documentos || (acta.cantidad_historial + 1)} (${acta.cantidad_historial} ${acta.cantidad_historial === 1 ? 'escaneo previo archivado' : 'escaneos previos archivados'}) — Clic para abrir PDF`
+                                                            : "Documento digitalizado vigente — Clic para abrir PDF"
+                                                    }
+                                                    className="group inline-flex items-center gap-1.5 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/30 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300 px-2.5 py-1 rounded-full border border-blue-200/80 dark:border-blue-800/50 shadow-2xs transition-all active:scale-95 cursor-pointer"
+                                                >
                                                     {acta.tipo_documento?.toLowerCase().includes('pdf') ? (
-                                                        <FileText size={14} className="text-blue-600 dark:text-blue-400" />
+                                                        <FileText size={13} className="text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform" />
                                                     ) : (
-                                                        <Paperclip size={14} className="text-blue-500 dark:text-blue-400" />
+                                                        <Paperclip size={13} className="text-blue-500 dark:text-blue-400 group-hover:scale-110 transition-transform" />
                                                     )}
-                                                    <span className="text-[10px] font-semibold uppercase tracking-tight italic">Digitalizado</span>
-                                                </div>
+                                                    <span className="text-[10px] font-semibold uppercase tracking-tight">
+                                                        Digitalizado
+                                                        {acta.total_documentos && acta.total_documentos > 1 ? (
+                                                            <span className="ml-1 font-mono font-bold text-blue-900 dark:text-blue-200">
+                                                                · v{acta.total_documentos}
+                                                            </span>
+                                                        ) : null}
+                                                    </span>
+                                                    <Eye size={12} className="opacity-0 group-hover:opacity-100 transition-opacity text-blue-600 dark:text-blue-400" />
+                                                </button>
+                                                {acta.cantidad_historial && acta.cantidad_historial > 0 ? (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => onView(acta)}
+                                                        title={`${acta.cantidad_historial} ${acta.cantidad_historial === 1 ? 'escaneo previo archivado' : 'escaneos previos archivados'}. Clic para ver historial completo en Detalle.`}
+                                                        className="inline-flex items-center gap-1 text-[10px] font-semibold bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/30 dark:hover:bg-amber-900/50 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded-md border border-amber-200/80 dark:border-amber-900/40 cursor-pointer transition-all active:scale-95"
+                                                    >
+                                                        <History size={11} className="text-amber-600 dark:text-amber-400" />
+                                                        <span>{acta.cantidad_historial}</span>
+                                                    </button>
+                                                ) : null}
                                             </div>
                                         ) : (
                                             <div className="flex items-center justify-center">
@@ -401,43 +430,27 @@ export function ActasTable({
                                                     <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
                                                 </Button>
                                             </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end" className="w-56 rounded-xl shadow-xl border-border p-1">
-                                                <DropdownMenuLabel className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 px-2 py-2">Opciones</DropdownMenuLabel>
-                                                <DropdownMenuItem onClick={() => onView(acta)} className="cursor-pointer font-medium gap-2 py-2.5 rounded-lg text-xs">
-                                                    <Eye className="icon-std" /> Ver Detalles
+                                            <DropdownMenuContent align="end" className="w-52 rounded-xl shadow-lg border-border p-1.5">
+                                                <DropdownMenuItem onClick={() => onView(acta)} className="cursor-pointer font-medium gap-2.5 py-2 px-2.5 rounded-lg text-xs">
+                                                    <Eye className="h-4 w-4 text-muted-foreground shrink-0" /> Ver Detalles
                                                 </DropdownMenuItem>
                                                 {canModificar && (
-                                                    <DropdownMenuItem onClick={() => onEdit?.(acta)} className="cursor-pointer font-medium gap-2 py-2.5 rounded-lg text-xs">
-                                                        <Edit className="icon-std" /> Editar Información
+                                                    <DropdownMenuItem onClick={() => onEdit?.(acta)} className="cursor-pointer font-medium gap-2.5 py-2 px-2.5 rounded-lg text-xs">
+                                                        <Edit className="h-4 w-4 text-muted-foreground shrink-0" /> Editar Información
                                                     </DropdownMenuItem>
                                                 )}
-                                                <DropdownMenuSeparator className="my-1" />
+
                                                 {hasDoc(acta) && (
                                                     <>
+                                                        <DropdownMenuSeparator className="my-1" />
                                                         <DropdownMenuItem
-                                                            className="cursor-pointer text-blue-600 font-medium gap-2 py-2.5 rounded-lg text-xs"
-                                                            onClick={() => onViewDoc?.(acta)}
-                                                        >
-                                                            <Eye className="h-4 w-4" /> Ver Documento
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem
-                                                            className="cursor-pointer text-blue-600 font-medium gap-2 py-2.5 rounded-lg text-xs"
+                                                            className="cursor-pointer font-medium gap-2.5 py-2 px-2.5 rounded-lg text-xs"
                                                             onClick={() => onDownloadDoc?.(acta)}
                                                         >
-                                                            <FileDown className="h-4 w-4" /> Descargar
+                                                            <FileDown className="h-4 w-4 text-muted-foreground shrink-0" /> Descargar PDF
                                                         </DropdownMenuItem>
                                                     </>
                                                 )}
-                                                <DropdownMenuItem
-                                                    onClick={() => onUploadDoc?.(acta)}
-                                                    className="cursor-pointer text-foreground/70 font-medium gap-2 py-2.5 rounded-lg text-xs"
-                                                >
-                                                    {hasDoc(acta) ? (
-                                                        <><RefreshCw className="h-4 w-4" /> Reemplazar Archivo</>
-                                                    ) : (
-                                                        <><Paperclip className="h-4 w-4" /> Adjuntar Archivo</>
-                                                    )}
-                                                </DropdownMenuItem>
 
                                                 {(canAnular || canEliminar) && (
                                                     <>
@@ -445,25 +458,25 @@ export function ActasTable({
                                                         {canAnular && acta.estado === 'ACTIVO' && (
                                                             <DropdownMenuItem
                                                                 onClick={() => onAnular?.(acta)}
-                                                                className="text-amber-600 cursor-pointer font-medium gap-2 py-2.5 rounded-lg text-xs"
+                                                                className="cursor-pointer font-medium gap-2.5 py-2 px-2.5 rounded-lg text-xs text-amber-600 dark:text-amber-400 focus:text-amber-700 dark:focus:text-amber-300 focus:bg-amber-50 dark:focus:bg-amber-950/30"
                                                             >
-                                                                <Ban className="h-4 w-4" /> Anular Registro
+                                                                <Ban className="h-4 w-4 shrink-0 text-amber-500" /> Anular Registro
                                                             </DropdownMenuItem>
                                                         )}
                                                         {isAdminUser && acta.estado !== 'ACTIVO' && (
                                                             <DropdownMenuItem
                                                                 onClick={() => onReactivar?.(acta)}
-                                                                className="text-emerald-600 cursor-pointer font-medium gap-2 py-2.5 rounded-lg text-xs"
+                                                                className="cursor-pointer font-medium gap-2.5 py-2 px-2.5 rounded-lg text-xs text-emerald-600 dark:text-emerald-400 focus:text-emerald-700 dark:focus:text-emerald-300 focus:bg-emerald-50 dark:focus:bg-emerald-950/30"
                                                             >
-                                                                <RotateCcw className="h-4 w-4" /> Reactivar Registro
+                                                                <RotateCcw className="h-4 w-4 shrink-0 text-emerald-500" /> Reactivar Registro
                                                             </DropdownMenuItem>
                                                         )}
                                                         {canEliminar && (
                                                             <DropdownMenuItem
                                                                 onClick={() => onDelete(acta.id)}
-                                                                className="text-rose-600 cursor-pointer font-medium gap-2 py-2.5 rounded-lg text-xs"
+                                                                className="cursor-pointer font-medium gap-2.5 py-2 px-2.5 rounded-lg text-xs text-rose-600 dark:text-rose-400 focus:text-rose-700 dark:focus:text-rose-300 focus:bg-rose-50 dark:focus:bg-rose-950/30"
                                                             >
-                                                                <Trash2 className="h-4 w-4" /> Eliminar Registro
+                                                                <Trash2 className="h-4 w-4 shrink-0 text-rose-500" /> Eliminar Registro
                                                             </DropdownMenuItem>
                                                         )}
                                                     </>

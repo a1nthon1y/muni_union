@@ -213,15 +213,33 @@
   }
 
   .dig-field-label {
-    @apply text-[10px] font-bold uppercase text-muted-foreground/90 tracking-wide leading-none block mb-0 truncate;
+    @apply text-[11px] font-extrabold uppercase tracking-wider leading-none block mb-0 truncate;
+    color: #0f172a !important;
+  }
+
+  :is(.dark *) .dig-field-label,
+  .dark .dig-field-label {
+    color: #f8fafc !important;
   }
 
   .dig-field-hint {
-    @apply text-[9px] font-normal text-muted-foreground/70 normal-case tracking-normal mt-0.5 h-[11px] leading-none truncate;
+    @apply text-[9px] font-semibold normal-case tracking-normal mt-0.5 h-[11px] leading-none truncate;
+    color: #475569 !important;
+  }
+
+  :is(.dark *) .dig-field-hint,
+  .dark .dig-field-hint {
+    color: #94a3b8 !important;
   }
 
   .dig-field-option {
-    @apply flex items-center gap-1 shrink-0 text-[8px] text-muted-foreground cursor-pointer select-none leading-none;
+    @apply flex items-center gap-1 shrink-0 text-[8.5px] font-bold cursor-pointer select-none leading-none;
+    color: #334155 !important;
+  }
+
+  :is(.dark *) .dig-field-option,
+  .dark .dig-field-option {
+    color: #cbd5e1 !important;
   }
 
   .dig-field-msg {
@@ -229,7 +247,7 @@
   }
 
   .dig-input {
-    @apply box-border !h-8 !min-h-8 !max-h-8 w-full min-w-0 rounded-lg border border-border/50 bg-background/50 px-2.5 !py-0 text-xs !leading-8 focus:bg-background focus:border-primary/50 focus:ring-2 focus:ring-primary/5 transition-all;
+    @apply box-border !h-8 !min-h-8 !max-h-8 w-full min-w-0 rounded-lg border border-border/70 bg-background/50 px-2.5 !py-0 text-xs !leading-8 focus:bg-background focus:border-primary/50 focus:ring-2 focus:ring-primary/5 transition-all text-slate-900 dark:text-slate-100;
   }
 
   .dig-input[type="date"] {
@@ -241,19 +259,25 @@
   }
 
   .dig-input[type="date"]::-webkit-calendar-picker-indicator {
-    @apply size-3.5 cursor-pointer opacity-60;
+    @apply size-3.5 cursor-pointer opacity-70;
   }
 
   .dig-select-trigger {
-    @apply box-border !h-8 !min-h-8 !max-h-8 w-full min-w-0 rounded-lg border border-border/50 bg-background/50 px-2.5 !py-0 text-xs font-semibold !leading-none focus:bg-background focus:border-primary/50 focus:ring-2 focus:ring-primary/5 transition-all data-[size=default]:!h-8 data-[size=sm]:!h-8 [&>span]:truncate [&>span]:min-w-0 [&>span]:text-left [&_svg]:size-3.5;
+    @apply box-border !h-8 !min-h-8 !max-h-8 w-full min-w-0 rounded-lg border border-border/70 bg-background/50 px-2.5 !py-0 text-xs font-semibold !leading-none focus:bg-background focus:border-primary/50 focus:ring-2 focus:ring-primary/5 transition-all data-[size=default]:!h-8 data-[size=sm]:!h-8 [&>span]:truncate [&>span]:min-w-0 [&>span]:text-left [&_svg]:size-3.5 text-slate-900 dark:text-slate-100;
   }
 
   .dig-card-header {
-    @apply !flex !items-center !h-9 min-h-9 w-full px-3.5 border-b bg-muted/40 !py-0 gap-2;
+    @apply !flex !items-center !h-9 min-h-9 w-full px-3.5 border-b bg-slate-100/70 dark:bg-muted/50 !py-0 gap-2;
   }
 
   .dig-card-title {
-    @apply text-xs font-bold uppercase tracking-widest text-muted-foreground/80 leading-none;
+    @apply text-xs font-black uppercase tracking-wider leading-none;
+    color: #0f172a !important;
+  }
+
+  :is(.dark *) .dig-card-title,
+  .dark .dig-card-title {
+    color: #ffffff !important;
   }
 
   .dig-card-icon {
@@ -298,6 +322,51 @@
 
 .badge-std {
   @apply px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border;
+}
+
+/* ═══ CONSOLA DE DIGITALIZACIÓN - ALTO CONTRASTE ═══ */
+.dig-field-label {
+  font-size: 11px !important;
+  font-weight: 900 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  color: #0f172a !important;
+}
+
+:is(.dark, .dark *) .dig-field-label {
+  color: #f8fafc !important;
+}
+
+.dig-field-hint {
+  font-size: 9.5px !important;
+  font-weight: 700 !important;
+  color: #475569 !important;
+}
+
+:is(.dark, .dark *) .dig-field-hint {
+  color: #94a3b8 !important;
+}
+
+.dig-field-option {
+  font-size: 9px !important;
+  font-weight: 700 !important;
+  color: #334155 !important;
+}
+
+:is(.dark, .dark *) .dig-field-option {
+  color: #cbd5e1 !important;
+}
+
+.dig-card-title {
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  color: #0f172a !important;
+}
+
+:is(.dark, .dark *) .dig-card-title {
+  color: #ffffff !important;
 }
 
 /* ═══ PRINT UTILITIES ═══ */

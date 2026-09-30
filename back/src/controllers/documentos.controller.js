@@ -18,18 +18,11 @@ export const registrarDocumento = async (req, res) => {
             return res.status(400).json({ message: "El ID del acta es obligatorio" });
         }
 
-        // --- LÓGICA DE REEMPLAZO: Borrar anteriores ---
+        // --- LÓGICA DE REEMPLAZO: Soft-delete de anteriores (conservar físico para historial) ---
         const docsExistentes = await documentosService.listarDocumentosPorActa(acta_id);
         for (const doc of docsExistentes) {
-            // 1. Borrar físico
-            if (doc.ruta_archivo && fs.existsSync(doc.ruta_archivo)) {
-                try {
-                    fs.unlinkSync(doc.ruta_archivo);
-                } catch (err) {
-                    console.error("Error borrando archivo anterior:", err.message);
-                }
-            }
-            // 2. Limpiar en BD (Soft delete para historial o simplemente marcarlo)
+            // Solo soft-delete en BD — el archivo físico se conserva para que esté disponible
+            // en el historial y el usuario pueda consultarlo como referencia.
             await documentosService.eliminarDocumento(doc.id, req.user.id);
         }
 
@@ -77,6 +70,20 @@ export const listarDocumentosPorActa = async (req, res) => {
     }
 };
 
+/**
+ * GET /documentos/acta/:actaId/historial
+ * Devuelve todos los documentos de un acta (activos + reemplazados),
+ * para mostrar el historial de escaneos como referencia.
+ */
+export const listarHistorialPorActa = async (req, res) => {
+    try {
+        const docs = await documentosService.listarHistorialDocumentosPorActa(req.params.actaId);
+        res.json(docs);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 export const eliminarDocumento = async (req, res) => {
     try {
         // Primero obtener la ruta del archivo para borrarlo físicamente
@@ -91,7 +98,7 @@ export const eliminarDocumento = async (req, res) => {
             }
         }
 
-        const resultado = await documentosService.eliminarDocumento(req.params.id, req.user.id);
+        const resultado = await documentosService.eliminarDocumentoDefinitivo(req.params.id);
         if (!resultado) return res.status(404).json({ message: "Documento no encontrado" });
 
         req.auditHandled = true;
@@ -105,6 +112,26 @@ export const eliminarDocumento = async (req, res) => {
         });
 
         res.json({ message: "Documento eliminado correctamente" });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+export const restaurarDocumento = async (req, res) => {
+    try {
+        const documentoRestaurado = await documentosService.restaurarDocumento(req.params.id, req.user.id);
+
+        req.auditHandled = true;
+        await registrarAccion({
+            usuario_id: req.user.id,
+            tabla_afectada: "documentos_digitales",
+            operacion: "UPDATE",
+            registro_id: req.params.id,
+            ip: req.ip,
+            descripcion: `Se restauró escaneo previo ID: ${req.params.id} como documento activo para acta ID: ${documentoRestaurado.acta_id}`
+        });
+
+        res.json({ message: "Documento restaurado correctamente como activo", documento: documentoRestaurado });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

@@ -6,6 +6,8 @@ export const ALIAS_COLUMNAS_IMPORTACION = {
     f_fallec: "fecha_fallecimiento",
     conyuge_fecha_defuncion: "conyuge_fecha_fallecimiento",
     conyuge_fecha_de_fallecimiento: "conyuge_fecha_fallecimiento",
+    observacion: "acta_observaciones",
+    observaciones: "acta_observaciones",
 };
 
 export const normalizarColumnasImportacion = (fila) => {

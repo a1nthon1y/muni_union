@@ -76,7 +76,11 @@ export const listarActas = async (filtros = {}) => {
              ORDER BY d.fecha_registro DESC LIMIT 1) AS tipo_documento,
             (SELECT d.ruta_archivo FROM documentos_digitales d
              WHERE d.acta_id = a.id AND d.fecha_eliminacion IS NULL
-             ORDER BY d.fecha_registro DESC LIMIT 1) AS ruta_archivo
+             ORDER BY d.fecha_registro DESC LIMIT 1) AS ruta_archivo,
+            (SELECT COUNT(*) FROM documentos_digitales d
+             WHERE d.acta_id = a.id)::INT AS total_documentos,
+            (SELECT COUNT(*) FROM documentos_digitales d
+             WHERE d.acta_id = a.id AND d.fecha_eliminacion IS NOT NULL)::INT AS cantidad_historial
         ${queryBase}
         ORDER BY a.fecha_registro DESC
         LIMIT $${params.length + 1} OFFSET $${params.length + 2}
@@ -102,7 +106,9 @@ export const obtenerActaPorId = async (id) => {
              a.*,
              ${TITULAR_COLS},
              ${CONYUGE_COLS},
-             d.nombre_archivo, d.tipo_archivo, d.ruta_archivo
+             d.nombre_archivo, d.tipo_archivo, d.ruta_archivo,
+             (SELECT COUNT(*) FROM documentos_digitales d2 WHERE d2.acta_id = a.id)::INT AS total_documentos,
+             (SELECT COUNT(*) FROM documentos_digitales d2 WHERE d2.acta_id = a.id AND d2.fecha_eliminacion IS NOT NULL)::INT AS cantidad_historial
          FROM actas a
          JOIN  personas p  ON a.persona_principal_id = p.id
          LEFT JOIN personas p2 ON a.persona_secundaria_id = p2.id

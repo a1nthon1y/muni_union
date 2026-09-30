@@ -37,6 +37,8 @@ export interface Acta {
     tiene_documento?: boolean;
     tipo_documento?: string;
     ruta_archivo?: string;
+    total_documentos?: number;
+    cantidad_historial?: number;
 }
 
 export interface ActaInput {
