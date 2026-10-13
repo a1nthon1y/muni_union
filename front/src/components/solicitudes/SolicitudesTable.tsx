@@ -27,8 +27,7 @@ import {
     User,
     FileText,
     Search,
-    Filter,
-    Trash2
+    Filter
 } from "lucide-react";
 import { Solicitud, EstadoSolicitud } from "@/types/solicitud";
 import { format } from "date-fns";
@@ -47,7 +46,7 @@ interface SolicitudesTableProps {
     onView: (solicitud: Solicitud) => void;
     onAtender: (solicitud: Solicitud) => void;
     onAnular: (solicitud: Solicitud) => void;
-    onDelete: (solicitud: Solicitud) => void;
+    onDelete?: (solicitud: Solicitud) => void;
     pagination: {
         total: number;
         page: number;
@@ -184,13 +183,7 @@ export function SolicitudesTable({
                                                         <Ban className="h-4 w-4" /> Anular Trámite
                                                     </DropdownMenuItem>
                                                 )}
-                                                <DropdownMenuSeparator className="my-1" />
-                                                <DropdownMenuItem
-                                                    onClick={() => onDelete(solicitud)}
-                                                    className="text-rose-600 cursor-pointer font-bold gap-2 py-2 rounded-lg text-xs"
-                                                >
-                                                    <Trash2 className="h-4 w-4" /> Eliminar Registro
-                                                </DropdownMenuItem>
+
                                                 </>
                                                 )}
                                             </DropdownMenuContent>

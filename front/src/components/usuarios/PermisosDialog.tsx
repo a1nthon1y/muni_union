@@ -103,7 +103,6 @@ export function PermisosDialog({ open, onOpenChange, usuario, onSuccess }: Permi
                         {([
                             { key: "actas_modificar",  label: "Puede modificar actas" },
                             { key: "actas_anular",     label: "Puede anular actas" },
-                            { key: "actas_eliminar",   label: "Puede eliminar actas" },
                         ] as { key: keyof PermisosState; label: string }[]).map(({ key, label }) => (
                             <label
                                 key={key}
@@ -127,7 +126,6 @@ export function PermisosDialog({ open, onOpenChange, usuario, onSuccess }: Permi
                         </p>
                         {([
                             { key: "personas_modificar", label: "Puede modificar ciudadanos" },
-                            { key: "personas_eliminar",  label: "Puede eliminar ciudadanos" },
                         ] as { key: keyof PermisosState; label: string }[]).map(({ key, label }) => (
                             <label
                                 key={key}

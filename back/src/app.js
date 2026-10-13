@@ -22,10 +22,20 @@ import configuracionRoutes from "./routes/configuracion.routes.js";
 import { serveLogo } from "./controllers/configuracion.controller.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
 import { auditMiddleware } from "./middlewares/auditMiddleware.js";
+import { obtenerIpCliente } from "./utils/ipUtils.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+
+// Confiar en el proxy inverso (Nginx / Docker / Cloudflare) para resolver la IP real del cliente
+app.set("trust proxy", true);
+
+// Middleware para fijar la IP real del cliente en la request
+app.use((req, res, next) => {
+    req.clientIp = obtenerIpCliente(req);
+    next();
+});
 
 // Cabeceras de seguridad HTTP (desactivar CSP solo en /api/docs para que Swagger UI cargue)
 app.use((req, res, next) => {
@@ -44,10 +54,12 @@ app.use(cors({
             return callback(null, true);
         }
         
-        // Permitir cualquier puerto de localhost en desarrollo
+        // Permitir localhost o IPs de red local (LAN) en desarrollo
         const esLocalhost = /^https?:\/\/localhost(:\d+)?$/.test(origin);
+        const esRedLocal = process.env.NODE_ENV !== "production" && 
+            /^https?:\/\/(192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3})(:\d+)?$/.test(origin);
         
-        if (esLocalhost || allowedOrigins.includes(origin)) {
+        if (esLocalhost || esRedLocal || allowedOrigins.includes(origin)) {
             callback(null, true);
         } else {
             callback(new Error(`CORS: origen no permitido → ${origin}`));
@@ -114,7 +126,7 @@ app.get("/", (req, res) => {
 
 // ── Health Check — usado por Docker y monitoreo de infraestructura ──
 app.get("/api/health", async (req, res) => {
-    const status = { status: "ok", timestamp: new Date().toISOString(), services: {} };
+    const status = { status: "ok", clientIp: req.clientIp, timestamp: new Date().toISOString(), services: {} };
 
     // Verificar PostgreSQL
     try {

@@ -1,5 +1,6 @@
 import { pool } from "../config/db.js";
 import { resolverFechasPersona } from "./persona-fechas.service.js";
+import { formatearIp } from "../utils/ipUtils.js";
 
 const PERSONA_COLS = `
     p.id, p.dni, p.tipo_documento_id,
@@ -307,7 +308,7 @@ export const fusionarPersonas = async (homonimoId, maestroId, usuario_id, db = p
         await client.query(
             `INSERT INTO auditoria (usuario_id, tabla_afectada, operacion, registro_id, descripcion, ip)
              VALUES ($1, 'personas', 'MERGE', $2, $3, $4)`,
-            [usuario_id, maestroId, descripcion, ip]
+            [usuario_id, maestroId, descripcion, formatearIp(ip)]
         );
 
         return {

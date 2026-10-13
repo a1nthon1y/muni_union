@@ -37,7 +37,8 @@ export const crearSolicitud = async (req, res) => {
             tabla_afectada: "solicitudes",
             operacion: "INSERT",
             registro_id: solicitud.id,
-            ip: req.ip,
+            req,
+            ip: req.clientIp || req.ip,
             descripcion: `Se registró nueva solicitud ID: ${solicitud.id} de tipo ${solicitud.tipo_solicitud}`
         });
 
@@ -80,7 +81,8 @@ export const atenderSolicitud = async (req, res) => {
             tabla_afectada: "solicitudes",
             operacion: "UPDATE_STATUS",
             registro_id: solicitud.id,
-            ip: req.ip,
+            req,
+            ip: req.clientIp || req.ip,
             descripcion: `Se marcó como ATENDIDA la solicitud ID: ${solicitud.id}`
         });
 
@@ -102,7 +104,8 @@ export const anularSolicitud = async (req, res) => {
             tabla_afectada: "solicitudes",
             operacion: "UPDATE_STATUS",
             registro_id: solicitud.id,
-            ip: req.ip,
+            req,
+            ip: req.clientIp || req.ip,
             descripcion: `Se anuló la solicitud ID: ${solicitud.id}. Motivo: ${motivo || 'No especificado'}`
         });
 
@@ -123,7 +126,8 @@ export const eliminarSolicitud = async (req, res) => {
             tabla_afectada: "solicitudes",
             operacion: "DELETE",
             registro_id: req.params.id,
-            ip: req.ip,
+            req,
+            ip: req.clientIp || req.ip,
             descripcion: `Se eliminó definitivamente la solicitud ID: ${req.params.id}`
         });
 

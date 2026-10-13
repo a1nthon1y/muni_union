@@ -27,7 +27,8 @@ export const crearActa = async (req, res) => {
             tabla_afectada: "actas",
             operacion: "INSERT",
             registro_id: acta.id,
-            ip: req.ip,
+            req,
+            ip: req.clientIp || req.ip,
             descripcion: `Se registró acta de ${acta.tipo_acta} Nro: ${acta.numero_acta}-${acta.anio}`
         });
 
@@ -67,7 +68,8 @@ export const actualizarActa = async (req, res) => {
             tabla_afectada: "actas",
             operacion: "UPDATE",
             registro_id: acta.id,
-            ip: req.ip,
+            req,
+            ip: req.clientIp || req.ip,
             descripcion: `Se actualizó acta ID: ${acta.id}`
         });
 
@@ -93,7 +95,8 @@ export const anularActa = async (req, res) => {
             tabla_afectada: "actas",
             operacion: "UPDATE_STATUS",
             registro_id: acta.id,
-            ip: req.ip,
+            req,
+            ip: req.clientIp || req.ip,
             descripcion: `Se anuló el acta ID: ${acta.id}. Motivo: ${motivo.trim()}`
         });
 
@@ -114,7 +117,8 @@ export const reactivarActa = async (req, res) => {
             tabla_afectada: "actas",
             operacion: "REACTIVATE",
             registro_id: acta.id,
-            ip: req.ip,
+            req,
+            ip: req.clientIp || req.ip,
             descripcion: `Se reactivó el acta ID: ${acta.id}`
         });
 
@@ -135,7 +139,8 @@ export const eliminarActa = async (req, res) => {
             tabla_afectada: "actas",
             operacion: "DELETE_LOGIC",
             registro_id: req.params.id,
-            ip: req.ip,
+            req,
+            ip: req.clientIp || req.ip,
             descripcion: `Eliminación lógica de acta ID: ${req.params.id}`
         });
 

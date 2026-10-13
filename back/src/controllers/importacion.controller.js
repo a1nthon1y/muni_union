@@ -250,7 +250,8 @@ export const importarMasivo = async (req, res) => {
             tabla_afectada: "actas",
             operacion: "IMPORT",
             registro_id: 0,
-            ip: req.ip,
+            req,
+            ip: req.clientIp || req.ip,
             descripcion: `Carga masiva: ${exitosos} nuevas, ${docsVinculados} docs vinculados, ${omitidos} omitidas, ${errores} errores (total ${filas.length})`
         });
 

@@ -325,7 +325,6 @@ export default function SolicitudesPage() {
                 onView={handleView}
                 onAtender={(s) => handleAtender(s.id)}
                 onAnular={(s) => handleAnularClick(s.id)}
-                onDelete={(s) => handleEliminarClick(s.id)}
                 pagination={pagination}
                 onPageChange={handlePageChange}
             />
@@ -336,7 +335,6 @@ export default function SolicitudesPage() {
                 onOpenChange={setIsDetalleOpen}
                 onAtender={handleAtender}
                 onAnular={handleAnularClick}
-                onDelete={handleEliminarClick}
                 isLoadingActions={isActionLoading}
                 soloConsulta={soloConsulta}
             />
@@ -376,18 +374,6 @@ export default function SolicitudesPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-
-            {/* Diálogo de Eliminación Definitiva */}
-            <ConfirmDialog
-                isOpen={isEliminarOpen}
-                onClose={() => setIsEliminarOpen(false)}
-                onConfirm={confirmEliminar}
-                title="¿Eliminar trámite DEFINITIVAMENTE?"
-                description="Esta acción eliminará el registro y todo su historial de la base de datos. Use esto SOLO para corregir errores críticos de registro. Esta operación no se puede deshacer."
-                confirmText="Sí, Eliminar de Raíz"
-                cancelText="Cancelar"
-                variant="destructive"
-            />
         </div >
     );
 }

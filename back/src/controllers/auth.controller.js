@@ -56,7 +56,8 @@ export const login = async (req, res) => {
             tabla_afectada: "usuarios",
             operacion: "LOGIN",
             registro_id: usuario.id,
-            ip: req.ip,
+            req,
+            ip: req.clientIp || req.ip,
             descripcion: `Inicio de sesión: ${usuario.username}`,
         });
 
@@ -111,13 +112,14 @@ export const logout = async (req, res) => {
     clearAuthCookies(res);
 
     req.auditHandled = true;
-        await registrarAccion({
+    await registrarAccion({
         usuario_id: req.user.id,
         tabla_afectada: "usuarios",
         operacion: "LOGOUT",
         registro_id: req.user.id,
-        ip: req.ip,
-            descripcion: `Cierre de sesión (usuario ID: ${req.user.id})`,
+        req,
+        ip: req.clientIp || req.ip,
+        descripcion: `Cierre de sesión (usuario ID: ${req.user.id})`,
     });
 
     res.json({ message: "Sesión cerrada correctamente" });
@@ -135,7 +137,8 @@ export const logoutAll = async (req, res) => {
             tabla_afectada: "usuarios",
             operacion: "LOGOUT_ALL",
             registro_id: req.user.id,
-            ip: req.ip,
+            req,
+            ip: req.clientIp || req.ip,
             descripcion: `Cierre de TODAS las sesiones activas (usuario ID: ${req.user.id})`,
         });
 

@@ -450,20 +450,6 @@ export function UsuarioSheet({
                                                     </FormItem>
                                                 )}
                                             />
-                                            <FormField
-                                                control={form.control}
-                                                name="permisos_actas_eliminar"
-                                                render={({ field }) => (
-                                                    <FormItem className="flex items-center gap-3 space-y-0">
-                                                        <FormControl>
-                                                            <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                                                        </FormControl>
-                                                        <FormLabel className="text-xs font-semibold cursor-pointer">
-                                                            Puede eliminar actas
-                                                        </FormLabel>
-                                                    </FormItem>
-                                                )}
-                                            />
                                             <Separator className="bg-border/40" />
                                             {/* Personas */}
                                             <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Personas / Ciudadanos</p>
@@ -477,20 +463,6 @@ export function UsuarioSheet({
                                                         </FormControl>
                                                         <FormLabel className="text-xs font-semibold cursor-pointer">
                                                             Puede modificar ciudadanos
-                                                        </FormLabel>
-                                                    </FormItem>
-                                                )}
-                                            />
-                                            <FormField
-                                                control={form.control}
-                                                name="permisos_personas_eliminar"
-                                                render={({ field }) => (
-                                                    <FormItem className="flex items-center gap-3 space-y-0">
-                                                        <FormControl>
-                                                            <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                                                        </FormControl>
-                                                        <FormLabel className="text-xs font-semibold cursor-pointer">
-                                                            Puede eliminar ciudadanos
                                                         </FormLabel>
                                                     </FormItem>
                                                 )}

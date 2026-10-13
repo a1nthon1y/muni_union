@@ -6,7 +6,6 @@ import {
     Phone,
     Power,
     Edit,
-    Trash2,
     MoreHorizontal,
     ShieldCheck
 } from "lucide-react";
@@ -39,7 +38,7 @@ interface UsuariosTableProps {
     usuarios: Usuario[];
     isLoading: boolean;
     onEdit: (usuario: Usuario) => void;
-    onDelete: (id: number) => void;
+    onDelete?: (id: number) => void;
     onToggleStatus: (id: number, active: boolean) => void;
     onPermisos: (usuario: Usuario) => void;
     pagination: {
@@ -165,10 +164,7 @@ export function UsuariosTable({
                                                 <DropdownMenuItem onClick={() => onToggleStatus(u.id, !u.activo)} className={`cursor-pointer font-bold gap-2 py-2 rounded-lg text-xs ${u.activo ? 'text-amber-600' : 'text-emerald-600'}`}>
                                                     <Power className="h-4 w-4" /> {u.activo ? 'Desactivar Acceso' : 'Activar Acceso'}
                                                 </DropdownMenuItem>
-                                                <DropdownMenuSeparator className="my-1" />
-                                                <DropdownMenuItem onClick={() => onDelete(u.id)} className="text-rose-600 cursor-pointer font-bold gap-2 py-2 rounded-lg text-xs">
-                                                    <Trash2 className="h-4 w-4" /> Eliminar Usuario
-                                                </DropdownMenuItem>
+
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </TableCell>

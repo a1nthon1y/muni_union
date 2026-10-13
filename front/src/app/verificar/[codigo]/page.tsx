@@ -8,6 +8,7 @@ import {
     Banknote, UserCheck, Clock, Printer, AlertTriangle,
 } from "lucide-react";
 import { useLogosConfig, obtenerRutaLogoDinamica } from "@/lib/logo-institucional";
+import { getApiBaseUrl } from "@/utils/api";
 
 interface ConstanciaVerificada {
     numero: string;
@@ -106,7 +107,7 @@ export default function VerificarPage() {
     const logoRuta = obtenerRutaLogoDinamica("principal", logosConfig);
 
     useEffect(() => {
-        const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+        const apiBase = getApiBaseUrl();
         fetch(`${apiBase}/verificar/solicitud/${codigo}`)
             .then(async (res) => { const data = await res.json(); setResult(data); })
             .catch(() => setResult({ valido: false, message: "No se pudo conectar con el servidor de verificación." }))

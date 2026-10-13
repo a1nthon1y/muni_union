@@ -268,15 +268,7 @@ export default function PersonasPage() {
                 onSubmit={handleSubmit}
                 persona={selectedPersona}
             />
-            <ConfirmDialog
-                isOpen={isDeleteDialogOpen}
-                onClose={() => setIsDeleteDialogOpen(false)}
-                onConfirm={confirmDelete}
-                title="¿Eliminar Ciudadano?"
-                description="Esta acción eliminará al ciudadano del sistema si no tiene actas asociadas. Los datos se marcarán como inactivos y podrán ser reactivados posteriormente si es necesario."
-                confirmText="Eliminar"
-                cancelText="Cancelar"
-            />
+
 
             {/* Diálogo de fusión de homónimos */}
             <Dialog open={isMergeOpen} onOpenChange={(open) => { if (!open) { setIsMergeOpen(false); setMergePersona(null); } }}>

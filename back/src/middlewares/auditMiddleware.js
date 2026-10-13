@@ -77,7 +77,8 @@ export const auditMiddleware = (req, res, next) => {
                 tabla_afectada: TABLE_FROM_PATH(req.originalUrl.split("?")[0]),
                 operacion:      OP_FROM_METHOD[req.method] ?? req.method,
                 registro_id:    req.params?.id ? parseInt(req.params.id) : 0,
-                ip:             req.ip,
+                req,
+                ip:             req.clientIp || req.ip,
                 descripcion:    buildDescription(req.method, req.originalUrl, req.params),
             });
         } catch {

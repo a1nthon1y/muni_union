@@ -6,12 +6,13 @@ export const crearUsuario = async (req, res) => {
     const usuario = await usuariosService.crearUsuario(req.body);
 
     req.auditHandled = true;
-        await registrarAccion({
+    await registrarAccion({
       usuario_id: req.user.id,
       tabla_afectada: "usuarios",
       operacion: "INSERT",
       registro_id: usuario.id,
-      ip: req.ip,
+      req,
+      ip: req.clientIp || req.ip,
       descripcion: `Se creó el usuario: ${usuario.username}`
     });
 
@@ -47,12 +48,13 @@ export const actualizarUsuario = async (req, res) => {
     );
 
     req.auditHandled = true;
-        await registrarAccion({
+    await registrarAccion({
       usuario_id: req.user.id,
       tabla_afectada: "usuarios",
       operacion: "UPDATE",
       registro_id: usuario.id,
-      ip: req.ip,
+      req,
+      ip: req.clientIp || req.ip,
       descripcion: `Se actualizó el usuario: ${usuario.username}`
     });
 
@@ -70,12 +72,13 @@ export const cambiarEstadoUsuario = async (req, res) => {
     );
 
     req.auditHandled = true;
-        await registrarAccion({
+    await registrarAccion({
       usuario_id: req.user.id,
       tabla_afectada: "usuarios",
       operacion: "UPDATE_STATUS",
       registro_id: usuario.id,
-      ip: req.ip,
+      req,
+      ip: req.clientIp || req.ip,
       descripcion: `Se cambió estado del usuario ${usuario.username} a ${req.body.activo ? 'ACTIVO' : 'INACTIVO'}`
     });
 
@@ -90,12 +93,13 @@ export const eliminarUsuario = async (req, res) => {
     const usuario = await usuariosService.eliminarUsuario(req.params.id);
 
     req.auditHandled = true;
-        await registrarAccion({
+    await registrarAccion({
       usuario_id: req.user.id,
       tabla_afectada: "usuarios",
       operacion: "DELETE_LOGIC",
       registro_id: usuario.id,
-      ip: req.ip,
+      req,
+      ip: req.clientIp || req.ip,
       descripcion: `Se eliminó (lógicamente) al usuario: ${usuario.username}`
     });
 
@@ -120,12 +124,13 @@ export const cambiarMiPassword = async (req, res) => {
     );
 
     req.auditHandled = true;
-        await registrarAccion({
+    await registrarAccion({
       usuario_id: req.user.id,
       tabla_afectada: "usuarios",
       operacion: "UPDATE_PASSWORD",
       registro_id: req.user.id,
-      ip: req.ip,
+      req,
+      ip: req.clientIp || req.ip,
       descripcion: "El usuario cambió su propia contraseña"
     });
 

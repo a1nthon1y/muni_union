@@ -8,7 +8,6 @@ import {
     SheetDescription,
 } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
     User,
     FileText,
@@ -23,13 +22,8 @@ import {
     Printer,
     Edit,
     Eye,
-    History,
-    ChevronDown,
-    ChevronUp,
     Upload,
-    Trash2,
     Loader2,
-    RotateCcw,
 } from "lucide-react";
 import { Acta } from "@/types/acta";
 import { dateUtils } from "@/utils/dateUtils";
@@ -37,6 +31,7 @@ import { Button } from "@/components/ui/button";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { documentosService, DocumentoHistorial } from "@/services/documentos.service";
+import { getApiBaseUrl } from "@/utils/api";
 
 interface ActaDetailSheetProps {
     isOpen: boolean;
@@ -48,18 +43,13 @@ interface ActaDetailSheetProps {
 
 export function ActaDetailSheet({ isOpen, onClose, acta, onEdit, onActaUpdated }: ActaDetailSheetProps) {
     const [historial, setHistorial] = useState<DocumentoHistorial[]>([]);
-    const [mostrarHistorial, setMostrarHistorial] = useState(false);
     const [cargandoHistorial, setCargandoHistorial] = useState(false);
-    const [documentoAEliminar, setDocumentoAEliminar] = useState<number | null>(null);
-    const [documentoARestaurar, setDocumentoARestaurar] = useState<number | null>(null);
     const [subiendo, setSubiendo] = useState(false);
-    const [restaurando, setRestaurando] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         if (!isOpen || !acta) {
             setHistorial([]);
-            setMostrarHistorial(false);
             return;
         }
         setCargandoHistorial(true);
@@ -72,7 +62,6 @@ export function ActaDetailSheet({ isOpen, onClose, acta, onEdit, onActaUpdated }
     if (!acta) return null;
 
     const docActivo = historial.find(d => d.es_activo) ?? null;
-    const docsPrevios = historial.filter(d => !d.es_activo);
 
     const handleUploadNuevaVersion = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -80,15 +69,18 @@ export function ActaDetailSheet({ isOpen, onClose, acta, onEdit, onActaUpdated }
 
         try {
             setSubiendo(true);
-            toast.loading("Subiendo nueva versión...", { id: "upload-doc" });
+            toast.loading(docActivo ? "Reemplazando documento..." : "Subiendo documento...", { id: "upload-doc" });
             
-            // Subimos el nuevo documento
-            await documentosService.upload(acta.id, file, "Reemplazo manual desde Detalle del Acta");
+            // Subimos el nuevo documento (el backend borra el anterior del disco si existe)
+            await documentosService.upload(acta.id, file, "Actualización desde Detalle del Acta");
             
-            // Refrescamos el historial
+            // Refrescamos el documento activo
             const docs = await documentosService.getHistorialByActa(acta.id);
             setHistorial(docs);
-            toast.success("Nueva versión subida. El documento anterior pasó al historial.", { id: "upload-doc" });
+            toast.success(
+                docActivo ? "Documento reemplazado con éxito. Se liberó el archivo previo del disco." : "Documento digital adjuntado con éxito.",
+                { id: "upload-doc" }
+            );
             onActaUpdated?.();
         } catch (error) {
             console.error(error);
@@ -99,49 +91,8 @@ export function ActaDetailSheet({ isOpen, onClose, acta, onEdit, onActaUpdated }
         }
     };
 
-    const confirmarRestauracion = async () => {
-        if (!documentoARestaurar || !acta) return;
-
-        try {
-            setRestaurando(true);
-            toast.loading("Restaurando versión...", { id: "restore-doc" });
-            await documentosService.restaurar(documentoARestaurar);
-
-            const docs = await documentosService.getHistorialByActa(acta.id);
-            setHistorial(docs);
-            toast.success("Documento restaurado como versión vigente.", { id: "restore-doc" });
-            onActaUpdated?.();
-        } catch (error) {
-            console.error(error);
-            toast.error("Error al restaurar el documento", { id: "restore-doc" });
-        } finally {
-            setRestaurando(false);
-            setDocumentoARestaurar(null);
-        }
-    };
-
-    const confirmarEliminacion = async () => {
-        if (!documentoAEliminar || !acta) return;
-
-        try {
-            toast.loading("Eliminando documento...", { id: "del-doc" });
-            await documentosService.delete(documentoAEliminar);
-            
-            // Refrescamos el historial
-            const docs = await documentosService.getHistorialByActa(acta.id);
-            setHistorial(docs);
-            toast.success("Documento eliminado correctamente.", { id: "del-doc" });
-            onActaUpdated?.();
-        } catch (error) {
-            console.error(error);
-            toast.error("Error al eliminar el documento", { id: "del-doc" });
-        } finally {
-            setDocumentoAEliminar(null);
-        }
-    };
-
     const abrirDoc = (rutaArchivo: string) => {
-        const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+        const apiBase = getApiBaseUrl();
         const rootUrl = apiBase.replace('/api', '');
         window.open(`${rootUrl}/${rutaArchivo}`, '_blank');
     };
@@ -365,33 +316,34 @@ export function ActaDetailSheet({ isOpen, onClose, acta, onEdit, onActaUpdated }
                         </div>
                     )}
 
-                    {/* Documento digital activo */}
-                    {(docActivo || acta.tiene_documento) && (
+                    {/* Input invisible común para subir archivos */}
+                    <input 
+                        type="file" 
+                        className="hidden" 
+                        accept="application/pdf,image/jpeg,image/png"
+                        ref={fileInputRef}
+                        onChange={handleUploadNuevaVersion}
+                    />
+
+                    {/* Documento digital activo o Estado Físico */}
+                    {cargandoHistorial ? (
+                        <div className="h-16 rounded-xl bg-muted/40 animate-pulse border border-border" />
+                    ) : docActivo ? (
                         <div className="flex items-center gap-3 bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200/70 dark:border-emerald-900/40 rounded-xl p-3.5 shadow-2xs">
                             <div className="p-2 bg-emerald-100 dark:bg-emerald-900/40 rounded-lg shrink-0">
                                 <FileCheck className="h-5 w-5 text-emerald-700 dark:text-emerald-400" />
                             </div>
                             <div className="flex-1 min-w-0">
                                 <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-300">Documento vigente</p>
-                                <p className="text-xs text-emerald-700/80 dark:text-emerald-400/80 truncate font-mono" title={docActivo?.nombre_archivo ?? 'Archivo disponible'}>
-                                    {docActivo?.nombre_archivo ?? 'Archivo disponible'}
+                                <p className="text-xs text-emerald-700/80 dark:text-emerald-400/80 truncate font-mono" title={docActivo.nombre_archivo}>
+                                    {docActivo.nombre_archivo}
                                 </p>
                             </div>
-                            <input 
-                                type="file" 
-                                className="hidden" 
-                                accept="application/pdf,image/jpeg,image/png"
-                                ref={fileInputRef}
-                                onChange={handleUploadNuevaVersion}
-                            />
                             <div className="flex items-center gap-1.5 shrink-0">
                                 <Button 
                                     size="icon-sm" 
                                     className="h-8 w-8 bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs rounded-lg" 
-                                    onClick={() => {
-                                        const ruta = docActivo?.ruta_archivo ?? acta.ruta_archivo;
-                                        if (ruta) abrirDoc(ruta);
-                                    }}
+                                    onClick={() => abrirDoc(docActivo.ruta_archivo)}
                                     title="Ver acta digitalizada vigente"
                                 >
                                     <Eye className="h-4 w-4" />
@@ -402,93 +354,34 @@ export function ActaDetailSheet({ isOpen, onClose, acta, onEdit, onActaUpdated }
                                     className="h-8 w-8 border-emerald-200 dark:border-emerald-900/50 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 rounded-lg bg-white dark:bg-emerald-950/20 shadow-2xs" 
                                     disabled={subiendo} 
                                     onClick={() => fileInputRef.current?.click()}
-                                    title={subiendo ? "Subiendo nueva versión..." : "Actualizar documento (subir nueva versión)"}
+                                    title={subiendo ? "Reemplazando documento..." : "Reemplazar documento (subir archivo correcto)"}
                                 >
                                     {subiendo ? <Loader2 className="h-4 w-4 animate-spin text-emerald-600" /> : <Upload className="h-4 w-4" />}
                                 </Button>
-                                {docActivo && (
-                                    <Button 
-                                        size="icon-sm" 
-                                        variant="ghost" 
-                                        className="h-8 w-8 text-rose-500 hover:text-rose-700 hover:bg-rose-100 dark:hover:bg-rose-950/50 rounded-lg" 
-                                        onClick={() => setDocumentoAEliminar(docActivo.id)} 
-                                        title="Eliminar por error de subida"
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                )}
                             </div>
                         </div>
-                    )}
-
-                    {/* Historial de escaneos anteriores */}
-                    {!cargandoHistorial && docsPrevios.length > 0 && (
-                        <div className="space-y-2.5">
-                            <button
-                                className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors w-full"
-                                onClick={() => setMostrarHistorial(v => !v)}
-                            >
-                                <History className="h-4 w-4 text-amber-500" />
-                                <span className="font-semibold uppercase tracking-wider text-[11px]">
-                                    Escaneos anteriores ({docsPrevios.length})
-                                </span>
-                                {mostrarHistorial
-                                    ? <ChevronUp className="h-4 w-4 ml-auto" />
-                                    : <ChevronDown className="h-4 w-4 ml-auto" />}
-                            </button>
-
-                            {mostrarHistorial && (
-                                <div className="space-y-2">
-                                    {docsPrevios.map(doc => (
-                                        <div
-                                            key={doc.id}
-                                            className="flex items-center gap-3 bg-amber-50/50 dark:bg-amber-950/15 border border-amber-200/70 dark:border-amber-900/40 rounded-xl p-3 shadow-2xs"
-                                        >
-                                            <div className="p-2 bg-amber-100/70 dark:bg-amber-900/30 rounded-lg shrink-0">
-                                                <FileText className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate font-mono" title={doc.nombre_archivo}>
-                                                    {doc.nombre_archivo}
-                                                </p>
-                                                <p className="text-[10px] text-amber-700 dark:text-amber-400/90 font-medium">
-                                                    Reemplazado el {dateUtils.formatDisplayTimestamp(doc.fecha_eliminacion ?? '')}
-                                                </p>
-                                            </div>
-                                            <div className="flex items-center gap-1.5 shrink-0">
-                                                <Button
-                                                    size="icon-sm"
-                                                    variant="outline"
-                                                    className="h-8 w-8 border-amber-200 dark:border-amber-900/50 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30 rounded-lg bg-white dark:bg-amber-950/20 shadow-2xs"
-                                                    onClick={() => abrirDoc(doc.ruta_archivo)}
-                                                    title="Ver escaneo anterior"
-                                                >
-                                                    <Eye className="h-4 w-4" />
-                                                </Button>
-                                                <Button
-                                                    size="icon-sm"
-                                                    variant="outline"
-                                                    className="h-8 w-8 border-amber-200 dark:border-amber-900/50 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30 rounded-lg bg-white dark:bg-amber-950/20 shadow-2xs"
-                                                    disabled={restaurando}
-                                                    onClick={() => setDocumentoARestaurar(doc.id)}
-                                                    title="Restaurar como versión vigente"
-                                                >
-                                                    <RotateCcw className="h-4 w-4" />
-                                                </Button>
-                                                <Button
-                                                    size="icon-sm"
-                                                    variant="ghost"
-                                                    className="h-8 w-8 text-rose-500 hover:text-rose-700 hover:bg-rose-100 dark:hover:bg-rose-950/50 rounded-lg"
-                                                    onClick={() => setDocumentoAEliminar(doc.id)}
-                                                    title="Eliminar del historial definitivamente"
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    ))}
+                    ) : (
+                        <div className="bg-slate-50/80 dark:bg-slate-900/30 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-2xs">
+                            <div className="flex items-center gap-3 min-w-0">
+                                <div className="p-2.5 bg-slate-200/70 dark:bg-slate-800 rounded-lg shrink-0">
+                                    <FileText className="h-5 w-5 text-slate-500 dark:text-slate-400" />
                                 </div>
-                            )}
+                                <div className="min-w-0">
+                                    <p className="text-sm font-semibold text-foreground">Acta en formato físico</p>
+                                    <p className="text-xs text-muted-foreground truncate">
+                                        No cuenta con documento digital vigente
+                                    </p>
+                                </div>
+                            </div>
+                            <Button
+                                size="sm"
+                                className="gap-2 bg-primary hover:bg-primary/90 text-white rounded-lg shadow-xs w-full sm:w-auto shrink-0 font-medium text-xs h-9"
+                                disabled={subiendo}
+                                onClick={() => fileInputRef.current?.click()}
+                            >
+                                {subiendo ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                                <span>Adjuntar Escaneo</span>
+                            </Button>
                         </div>
                     )}
                 </div>
@@ -514,28 +407,6 @@ export function ActaDetailSheet({ isOpen, onClose, acta, onEdit, onActaUpdated }
                         </Button>
                     </div>
                 </div>
-
-                {/* Modal de confirmación para restaurar versión anterior */}
-                <ConfirmDialog 
-                    isOpen={documentoARestaurar !== null}
-                    onClose={() => setDocumentoARestaurar(null)}
-                    onConfirm={confirmarRestauracion}
-                    title="Restaurar escaneo anterior"
-                    description="¿Deseas restaurar este documento como la versión vigente? El documento activo actual pasará al historial."
-                    confirmText="Sí, Restaurar Versión"
-                    cancelText="Cancelar"
-                />
-
-                {/* Modal de confirmación para eliminar documentos */}
-                <ConfirmDialog 
-                    isOpen={documentoAEliminar !== null}
-                    onClose={() => setDocumentoAEliminar(null)}
-                    onConfirm={confirmarEliminacion}
-                    title="Eliminar documento definitivamente"
-                    description="¿Estás seguro de que deseas borrar este archivo por error de subida? Esta acción no se puede deshacer y el archivo no quedará en el historial."
-                    confirmText="Sí, Eliminar Archivo"
-                    cancelText="Cancelar"
-                />
             </SheetContent>
         </Sheet>
     );

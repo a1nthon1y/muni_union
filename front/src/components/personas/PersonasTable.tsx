@@ -2,7 +2,6 @@
 
 import {
     Edit2,
-    Trash2,
     MoreHorizontal,
     Phone,
     Eye,
@@ -37,7 +36,7 @@ interface PersonasTableProps {
     personas: Persona[];
     onView: (persona: Persona) => void;
     onEdit: (persona: Persona) => void;
-    onDelete: (id: number) => void;
+    onDelete?: (id: number) => void;
     onMerge?: (persona: Persona) => void;
     onReactivate: (id: number) => void;
     isLoading: boolean;
@@ -185,17 +184,7 @@ export function PersonasTable({
                                                         <Edit2 className="icon-std" /> Editar Ciudadano
                                                     </DropdownMenuItem>
                                                 )}
-                                                {canEliminar && (
-                                                    <>
-                                                        <DropdownMenuSeparator className="my-1" />
-                                                        <DropdownMenuItem
-                                                            onClick={() => onDelete(persona.id)}
-                                                            className="text-rose-600 cursor-pointer font-medium gap-2 py-2.5 rounded-lg text-xs"
-                                                        >
-                                                            <Trash2 className="h-4 w-4" /> Eliminar Registro
-                                                        </DropdownMenuItem>
-                                                    </>
-                                                )}
+
                                                 {canModificar && onMerge && (
                                                     <>
                                                         <DropdownMenuSeparator className="my-1" />

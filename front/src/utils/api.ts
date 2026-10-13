@@ -2,8 +2,18 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { toast } from 'sonner';
 
+export const getApiBaseUrl = () => {
+    if (process.env.NEXT_PUBLIC_API_URL) {
+        return process.env.NEXT_PUBLIC_API_URL;
+    }
+    if (typeof window !== 'undefined' && window.location.hostname) {
+        return `http://${window.location.hostname}:4000/api`;
+    }
+    return 'http://localhost:4000/api';
+};
+
 const api = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api',
+    baseURL: getApiBaseUrl(),
     withCredentials: true,
 });
 

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { getApiBaseUrl } from "@/utils/api";
 import {
     Baby,
     Calendar,
@@ -74,7 +75,7 @@ const ordenarActasVinculadas = (actas: Acta[]) =>
     });
 
 const getFileUrl = (ruta: string) => {
-    const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+    const apiBase = getApiBaseUrl();
     return `${apiBase.replace(/\/api\/?$/, "")}/${ruta.replace(/^\//, "")}`;
 };
 

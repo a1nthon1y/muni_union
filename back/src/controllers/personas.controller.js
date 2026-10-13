@@ -12,7 +12,8 @@ export const crearPersona = async (req, res) => {
             tabla_afectada: "personas",
             operacion: "INSERT",
             registro_id: persona.id,
-            ip: req.ip,
+            req,
+            ip: req.clientIp || req.ip,
             descripcion: `Se registró a la persona: ${persona.apellido_paterno} ${persona.nombres}`
         });
 
@@ -55,7 +56,8 @@ export const actualizarPersona = async (req, res) => {
             tabla_afectada: "personas",
             operacion: "UPDATE",
             registro_id: persona.id,
-            ip: req.ip,
+            req,
+            ip: req.clientIp || req.ip,
             descripcion: `Se actualizó datos de la persona ID: ${persona.id}`
         });
 
@@ -79,7 +81,8 @@ export const eliminarPersona = async (req, res) => {
             tabla_afectada: "personas",
             operacion: "DELETE_LOGIC",
             registro_id: req.params.id,
-            ip: req.ip,
+            req,
+            ip: req.clientIp || req.ip,
             descripcion: `Eliminación lógica de persona ID: ${req.params.id}`
         });
 
@@ -100,7 +103,8 @@ export const reactivarPersona = async (req, res) => {
             tabla_afectada: "personas",
             operacion: "REACTIVATE",
             registro_id: persona.id,
-            ip: req.ip,
+            req,
+            ip: req.clientIp || req.ip,
             descripcion: `Se reactivó a la persona ID: ${persona.id}`
         });
 
@@ -144,7 +148,7 @@ export const fusionarPersonas = async (req, res) => {
         const maestroId = parseInt(maestro_id);
 
         req.auditHandled = true;
-        const ip = req.ip || req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || "0.0.0.0";
+        const ip = req.clientIp || req.ip;
 
         const resultado = await personasService.fusionarPersonas(
             homonimoId,

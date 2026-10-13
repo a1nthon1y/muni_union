@@ -5,7 +5,6 @@ import {
     Search,
     Eye,
     Edit,
-    Trash2,
     MoreHorizontal,
     Paperclip,
     RefreshCw,
@@ -17,7 +16,8 @@ import {
     Heart,
     Ban,
     RotateCcw,
-    History
+    History,
+    Upload
 } from "lucide-react";
 import { Pagination } from "@/components/shared/Pagination";
 import { useState, useEffect } from "react";
@@ -70,7 +70,7 @@ interface ActasTableProps {
     onPageChange: (page: number) => void;
     onView: (acta: Acta) => void;
     onEdit?: (acta: Acta) => void;
-    onDelete: (id: number) => void;
+    onDelete?: (id: number) => void;
     onAnular?: (acta: Acta) => void;
     onReactivar?: (acta: Acta) => void;
     onUploadDoc?: (acta: Acta) => void;
@@ -105,6 +105,19 @@ export function ActasTable({
 
     // Helper para manejar boolean de PostgreSQL - Verificamos el campo correcto en 'Acta'
     const hasDoc = (acta: Acta) => !!acta.tiene_documento;
+
+    // Proteger actas antiguas de eliminación directa (solo anulación)
+    const esActaAntigua = (acta: Acta) => {
+        if ((acta.cantidad_historial ?? 0) > 0) return true;
+        if (acta.fecha_registro) {
+            const fechaReg = new Date(acta.fecha_registro);
+            if (!isNaN(fechaReg.getTime())) {
+                const horasDesdeRegistro = (Date.now() - fechaReg.getTime()) / (1000 * 60 * 60);
+                if (horasDesdeRegistro > 24) return true;
+            }
+        }
+        return false;
+    };
 
     const [searchTerm, setSearchTerm] = useState("");
     const [searchNumero, setSearchNumero] = useState("");
@@ -416,7 +429,19 @@ export function ActasTable({
                                             </div>
                                         ) : (
                                             <div className="flex items-center justify-center">
-                                                <Badge variant="outline" className="text-muted-foreground/50 border-border font-medium h-5 text-[9px] uppercase tracking-widest">Físico</Badge>
+                                                {canModificar && onUploadDoc ? (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => onUploadDoc(acta)}
+                                                        title="Acta física: clic para adjuntar escaneo digital"
+                                                        className="group inline-flex items-center gap-1.5 bg-slate-50 hover:bg-primary/10 dark:bg-slate-900/40 dark:hover:bg-primary/20 text-slate-600 hover:text-primary dark:text-slate-400 dark:hover:text-primary px-2.5 py-1 rounded-full border border-dashed border-slate-300 dark:border-slate-700 hover:border-primary/50 shadow-2xs transition-all active:scale-95 cursor-pointer"
+                                                    >
+                                                        <Upload size={11} className="group-hover:scale-110 transition-transform text-slate-500 group-hover:text-primary" />
+                                                        <span className="text-[10px] font-semibold uppercase tracking-tight">Físico · Subir</span>
+                                                    </button>
+                                                ) : (
+                                                    <Badge variant="outline" className="text-muted-foreground/50 border-border font-medium h-5 text-[9px] uppercase tracking-widest">Físico</Badge>
+                                                )}
                                             </div>
                                         )}
                                     </TableCell>
@@ -440,6 +465,16 @@ export function ActasTable({
                                                     </DropdownMenuItem>
                                                 )}
 
+                                                {canModificar && onUploadDoc && (
+                                                    <DropdownMenuItem
+                                                        onClick={() => onUploadDoc(acta)}
+                                                        className="cursor-pointer font-medium gap-2.5 py-2 px-2.5 rounded-lg text-xs"
+                                                    >
+                                                        <Upload className="h-4 w-4 text-muted-foreground shrink-0" />
+                                                        {hasDoc(acta) ? "Reemplazar Documento" : "Adjuntar Documento"}
+                                                    </DropdownMenuItem>
+                                                )}
+
                                                 {hasDoc(acta) && (
                                                     <>
                                                         <DropdownMenuSeparator className="my-1" />
@@ -452,7 +487,7 @@ export function ActasTable({
                                                     </>
                                                 )}
 
-                                                {(canAnular || canEliminar) && (
+                                                {(canAnular || (isAdminUser && acta.estado !== 'ACTIVO')) && (
                                                     <>
                                                         <DropdownMenuSeparator className="my-1" />
                                                         {canAnular && acta.estado === 'ACTIVO' && (
@@ -469,14 +504,6 @@ export function ActasTable({
                                                                 className="cursor-pointer font-medium gap-2.5 py-2 px-2.5 rounded-lg text-xs text-emerald-600 dark:text-emerald-400 focus:text-emerald-700 dark:focus:text-emerald-300 focus:bg-emerald-50 dark:focus:bg-emerald-950/30"
                                                             >
                                                                 <RotateCcw className="h-4 w-4 shrink-0 text-emerald-500" /> Reactivar Registro
-                                                            </DropdownMenuItem>
-                                                        )}
-                                                        {canEliminar && (
-                                                            <DropdownMenuItem
-                                                                onClick={() => onDelete(acta.id)}
-                                                                className="cursor-pointer font-medium gap-2.5 py-2 px-2.5 rounded-lg text-xs text-rose-600 dark:text-rose-400 focus:text-rose-700 dark:focus:text-rose-300 focus:bg-rose-50 dark:focus:bg-rose-950/30"
-                                                            >
-                                                                <Trash2 className="h-4 w-4 shrink-0 text-rose-500" /> Eliminar Registro
                                                             </DropdownMenuItem>
                                                         )}
                                                     </>

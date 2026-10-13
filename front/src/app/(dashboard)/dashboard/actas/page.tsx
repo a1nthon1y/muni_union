@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { FileDigit, Plus } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { actasService, type ActasFilters } from "@/services/actas.service";
+import type { Acta } from "@/types/acta";
 import { ActasTable } from "@/components/actas/ActasTable";
 import { ActaEditSheet } from "@/components/actas/ActaEditSheet";
 import { ActaDetailSheet } from "@/components/actas/ActaDetailSheet";
@@ -19,8 +20,8 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Acta } from "@/types/acta";
 import { documentosService } from "@/services/documentos.service";
+import { getApiBaseUrl } from "@/utils/api";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Upload, Loader2, CheckCircle2, Trash2 } from "lucide-react";
@@ -88,6 +89,12 @@ export default function ActasPage() {
             const response = await actasService.getAll(filtros);
             setActas(response.data);
             setPagination(response.pagination);
+
+            // Sincronizar selectedActa si hay una abierta actualmente
+            setSelectedActa((prev: Acta | null) => {
+                if (!prev) return null;
+                return response.data.find((a) => a.id === prev.id) ?? prev;
+            });
 
             if (
                 Number.isInteger(actaIdParam)
@@ -249,7 +256,7 @@ export default function ActasPage() {
     // --- Ver y Descargar documento ---
     const getFileUrl = (ruta?: string) => {
         if (!ruta) return "";
-        const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+        const apiBase = getApiBaseUrl();
         const rootUrl = apiBase.replace('/api', '');
         return `${rootUrl}/${ruta}`;
     };
@@ -372,28 +379,7 @@ export default function ActasPage() {
                 </AlertDialogContent>
             </AlertDialog>
 
-            {/* Diálogo de ELIMINACIÓN (error de registro) */}
-            <ConfirmDialog
-                isOpen={isDeleteDialogOpen}
-                onClose={() => setIsDeleteDialogOpen(false)}
-                onConfirm={confirmDelete}
-                title="¿Eliminar Acta por error de registro?"
-                description="Esta acción eliminará el acta, su documento digitalizado y el archivo físico del servidor. Use esta opción solo si el acta fue creada por error (duplicado, datos incorrectos). Esta operación NO se puede deshacer."
-                confirmText="Eliminar definitivamente"
-                cancelText="Cancelar"
-            />
 
-            {/* Diálogo de ELIMINACIÓN DE SOLO DOCUMENTO */}
-            <ConfirmDialog
-                isOpen={isDelDocConfirmOpen}
-                onClose={() => setIsDelDocConfirmOpen(false)}
-                onConfirm={confirmDeleteDoc}
-                title="¿Desvincular documento del acta?"
-                description={`Se eliminará el archivo digitalizado vinculado al acta N° ${actaToDelDoc?.numero_acta}. El registro del acta permanecerá intacto.`}
-                confirmText="Sí, eliminar documento"
-                cancelText="Cancelar"
-                variant="destructive"
-            />
 
             {/* Diálogo de SUBIDA DE DOCUMENTO */}
             <AlertDialog open={isUploadDialogOpen} onOpenChange={(open) => {

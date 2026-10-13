@@ -205,7 +205,6 @@ export default function UsuariosPage() {
                 usuarios={usuarios}
                 isLoading={isLoading}
                 onEdit={handleEdit}
-                onDelete={handleDelete}
                 onToggleStatus={handleToggleStatus}
                 onPermisos={handlePermisos}
                 pagination={pagination}

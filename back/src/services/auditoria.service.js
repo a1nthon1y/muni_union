@@ -1,5 +1,6 @@
 import { pool } from "../config/db.js";
 import logger from "../config/logger.js";
+import { formatearIp, obtenerIpCliente } from "../utils/ipUtils.js";
 
 // Días de retención — entradas más antiguas se purgan automáticamente
 const RETENTION_DAYS = parseInt(process.env.AUDIT_RETENTION_DAYS ?? "730"); // 2 años por defecto
@@ -10,15 +11,15 @@ export const registrarAccion = async ({
   operacion,
   registro_id,
   ip,
+  req,
   descripcion
 }) => {
   try {
-    // Limpieza de IP: Convertir IPv6 local a IPv4 y extraer IPv4 de mapeos ::ffff:
-    let formattedIp = ip || "INTERNAL";
-    if (formattedIp === "::1") {
-      formattedIp = "127.0.0.1";
-    } else if (formattedIp.startsWith("::ffff:")) {
-      formattedIp = formattedIp.substring(7);
+    let formattedIp = "INTERNAL";
+    if (req) {
+      formattedIp = obtenerIpCliente(req);
+    } else if (ip) {
+      formattedIp = formatearIp(ip);
     }
 
     await pool.query(

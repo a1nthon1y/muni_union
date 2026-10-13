@@ -4,6 +4,8 @@ import { pool } from "../config/db.js";
 import crypto from "crypto";
 import fs from "fs";
 
+import path from "path";
+
 export const registrarDocumento = async (req, res) => {
     try {
         if (!req.file) {
@@ -18,12 +20,24 @@ export const registrarDocumento = async (req, res) => {
             return res.status(400).json({ message: "El ID del acta es obligatorio" });
         }
 
-        // --- LÓGICA DE REEMPLAZO: Soft-delete de anteriores (conservar físico para historial) ---
-        const docsExistentes = await documentosService.listarDocumentosPorActa(acta_id);
-        for (const doc of docsExistentes) {
-            // Solo soft-delete en BD — el archivo físico se conserva para que esté disponible
-            // en el historial y el usuario pueda consultarlo como referencia.
-            await documentosService.eliminarDocumento(doc.id, req.user.id);
+        // --- LÓGICA DE REEMPLAZO LIMPIO: Eliminar físicamente del disco y de BD archivos anteriores ---
+        // para garantizar que no quede basura acumulada en el servidor y mantener 1 acta = 1 archivo vigente
+        const { rows: docsAnteriores } = await pool.query(
+            "SELECT id, ruta_archivo, nombre_archivo FROM documentos_digitales WHERE acta_id = $1",
+            [acta_id]
+        );
+        for (const doc of docsAnteriores) {
+            if (doc.ruta_archivo) {
+                const resolvedPath = path.resolve(doc.ruta_archivo);
+                if (fs.existsSync(resolvedPath)) {
+                    try {
+                        fs.unlinkSync(resolvedPath);
+                    } catch (err) {
+                        console.warn(`No se pudo eliminar archivo físico anterior ${resolvedPath}:`, err.message);
+                    }
+                }
+            }
+            await documentosService.eliminarDocumentoDefinitivo(doc.id);
         }
 
         // Leer el archivo para generar un hash
@@ -41,14 +55,19 @@ export const registrarDocumento = async (req, res) => {
 
         const documento = await documentosService.registrarDocumento(datosDocumento, req.user.id);
 
+        const descripcionAuditoria = docsAnteriores.length > 0
+            ? `Se reemplazó documento para acta ID: ${documento.acta_id}. Nuevo archivo: ${documento.nombre_archivo} (se liberó espacio eliminando archivo anterior del disco).`
+            : `Se subió documento: ${documento.nombre_archivo} para acta ID: ${documento.acta_id}`;
+
         req.auditHandled = true;
         await registrarAccion({
             usuario_id: req.user.id,
             tabla_afectada: "documentos_digitales",
-            operacion: "INSERT",
+            operacion: docsAnteriores.length > 0 ? "UPDATE" : "INSERT",
             registro_id: documento.id,
-            ip: req.ip,
-            descripcion: `Se subió documento: ${documento.nombre_archivo} para acta ID: ${documento.acta_id}`
+            req,
+            ip: req.clientIp || req.ip,
+            descripcion: descripcionAuditoria
         });
 
         res.status(201).json(documento);
@@ -107,7 +126,8 @@ export const eliminarDocumento = async (req, res) => {
             tabla_afectada: "documentos_digitales",
             operacion: "DELETE_LOGIC",
             registro_id: req.params.id,
-            ip: req.ip,
+            req,
+            ip: req.clientIp || req.ip,
             descripcion: `Se eliminó documento ID: ${req.params.id}`
         });
 
@@ -127,7 +147,8 @@ export const restaurarDocumento = async (req, res) => {
             tabla_afectada: "documentos_digitales",
             operacion: "UPDATE",
             registro_id: req.params.id,
-            ip: req.ip,
+            req,
+            ip: req.clientIp || req.ip,
             descripcion: `Se restauró escaneo previo ID: ${req.params.id} como documento activo para acta ID: ${documentoRestaurado.acta_id}`
         });
 

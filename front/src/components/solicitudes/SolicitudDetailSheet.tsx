@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Solicitud } from "@/types/solicitud";
 import { es } from "date-fns/locale";
 import { dateUtils } from "@/utils/dateUtils";
+import { getApiBaseUrl } from "@/utils/api";
 import {
     User,
     Calendar,
@@ -71,7 +72,7 @@ export function SolicitudDetailSheet({
 
     const getFileUrl = (ruta?: string) => {
         if (!ruta) return "";
-        const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+        const apiBase = getApiBaseUrl();
         const rootUrl = apiBase.replace('/api', '');
         return `${rootUrl}/${ruta}`;
     };
