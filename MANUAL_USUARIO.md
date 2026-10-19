@@ -11,10 +11,10 @@
 | Campo | Valor |
 |---|---|
 | Documento | Manual de Usuario del Sistema de Registro Civil |
-| Versión | `1.0.0` |
-| Fecha | 23 de julio de 2026 |
-| Estado | Versión final |
-| Audiencia | ADMIN, REGISTRADOR y personal de ventanilla con cuenta REGISTRADOR |
+| Versión | `1.1.0` |
+| Fecha | 15 de octubre de 2026 |
+| Estado | Versión actualizada |
+| Audiencia | ADMIN, REGISTRADOR, CONSULTA y personal de ventanilla con cuenta autorizada |
 | Documento técnico relacionado | `MANUAL_TECNICO.md` / `MANUAL_TECNICO.html` |
 | Clasificación | Uso interno municipal |
 
@@ -58,9 +58,10 @@ Este manual orienta al personal autorizado en el uso funcional del Sistema de Re
 
 | Perfil | Uso principal |
 |---|---|
-| REGISTRADOR | Digitalización, personas, actas y solicitudes, según permisos; su identificador interno es `USER` |
-| ADMIN | Operación completa y administración funcional |
-| Ventanilla (función organizativa, no rol) | Opera con una cuenta REGISTRADOR autorizada |
+| REGISTRADOR | Digitalización, personas, actas, solicitudes y carga masiva, según permisos asignados; su identificador interno es `USER` |
+| ADMIN | Operación completa, auditoría, gestión de usuarios, backup, configuración institucional y administración funcional |
+| CONSULTA | Consulta y visualización en solo lectura de actas, ciudadanos, solicitudes y reportes; sin permisos de modificación, creación ni anulación |
+| Ventanilla (función organizativa, no rol) | Opera con una cuenta REGISTRADOR o CONSULTA según sus funciones asignadas |
 | Ciudadano | Solo portal público de verificación |
 
 El manual no comprende instalación, red, certificados, API, base de datos, restauración ni recuperación técnica. Esos procedimientos están en el **Manual Técnico**, secciones 2.4, 5, 6, 7, 8 y 9.
@@ -70,13 +71,15 @@ El manual no comprende instalación, red, certificados, API, base de datos, rest
 El sistema permite:
 
 - registrar personas y actas de nacimiento, matrimonio y defunción;
-- adjuntar el PDF o imagen digitalizada de un acta;
-- consultar, filtrar, editar, anular o eliminar registros según permisos;
-- gestionar solicitudes de copias y sus constancias;
-- importar actas históricas desde Excel;
-- exportar información autorizada a Excel;
-- administrar usuarios, auditoría, backup e identidad visual;
-- ofrecer al ciudadano una verificación limitada, sin acceso al sistema interno.
+- adjuntar y gestionar escaneos digitales (PDF o imagen) con historial de versiones anteriores y opción de restauración;
+- consultar, filtrar, editar, anular o reactivar registros según permisos y estricta trazabilidad registral (no se permite eliminación destructiva de registros);
+- fusionar ciudadanos duplicados para consolidar actas sin pérdida de información;
+- gestionar personas homónimas y aplicar convenciones registrales históricas (`S/A`, `S/N`);
+- gestionar solicitudes de copias certificadas, constancias y verificación pública con código QR;
+- importar actas históricas desde Excel con prevención de duplicados erróneos;
+- exportar información autorizada a reportes tabulares en Excel (`.xlsx`);
+- administrar usuarios, bitácora de auditoría con registro de IP real del cliente, backup e identidad visual municipal;
+- ofrecer al ciudadano un portal público de verificación de constancias, sin acceso a información sensible interna.
 
 ### 1.3. Requisitos básicos del usuario
 
@@ -282,39 +285,41 @@ La **Consola de Digitalización** registra de forma conjunta ciudadano, acta y a
 
 #### 4.1.1. Información del ciudadano
 
-1. Seleccione el tipo de documento.
-2. Ingrese DNI si corresponde.
-3. Complete nombres y apellidos.
-4. Seleccione y verifique el sexo, que es obligatorio. Complete fecha de nacimiento, fecha de fallecimiento, teléfono u observaciones cuando correspondan. La fecha de fallecimiento es opcional.
-5. Revise las coincidencias mostradas por el sistema.
+1. Seleccione el tipo de documento (**DNI**, **CARNET EXT.**, **LIBRETA ELECTORAL** o **SIN DOCUMENTO**).
+2. Ingrese el número según corresponda (DNI de exactamente 8 dígitos numéricos).
+3. Complete nombres y apellidos:
+   - Para registros históricos donde no conste el apellido o el nombre, utilice las convenciones admitidas por el sistema: **`S/A`** (Sin Apellido) y **`S/N`** (Sin Nombre).
+4. Seleccione y verifique el sexo, que es obligatorio. Complete fecha de nacimiento, fecha de fallecimiento (opcional), teléfono u observaciones cuando correspondan.
+5. Marque la casilla **Es homónimo** si el ciudadano comparte nombres y apellidos con otra persona pero se trata de un individuo diferente, o si carece de DNI y requiere un registro independiente para evitar vinculaciones automáticas no deseadas.
+6. Revise las coincidencias sugeridas por el sistema antes de proceder.
 
-Para una persona sin documento use **SIN DOCUMENTO**.
+Para una persona sin documento use **SIN DOCUMENTO** (el campo de número quedará inhabilitado automáticamente).
 
 Si registra ambas fechas, la fecha de fallecimiento no puede ser anterior a la fecha de nacimiento. Deje **F. Fallecimiento** vacía cuando no corresponda.
 
-> Una coincidencia por nombre no demuestra que sea la misma persona. Revise fecha, acta física y demás datos. No fusione registros por suposición.
+> **Importante sobre homonimias:** Una coincidencia por nombre no demuestra que sea la misma persona. Revise fecha de nacimiento, acta física y lugar de procedencia. Si son personas diferentes, asegúrese de marcar la condición de homónimo.
 
 #### 4.1.2. Especificaciones del acta
 
 1. Seleccione Nacimiento, Matrimonio o Defunción.
-2. Elija el modo:
-   - **Libro Clásico:** libro y número de acta.
-   - **RENIEC (CUI):** código CUI/ID.
+2. Elija el modo de registro:
+   - **Libro Clásico:** ingrese número de libro y número de acta (o folio).
+   - **RENIEC (CUI):** código CUI/ID único (entre 6 y 12 dígitos numéricos).
 3. Use la sugerencia **AUTO** solo después de verificar libro, tipo y año.
 4. Complete año y fecha del acta.
-5. En matrimonio complete **Cónyuge — Obligatorio en Matrimonio**.
-6. Agregue observaciones si son necesarias.
+5. En actas de matrimonio, complete obligatoriamente los datos del **Cónyuge**.
+6. Agregue observaciones registrales marginales si constan en la partida física.
 
-Formato clásico mostrado: `NAC-L{libro}-{numero}` o prefijo equivalente según tipo.
+Formato clásico mostrado: `NAC-L{libro}-{numero}` o prefijo equivalente según tipo (`MAT-`, `DEF-`).
 
 #### 4.1.3. Archivo digitalizado
 
-1. Seleccione PDF, JPG o PNG.
-2. Verifique que corresponda a la persona y al acta de la pantalla.
-3. Tamaño máximo real: **20 MB**.
+1. Seleccione el archivo escaneado en formato PDF, JPG o PNG.
+2. Verifique en pantalla que el archivo corresponda fielmente a la persona y al acta especificada.
+3. Tamaño máximo permitido: **20 MB**.
 4. Pulse **Procesar Registro**.
 
-El archivo es obligatorio para este flujo.
+El archivo digital es obligatorio para culminar el flujo de la Consola de Digitalización.
 
 **Resultados esperados:**
 
@@ -325,10 +330,10 @@ El archivo es obligatorio para este flujo.
 
 | Mensaje/situación | Acción |
 |---|---|
-| `Documento Requerido` | Adjunte el archivo antes de procesar |
-| Acta duplicada | No vuelva a guardar; revise el acta existente |
-| Homonimia/ciudadano identificado | Compare datos antes de seleccionar |
-| Error al procesar | Verifique si el acta quedó creada antes de reintentar |
+| `Documento Requerido` | Adjunte el archivo escaneado antes de procesar |
+| Acta duplicada | Ya existe un acta con el mismo libro, número y año; consulte el registro existente |
+| Homonimia/ciudadano identificado | Compare datos antes de seleccionar o marque "Es homónimo" si es otra persona |
+| Error al procesar | Verifique si el acta quedó creada en el listado antes de reintentar |
 
 > **Captura pendiente — Figura 4.1.** Consola de Digitalización antes de completar datos.  
 
@@ -388,31 +393,36 @@ Para soporte o exportación, anote todos los filtros activos.
 
 > **Captura pendiente — Figura 4.4-A.** Filtros de Actas identificados, ejemplo de búsqueda y botón de flechas circulares para limpiar.
 
-#### 4.2.2. Modificar, anular, reactivar o eliminar
+#### 4.2.2. Modificar, anular, reactivar y gestión de escaneos (historial y versiones)
 
-Abra el menú **⋮** de la fila:
+> **Criterio de conservación registral:**  
+> Por seguridad jurídica, estricta trazabilidad y normativa del Registro Civil, **el sistema no permite eliminar actas ni destruir partidas registradas**. Si un acta fue ingresada por error, debe ser **anulada** ingresando obligatoriamente el motivo formal de anulación. Los registros anulados quedan rotulados en color ámbar y únicamente un usuario con perfil **ADMIN** puede **reactivarlos** si se comprueba una anulación involuntaria.
+
+Abra el menú **⋮** de la fila del acta:
 
 | Acción | Requisito | Resultado |
 |---|---|---|
-| Ver Detalles | Usuario autenticado | Ficha completa |
-| Editar | Permiso `actas_modificar` | Actualiza datos |
-| Imprimir | Desde detalle | Vista `/print/acta/{id}` |
-| Ver/Descargar documento | Documento existente | Abre archivo |
-| Adjuntar/Reemplazar Archivo | Usuario autenticado | Sustituye documento vigente |
-| Anular | Permiso `actas_anular` | Estado ANULADO |
-| Reactivar | Solo ADMIN | Estado activo |
-| Eliminar | Permiso `actas_eliminar` | Eliminación lógica |
+| **Ver Detalles** | Usuario autenticado | Abre ficha completa con datos del titular, cónyuge, actas relacionadas y visualizador interactivo de PDF |
+| **Editar Información** | Permiso `actas_modificar` (ADMIN o REGISTRADOR con permiso) | Permite actualizar datos registrales, folios y observaciones del acta |
+| **Descargar PDF** | Acta con documento digital | Descarga directa del archivo PDF escaneado |
+| **Adjuntar / Reemplazar Documento** | Permiso `actas_modificar` | Permite cargar un nuevo escaneo; el archivo anterior **no se borra**, se conserva archivado en el historial de versiones |
+| **Físico · Subir** (botón directo) | Acta física sin digitalizar | Botón directo visible en la columna "Documento" para cargar el escaneo sin abrir el menú |
+| **Anular Registro** | Permiso `actas_anular` y estado ACTIVO | Abre diálogo donde es **obligatorio** escribir el motivo de la anulación; cambia el estado a ANULADO |
+| **Reactivar Registro** | Solo perfil ADMIN y acta no activa | Restablece el acta a estado ACTIVO |
+
+##### Historial de escaneos y versiones (v2, v3...):
+- Cuando un acta tiene más de un escaneo cargado en su historial, la tabla muestra una etiqueta ámbar con el contador (ejemplo: `1 escaneo previo archivado`).
+- Al abrir **Ver Detalles**, se accede al historial completo donde figura la fecha, hora, usuario operador y versión de cada escaneo.
+- Si un escaneo fue reemplazado por error, el sistema permite pulsar **Restaurar escaneo anterior** para regresar a la versión archivada correcta de forma inmediata.
 
 La ficha y la impresión del acta muestran la fecha de fallecimiento del titular o cónyuge únicamente cuando está registrada.
 
-Para anular, el motivo es obligatorio. Si aparece `Debe indicar el motivo de anulación`, complete el campo.
-
-> Reemplazar o eliminar un documento puede borrar el archivo físico anterior. Confirme acta y archivo antes de aceptar.
+Para anular, el motivo es obligatorio. Si intenta confirmar en blanco, aparecerá la alerta `Debe indicar el motivo de anulación`.
 
 #### 4.2.3. Descargar e iniciar una importación
 
-- **EXPORTAR:** genera Excel con los filtros activos.
-- **IMPORTAR:** abre la carga masiva; solo ADMIN puede completarla.
+- **EXPORTAR:** genera un archivo Excel (`.xlsx`) con los filtros aplicados en pantalla.
+- **IMPORTAR:** abre la carga masiva; disponible para **ADMIN** y usuarios **REGISTRADOR** autorizados (el perfil CONSULTA tiene esta función deshabilitada).
 
 Mensajes de exportación: `Generando Excel de actas...`, `Descarga lista` o `Error al generar el reporte`.
 
@@ -420,7 +430,7 @@ Mensajes de exportación: `Generando Excel de actas...`, `Descarga lista` o `Err
 
 > **Captura pendiente — Figura 4.5.** Menú **⋮** de un acta con las acciones permitidas al perfil autenticado.  
 
-> **Captura pendiente — Figura 4.6.** Alerta de confirmación para anular o eliminar un acta, sin ejecutar la acción sobre información productiva.
+> **Captura pendiente — Figura 4.6.** Alerta de confirmación para anular un acta indicando motivo justificado, sin ejecutar la acción sobre información productiva.
 
 ---
 
@@ -449,29 +459,35 @@ El campo **Buscar por DNI o Nombres...** consulta mientras escribe.
 #### 4.3.2. Registrar
 
 1. Pulse **REGISTRAR CIUDADANO**.
-2. Complete nombres y apellidos obligatorios.
+2. Complete nombres y apellidos obligatorios:
+   - Para partidas históricas sin apellido o nombre registrado, ingrese **`S/A`** (Sin Apellido) o **`S/N`** (Sin Nombre).
 3. Seleccione tipo de documento; use **SIN DOCUMENTO** si corresponde.
 4. Seleccione y verifique el sexo, que es obligatorio.
-5. Complete fecha de nacimiento y, solo si corresponde, **F. Fallecimiento**.
-6. Revise y guarde.
+5. Marque la casilla **Es homónimo** si la persona comparte nombres y apellidos con otro ciudadano pero se trata de un registro distinto, evitando que el sistema los unifique o sugiera vínculos erróneos.
+6. Complete fecha de nacimiento y, solo si corresponde, **F. Fallecimiento** (deje vacía si no aplica).
+7. Revise y guarde.
 
-#### 4.3.3. Editar, eliminar y exportar
+#### 4.3.3. Editar, fusionar duplicados y exportar
 
-- **Ver detalles:** abra el menú **⋮** y seleccione **Ver detalles**. El panel muestra los datos del ciudadano y la sección **Actas vinculadas**, incluyendo nacimiento, matrimonio o defunción donde figure como titular o cónyuge.
-- Desde **Actas vinculadas** puede usar **Ver acta**, **Imprimir** y, cuando esté digitalizada, **Ver documento**.
-- Editar requiere `personas_modificar`. Desde **Editar Ciudadano** puede registrar, corregir o borrar **F. Fallecimiento**. Para borrarla, deje el campo vacío y guarde.
-- Eliminar requiere `personas_eliminar` y puede rechazarse si la persona tiene actas.
-- **EXPORTAR** genera Excel del resultado filtrado con fecha de nacimiento y fecha de fallecimiento.
+> **Criterio de conservación de ciudadanos:**  
+> Los ciudadanos registrados **no se eliminan del sistema**. Eliminar una persona rompería la integridad referencial de los libros y actas vinculadas históricas. Si por equivocación se registraron fichas duplicadas para una misma persona, **no intente borrarlas**: utilice la función oficial de **Fusionar duplicado**.
 
-Las actas se vinculan cuando se registra o edita el acta. El panel de Personas solo consulta las relaciones existentes y no permite vincularlas manualmente.
+- **Ver detalles:** abra el menú **⋮** y seleccione **Ver detalles**. El panel lateral muestra los datos completos del ciudadano y la sección **Actas vinculadas**, incluyendo nacimiento, matrimonio o defunción donde figure como titular, cónyuge o difunto.
+- Desde **Actas vinculadas** puede pulsar **Ver acta**, **Imprimir** y, cuando esté digitalizada, **Ver documento** (PDF).
+- **Editar Ciudadano:** requiere permiso `personas_modificar`. Permite actualizar nombres, apellidos, documento, sexo, observaciones, condición de homónimo y fecha de fallecimiento (para retirarla, deje el campo vacío y guarde).
+- **Fusionar duplicado:** disponible en el menú **⋮** para unificar registros repetidos:
+  1. Ubique al ciudadano que quedará como registro principal y seleccione **Fusionar duplicado**.
+  2. En la ventana emergente, busque y seleccione al ciudadano duplicado.
+  3. Confirme la fusión: el sistema reasigna automáticamente todas las actas vinculadas al registro principal y consolida los datos sin pérdida de trazabilidad ni duplicidades.
+- **EXPORTAR:** genera un archivo Excel con el listado filtrado, incluyendo fecha de nacimiento, fallecimiento y estado de homonimia.
 
-No elimine una persona para resolver un duplicado sin verificar antes sus actas vinculadas.
+Las actas se vinculan cuando se digitaliza o edita el acta correspondiente. El panel de Personas consulta las relaciones existentes y las consolida automáticamente mediante la fusión de duplicados.
 
 > **Captura pendiente — Figura 4.7.** Padrón de Ciudadanos con búsqueda y botón **REGISTRAR CIUDADANO**.  
 
 > **Captura pendiente — Figura 4.8.** Formulario de registro de persona con campos obligatorios identificados.  
 
-> **Captura pendiente — Figura 4.9.** Alerta de confirmación de eliminación o mensaje que impide eliminar una persona vinculada.
+> **Captura pendiente — Figura 4.9.** Diálogo de **Fusionar duplicado** con selección del ciudadano secundario y confirmación de actas vinculadas.
 
 ---
 
@@ -492,17 +508,19 @@ No elimine una persona para resolver un duplicado sin verificar antes sus actas 
 
 **Resultado esperado:** solicitud en estado **PENDIENTE**.
 
-#### 4.4.2. Atender, anular o eliminar
+#### 4.4.2. Atender o anular trámite
 
-- **Atender:** desde el detalle; resultado `Solicitud atendida correctamente` y estado **ATENDIDO**.
-- **Anular:** indique motivo; estado **ANULADO**.
-- **Eliminar:** confirme solo cuando corresponda; el registro deja de aparecer en listados normales.
+> **Conservación de trámites y correlativos:**  
+> Las solicitudes de copias y constancias **no se eliminan del sistema**. Cada solicitud posee un número correlativo único de trámite (`#000123`) que forma parte de la rendición de cuentas, auditoría y recaudación de la Municipalidad.
+
+- **Atender Solicitud:** disponible cuando el trámite se encuentra en estado **PENDIENTE**. Desde el menú **⋮** de la fila o desde la ficha de detalle, seleccione **Atender Solicitud** tras verificar la expedición de las actas; el sistema registrará la fecha y hora de atención, cambiando su estado a **ATENDIDO** (`Solicitud atendida correctamente`).
+- **Anular Trámite:** disponible para trámites en estado no anulado. Si el solicitante desiste o el trámite es revocado, seleccione **Anular Trámite** e ingrese obligatoriamente el motivo de la anulación. El registro pasará a estado **ANULADO**, conservando su trazabilidad histórica.
 
 #### 4.4.3. Imprimir documento o cargo
 
 Desde el detalle pulse **Imprimir Documento / Cargo**.
 
-La impresión incluye el número de constancia y un enlace de verificación. Revise antes de entregar:
+La impresión incluye el número de constancia y un enlace de verificación con código QR. Revise antes de entregar:
 
 - solicitante;
 - actas/cantidades;
@@ -539,7 +557,7 @@ Los filtros se aplican al listado y también al archivo generado por **EXPORTAR*
 
 > **Captura pendiente — Figura 4.12.** Detalle de solicitud con opciones de atención e impresión.  
 
-> **Captura pendiente — Figura 4.13.** Alerta de confirmación para anular o eliminar una solicitud.
+> **Captura pendiente — Figura 4.13.** Alerta de confirmación para anular trámite de solicitud con motivo requerido.
 
 ---
 
@@ -549,7 +567,7 @@ Los filtros se aplican al listado y también al archivo generado por **EXPORTAR*
 
 **Pantalla:** Carga Masiva de Actas
 
-**Rol:** solo ADMIN
+**Rol:** ADMIN y REGISTRADOR (operadores con permiso de importación; rol CONSULTA no admitido)
 
 #### 4.5.1. Preparar archivos
 
@@ -560,7 +578,7 @@ Los filtros se aplican al listado y también al archivo generado por **EXPORTAR*
 
 Campos obligatorios por fila:
 
-- `nombres`, `apellido_paterno`, `apellido_materno`;
+- `nombres`, `apellido_paterno`, `apellido_materno` (se admiten convenciones `S/A` y `S/N` para partidas antiguas sin apellido o nombre);
 - `tipo_acta`: `NACIMIENTO`, `MATRIMONIO` o `DEFUNCION`;
 - `fecha_acta` en formato `AAAA-MM-DD`;
 - `cui`, o bien `libro` y `numero_acta`;
@@ -569,11 +587,14 @@ Campos obligatorios por fila:
 Campos relevantes opcionales:
 
 - `dni`, `tipo_documento`, `sexo`, `fecha_nacimiento`, `fecha_fallecimiento`, `telefono`;
+- `es_homonimo` (opcional: `SI` o `1`, para evitar unificaciones indebidas);
 - `persona_observaciones`, `acta_observaciones`;
 - `nombre_archivo_pdf`, `carpeta_ruta`;
 - en matrimonio: `conyuge_nombres`, `conyuge_apellido_paterno`, `conyuge_apellido_materno` obligatorios, y demás campos `conyuge_*` cuando existan.
 
 `fecha_fallecimiento` y `conyuge_fecha_fallecimiento` son opcionales. Si se informan, deben contener una fecha real y no pueden ser anteriores a la fecha de nacimiento correspondiente. Una celda vacía no borra una fecha ya registrada.
+
+El motor de importación cuenta con salvaguardas especiales para evitar fusionar automáticamente personas con nombres genéricos o convenciones `S/N` y `S/A`.
 
 `sexo`, si se proporciona, acepta solo `M` o `F`. Si queda vacío, la versión actual asigna `M`. **No inicie nuevas cargas históricas hasta que Sistemas confirme la corrección de esta regla.**
 
@@ -768,12 +789,12 @@ Crear usuario:
 
 Acciones del menú **⋮**:
 
-- **Editar Perfil**; dentro de este formulario se encuentra **Cambiar Contraseña**;
-- **Configurar Permisos**;
-- **Desactivar Acceso** / **Activar Acceso**;
-- eliminar, cuando la aplicación lo permita.
+- **Editar Perfil**: permite actualizar nombres, apellidos, teléfono y contraseña institucional (**Cambiar Contraseña**);
+- **Configurar Permisos**: abre el panel de permisos específicos por módulo (exclusivo para usuarios con rol REGISTRADOR);
+- **Desactivar Acceso** / **Activar Acceso**: inhabilita o rehabilita la cuenta inmediatamente.
 
-No desactive ni elimine la cuenta propia durante una sesión administrativa.
+> **Conservación de cuentas institucionales:**  
+> Las cuentas de usuario **no se eliminan del sistema**. Al desvincularse un colaborador de la entidad, el administrador debe usar **Desactivar Acceso**. Esto bloquea el ingreso de forma inmediata mientras preserva la autoría e integridad de la bitácora de auditoría histórica. No desactive la cuenta propia durante una sesión administrativa activa.
 
 > **Captura pendiente — Figura 6.1.** Panel de Gestión de Usuarios de una sesión ADMIN.  
 
@@ -785,24 +806,27 @@ No desactive ni elimine la cuenta propia durante una sesión administrativa.
 
 | Perfil | Bandejas y funciones |
 |---|---|
-| ADMIN | Dashboard, Digitalización, Personas, Actas, Solicitudes, Usuarios, Auditoría, Backup BD, Configuración e importación |
-| REGISTRADOR | Dashboard, Digitalización, Personas, Actas y Solicitudes, según permisos asignados |
+| ADMIN | Acceso completo: Dashboard, Digitalización, Personas, Actas, Solicitudes, Usuarios, Auditoría, Backup BD, Configuración e Importación masiva |
+| REGISTRADOR | Dashboard, Digitalización, Personas, Actas, Solicitudes e Importación masiva, según los permisos granulares asignados por el administrador (identificador interno `USER`) |
+| CONSULTA | Visualización en solo lectura de Dashboard, Personas, Actas, Solicitudes y emisión de reportes; sin acceso a digitalización, importación ni opciones de edición o anulación |
 
-Permisos configurables para REGISTRADOR:
+Permisos configurables para el rol REGISTRADOR:
 
-- modificar, anular o eliminar actas;
-- modificar o eliminar personas.
+- **Actas:** modificar datos y anular registros;
+- **Personas:** modificar datos de ciudadanos y fusionar registros duplicados;
+- **Solicitudes:** atender y anular trámites de solicitudes;
+- **Importación:** acceso a la carga masiva de actas históricas.
 
-ADMIN puede reactivar actas y gestionar usuarios, auditoría, backup, configuración e importación. El identificador técnico del perfil REGISTRADOR es `USER`.
+ADMIN puede reactivar actas y gestionar usuarios, auditoría, backup, configuración institucional e importación.
 
-1. En **Usuarios**, abra el menú **⋮** de la cuenta.
+1. En **Usuarios**, abra el menú **⋮** de la cuenta con rol REGISTRADOR.
 2. Seleccione **Configurar Permisos**.
-3. Active solo las funciones aprobadas para el puesto.
-4. Guarde y solicite al usuario que vuelva a ingresar si el cambio no aparece en su sesión.
+3. Active únicamente los permisos aprobados para las funciones del operador.
+4. Guarde y solicite al usuario que vuelva a ingresar si el cambio no aparece de inmediato en su sesión activa.
 
 > **Captura pendiente — Figura 6.3.** Diálogo real **Configurar Permisos** para un usuario REGISTRADOR.  
 
-> **Captura pendiente — Figura 6.4.** Comparación del menú visible para ADMIN y REGISTRADOR.
+> **Captura pendiente — Figura 6.4.** Comparación del menú visible para ADMIN, REGISTRADOR y CONSULTA.
 
 ### 6.3. Otras funciones administrativas
 
@@ -812,7 +836,7 @@ ADMIN puede reactivar actas y gestionar usuarios, auditoría, backup, configurac
 
 **Pantalla:** Bitácora de Auditoría
 
-Permite filtrar por usuario, fechas y módulo; revisar quién hizo qué y exportar resultados.
+Permite filtrar por usuario, fechas y módulo; revisar quién hizo qué, la IP real de conexión del operador y exportar resultados.
 
 | Filtro visible | Uso |
 |---|---|
@@ -827,7 +851,7 @@ Permite filtrar por usuario, fechas y módulo; revisar quién hizo qué y export
 4. Pulse **EXPORTAR** solo después de comprobar los filtros.
 5. Para restablecer la bitácora, pulse el botón con **flechas circulares**.
 
-La bitácora puede contener IP y datos operativos. No debe compartirse fuera del personal autorizado.
+La bitácora registra con precisión la IP real del cliente (con soporte para proxies inversos y encabezados confiables), usuario, fecha, hora y acción realizada. No debe compartirse fuera del personal autorizado.
 
 > **Captura pendiente — Figura 6.5.** Bitácora de Auditoría con filtros y botón **EXPORTAR**.
 
@@ -890,7 +914,7 @@ Si el archivo tiene otro nombre, formato o tamaño, la pantalla lo rechaza y con
 | Logo rechazado | Nombre distinto, formato diferente de SVG o más de 2 MB | Use exactamente `Logo_MDUnion.svg` o `Logo_blanco.svg`, según la tarjeta |
 | Acta duplicada | Ya existe el número/año o CUI | Busque el acta existente; no vuelva a guardar |
 | Motivo obligatorio | Se intentó anular sin justificar | Registre el motivo antes de confirmar |
-| Persona no se elimina | Tiene actas vinculadas | Revise sus relaciones; no fuerce la eliminación |
+| No existe opción eliminar | Las actas y personas no se destruyen por normativa registral | Para actas use "Anular Registro" con motivo; para personas repetidas use "Fusionar duplicado" |
 | Fila `ERROR` en importación | Datos incompletos o inválidos | Corrija solo la fila indicada y genere un nuevo archivo |
 
 > **Captura pendiente — Figura 7.1.** Formulario real con campos obligatorios señalados, sin datos personales.  
@@ -962,13 +986,24 @@ No. La versión actual no ofrece recuperación automática. Solicite el cambio a
 Es la **primera pantalla del navegador** en la red municipal. No es un error del sistema. **Recomendación:** confirme que la dirección sea **`https://172.16.3.21`**; solo entonces pulse **Avanzado** (o **Configuración avanzada**) y **Continuar a 172.16.3.21**. **Después** aparecerá el login (secciones 2.0 y 2.1.1).
 
 **¿Por qué no veo Usuarios, Auditoría, Backup BD o Configuración?**  
-Esas opciones corresponden al perfil ADMIN.
+Esas opciones corresponden exclusivamente al perfil ADMIN.
 
 **¿Por qué el logo no cambió después de reemplazarlo?**<br>
 Actualice la página. Si continúa la versión anterior, comuníquelo al encargado de la Oficina de Informática indicando cuál de los dos logos reemplazó y la hora aproximada.
 
-**¿Por qué no puedo editar, anular o eliminar?**  
-El perfil REGISTRADOR necesita permisos específicos. Solicite al ADMIN la revisión de su cuenta.
+**¿Por qué no existe la opción de eliminar registros y cómo debo proceder?**  
+Para cumplir con los estándares de seguridad jurídica, trazabilidad y normativa del Registro Civil, el sistema no permite eliminar actas, ciudadanos, solicitudes ni usuarios:
+- **Para un acta errónea:** use **Anular Registro** del menú **⋮** indicando el motivo formal. Si fue un error involuntario, el usuario **ADMIN** puede **Reactivar** el acta.
+- **Para un escaneo o documento PDF equivocado:** use **Reemplazar Documento**; la versión anterior se archivará en el historial de escaneos y podrá ser consultada o restaurada con **Restaurar escaneo anterior**.
+- **Para ciudadanos duplicados:** use **Fusionar duplicado** desde el menú de la persona principal para transferir todas las actas y unificar el expediente sin perder historial.
+- **Para solicitudes desistidas:** use **Anular Trámite** registrando el motivo. Las solicitudes no se borran para garantizar la correlatividad de trámites.
+- **Para usuarios que ya no laboran:** el administrador utiliza **Desactivar Acceso**; no se eliminan para conservar la autoría en auditoría.
+
+**¿Por qué no puedo editar o anular en mi cuenta?**  
+Si tiene rol **CONSULTA**, su acceso es de solo lectura por diseño. Si tiene rol **REGISTRADOR**, requiere que el administrador le configure los permisos granulares correspondientes en **Usuarios → Configurar Permisos**.
+
+**¿Qué características tiene el nuevo rol CONSULTA?**  
+Permite al personal de ventanilla o áreas administrativas consultar información, revisar actas físicas y digitalizadas, imprimir constancias y generar reportes tabulares, garantizando la inmutabilidad de los datos al no permitir creación, edición ni anulación.
 
 **¿Qué hago si no sé si un registro se guardó?**  
 No repita inmediatamente la operación. Busque primero la persona, el acta o la solicitud.

@@ -38,6 +38,7 @@ import { Acta, TipoActa } from "@/types/acta";
 import { actasService } from "@/services/actas.service";
 import { dateUtils } from "@/utils/dateUtils";
 import {
+    sanitizarFolio,
     sanitizarSoloDigitos,
     validarFechaNoFutura,
     validarLibro,
@@ -84,11 +85,11 @@ export function ActaEditSheet({ isOpen, onClose, onSuccess, acta }: ActaEditShee
     const parseNumeroActa = (fullNum: string) => {
         if (!fullNum) return { libro: "", acta: "", modo: 'CLASICO' as const };
         const parts = fullNum.split("-");
-        // Formato clásico: Prefijo-LX-Num
+        // Formato clásico: Prefijo-LX-Num(-Sufijo)
         if (parts.length >= 3 && parts[1].startsWith("L")) {
             return {
                 libro: parts[1].replace(/^L/, ""), // Quitar 'L' inicial
-                acta: parts[2],
+                acta: parts.slice(2).join("-"),
                 modo: 'CLASICO' as const
             };
         }
@@ -336,15 +337,14 @@ export function ActaEditSheet({ isOpen, onClose, onSuccess, acta }: ActaEditShee
                                                 <FormControl>
                                                     <Input
                                                         {...field}
-                                                        inputMode="numeric"
-                                                        maxLength={modoValue === "CLASICO" ? 6 : 12}
-                                                        placeholder={modoValue === "CLASICO" ? "Número" : "6-12 dígitos"}
+                                                        inputMode={modoValue === "CLASICO" ? "text" : "numeric"}
+                                                        maxLength={modoValue === "CLASICO" ? 10 : 12}
+                                                        placeholder={modoValue === "CLASICO" ? "Número (ej. 154 o 154-A)" : "6-12 dígitos"}
                                                         className="std-input h-10 font-bold tracking-widest uppercase"
                                                         onChange={(e) => field.onChange(
-                                                            sanitizarSoloDigitos(
-                                                                e.target.value,
-                                                                modoValue === "CLASICO" ? 6 : 12,
-                                                            ),
+                                                            modoValue === "CLASICO"
+                                                                ? sanitizarFolio(e.target.value)
+                                                                : sanitizarSoloDigitos(e.target.value, 12),
                                                         )}
                                                     />
                                                 </FormControl>

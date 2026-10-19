@@ -19,6 +19,7 @@ export const construirFiltrosActas = (filtros = {}) => {
             OR concat_ws(' ', p2.apellido_paterno, p2.apellido_materno, p2.nombres) ILIKE ${placeholder}
             OR COALESCE(p.dni, '') ILIKE ${placeholder}
             OR COALESCE(p2.dni, '') ILIKE ${placeholder}
+            OR a.numero_acta ILIKE ${placeholder}
         )`);
     }
 
@@ -47,21 +48,37 @@ export const construirFiltrosActas = (filtros = {}) => {
     }
 
     if (libro?.trim()) {
-        const numeroLibro = libro.trim().replace(/^L/i, "");
-        const placeholder = agregarParametro(params, `L${numeroLibro}`);
-        clausulas.push(`split_part(a.numero_acta, '-', 2) = ${placeholder}`);
+        const raw = libro.trim().toUpperCase().replace(/^L/, "");
+        const placeholderL = agregarParametro(params, `L${raw}`);
+        const placeholderSinL = agregarParametro(params, raw);
+        clausulas.push(`(
+            split_part(a.numero_acta, '-', 2) = ${placeholderL}
+            OR regexp_replace(split_part(a.numero_acta, '-', 2), '^L0*', 'L') = ${placeholderL}
+            OR regexp_replace(split_part(a.numero_acta, '-', 2), '^L0*', '') = ${placeholderSinL}
+        )`);
     }
 
     if (numero?.trim()) {
         const codigo = numero.trim().toUpperCase();
-        const placeholder = agregarParametro(params, codigo);
 
-        if (codigo.includes("-")) {
-            clausulas.push(`UPPER(a.numero_acta) = ${placeholder}`);
+        if (/^[A-Z]+-L\d+-\d+/i.test(codigo)) {
+            // Ejemplo: "NAC-L29-154" -> debe traer "NAC-L29-154" Y también "NAC-L29-154-A", etc.
+            const placeholderExacto = agregarParametro(params, codigo);
+            const placeholderPrefijo = agregarParametro(params, `${codigo}-%`);
+            clausulas.push(`(UPPER(a.numero_acta) = ${placeholderExacto} OR UPPER(a.numero_acta) LIKE ${placeholderPrefijo})`);
+        } else if (/^\d+-[A-Z0-9]+$/i.test(codigo)) {
+            // Ejemplo: "154-A" -> coincide con cualquier acta que termine en -154-A o sea 154-A
+            const placeholder = agregarParametro(params, `%-${codigo}`);
+            const placeholderExacto = agregarParametro(params, codigo);
+            clausulas.push(`(UPPER(a.numero_acta) LIKE ${placeholder} OR UPPER(a.numero_acta) = ${placeholderExacto})`);
         } else if (/^\d+$/.test(codigo)) {
-            clausulas.push(`(split_part(a.numero_acta, '-', 3) = ${placeholder} OR a.numero_acta = ${placeholder})`);
+            // Ejemplo: "154" -> trae 154 exacto y también con sufijo 154-A
+            const placeholder = agregarParametro(params, codigo);
+            const placeholderSufijo = agregarParametro(params, `${codigo}-%`);
+            clausulas.push(`(split_part(a.numero_acta, '-', 3) = ${placeholder} OR split_part(a.numero_acta, '-', 3) LIKE ${placeholderSufijo} OR a.numero_acta = ${placeholder})`);
         } else {
-            clausulas.push(`UPPER(a.numero_acta) = ${placeholder}`);
+            const placeholder = agregarParametro(params, `%${codigo}%`);
+            clausulas.push(`UPPER(a.numero_acta) LIKE ${placeholder}`);
         }
     }
 

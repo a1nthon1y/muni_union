@@ -77,6 +77,7 @@ import {
     sanitizarSoloDigitos,
     SIN_APELLIDO,
     SIN_NOMBRE,
+    sanitizarFolio,
     validarApellido,
     validarDocumento,
     validarFechaNoFutura,
@@ -1308,9 +1309,9 @@ export default function DigitalizacionPage() {
                                                 <FormControl>
                                                     <Input
                                                         {...field}
-                                                        placeholder={modoValue === "CLASICO" ? "Número" : "6-12 dígitos"}
-                                                        inputMode="numeric"
-                                                        maxLength={modoValue === "CLASICO" ? 6 : 12}
+                                                        placeholder={modoValue === "CLASICO" ? "Número (ej. 154 o 154-A)" : "6-12 dígitos"}
+                                                        inputMode={modoValue === "CLASICO" ? "text" : "numeric"}
+                                                        maxLength={modoValue === "CLASICO" ? 10 : 12}
                                                         className={cn(
                                                             "dig-input font-black uppercase tracking-wide",
                                                             modoValue === "CLASICO" && esSugerencia && numActaValue && "border-emerald-300 dark:border-emerald-700",
@@ -1318,8 +1319,11 @@ export default function DigitalizacionPage() {
                                                         )}
                                                         onChange={(e) => {
                                                             setActaEncontrada(null);
-                                                            const maxLen = modoValue === "CLASICO" ? 6 : 12;
-                                                            field.onChange(sanitizarSoloDigitos(e.target.value, maxLen));
+                                                            field.onChange(
+                                                                modoValue === "CLASICO"
+                                                                    ? sanitizarFolio(e.target.value)
+                                                                    : sanitizarSoloDigitos(e.target.value, 12),
+                                                            );
                                                             setEsSugerencia(false);
                                                         }}
                                                     />

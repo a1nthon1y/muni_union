@@ -35,7 +35,8 @@ describe("form-validators", () => {
 
     it("valida folio clásico", () => {
         expect(validarNumeroActa("CLASICO", "45")).toBeNull();
-        expect(validarNumeroActa("CLASICO", "abc")).toMatch(/solo números/);
+        expect(validarNumeroActa("CLASICO", "154-A")).toBeNull();
+        expect(validarNumeroActa("CLASICO", "abc")).toMatch(/1 a 6 dígitos/);
     });
 
     it("sanitiza documento según tipo", () => {

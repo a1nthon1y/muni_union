@@ -60,7 +60,7 @@
       h2,
       h3,
       h4 {
-        page-break-after: avoid;
+        break-after: avoid;
       }
     }
 
@@ -240,540 +240,155 @@
       margin: 0.5rem auto;
     }
   </style>
-  <style>
-    :root {
-      --navy: #12384a;
-      --cyan: #0e7490;
-      --ink: #1e293b;
-      --muted: #64748b;
-      --line: #cbd5e1;
-      --soft: #f1f5f9;
-      --warn: #fef3c7;
-      --danger: #fee2e2
-    }
-
-    * {
-      box-sizing: border-box
-    }
-
-    html {
-      scroll-behavior: smooth;
-      font-size: 15px
-    }
-
-    body {
-      margin: 0 !important;
-      padding: 0 !important;
-      max-width: none !important;
-      color: var(--ink);
-      background: #fff;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
-      line-height: 1.62
-    }
-
-    .cover {
-      min-height: 100vh;
-      padding: 10vh 8vw;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      color: #fff;
-      background: linear-gradient(145deg, #0b2531, #155e75);
-      page-break-after: always
-    }
-
-    .cover .seal {
-      width: 140px;
-      height: 140px;
-      border: 2px solid #67e8f9;
-      border-radius: 50%;
-      display: grid;
-      place-items: center;
-      margin-bottom: 2.2rem
-    }
-
-    .cover .seal img {
-      display: block;
-      width: 112px;
-      height: 112px;
-      object-fit: contain
-    }
-
-    .cover h1 {
-      font-size: 3rem;
-      line-height: 1.08;
-      color: #fff;
-      border: 0;
-      margin: 0 0 .8rem
-    }
-
-    .cover p {
-      max-width: 720px;
-      font-size: 1.1rem;
-      color: #cffafe
-    }
-
-    .cover .meta {
-      margin-top: 2.5rem;
-      padding-top: 1.2rem;
-      border-top: 1px solid #ffffff55;
-      display: flex;
-      gap: 2rem;
-      flex-wrap: wrap
-    }
-
-    .cover strong {
-      color: #fff
-    }
-
-    body>header#title-block-header {
-      display: none
-    }
-
-    nav#TOC {
-      max-width: 1040px;
-      margin: 0 auto;
-      padding: 3rem 3.5rem;
-      page-break-after: always
-    }
-
-    nav#TOC:before {
-      content: "Contenido";
-      display: block;
-      font-size: 1.5rem;
-      font-weight: 800;
-      color: var(--navy);
-      border-bottom: 3px solid var(--cyan);
-      padding-bottom: .5rem;
-      margin-bottom: 1rem
-    }
-
-    nav#TOC ul {
-      list-style: none;
-      margin: .2rem 0;
-      padding-left: 1rem
-    }
-
-    nav#TOC>ul {
-      padding-left: 0
-    }
-
-    nav#TOC li {
-      margin: .2rem 0;
-      break-inside: avoid;
-      page-break-inside: avoid
-    }
-
-    h3#contenido {
-      break-after: avoid;
-      page-break-after: avoid
-    }
-
-    h3#contenido + ol {
-      break-inside: avoid;
-      page-break-inside: avoid
-    }
-
-    nav#TOC a {
-      color: var(--ink);
-      text-decoration: none
-    }
-
-    nav#TOC a:hover {
-      color: var(--cyan)
-    }
-
-    main {
-      max-width: 1120px;
-      margin: 0 auto;
-      padding: 2rem 3.5rem 5rem
-    }
-
-    h1,
-    h2,
-    h3,
-    h4 {
-      line-height: 1.25;
-      break-after: avoid;
-      page-break-after: avoid
-    }
-
-    h1 {
-      font-size: 2rem;
-      color: var(--navy);
-      border-bottom: 4px solid var(--cyan);
-      padding-bottom: .55rem;
-      margin-top: 2.5rem
-    }
-
-    h2 {
-      font-size: 1.55rem;
-      color: var(--navy);
-      border-bottom: 2px solid var(--line);
-      padding-bottom: .35rem;
-      margin-top: 2.3rem
-    }
-
-    main>h2 {
-      page-break-before: always
-    }
-
-    h3 {
-      font-size: 1.2rem;
-      color: #155e75;
-      border-left: 4px solid #06b6d4;
-      padding-left: .65rem;
-      margin-top: 1.8rem
-    }
-
-    h4 {
-      font-size: 1rem;
-      color: #334155;
-      margin-top: 1.35rem
-    }
-
-    p,
-    li {
-      font-size: .94rem
-    }
-
-    a {
-      color: #0369a1
-    }
-
-    blockquote {
-      margin: 1rem 0;
-      padding: .8rem 1rem;
-      border-left: 5px solid #dc2626;
-      background: var(--danger);
-      color: #7f1d1d
-    }
-
-    code {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      background: var(--soft);
-      color: #9f1239;
-      padding: .12rem .3rem;
-      border-radius: 4px;
-      font-size: .82em
-    }
-
-    pre {
-      padding: 1rem 1.1rem;
-      background: #f8fafc;
-      color: #111827;
-      border: 1.5px solid #64748b;
-      border-left: 5px solid #0f172a;
-      border-radius: 8px;
-      overflow: auto;
-      white-space: pre-wrap;
-      word-break: break-word;
-      font-size: .82rem;
-      box-shadow: 0 1px 2px #0f172a14
-    }
-
-    pre code {
-      background: transparent;
-      color: #111827;
-      padding: 0
-    }
-
-    .mermaid {
-      background: #fff;
-      color: var(--ink);
-      border: 1px solid var(--line);
-      border-left: 4px solid var(--cyan);
-      text-align: center;
-      overflow: auto
-    }
-
-    .mermaid svg {
-      max-width: 100%;
-      height: auto
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin: .8rem 0 1.25rem;
-      font-size: .78rem
-    }
-
-    thead {
-      background: var(--navy);
-      color: #fff
-    }
-
-    th,
-    td {
-      padding: .48rem .58rem;
-      border: 1px solid #dbe3ea;
-      text-align: left;
-      vertical-align: top
-    }
-
-    tbody tr:nth-child(even) {
-      background: #f8fafc
-    }
-
-    tr {
-      break-inside: avoid;
-      page-break-inside: avoid
-    }
-
-    th {
-      font-weight: 700
-    }
-
-    ul.task-list {
-      list-style: none;
-      padding-left: .25rem
-    }
-
-    .task-list-item input {
-      margin-right: .45rem
-    }
-
-    hr {
-      border: 0;
-      border-top: 1px solid var(--line);
-      margin: 2rem 0
-    }
-
-    .doc-classification {
-      position: fixed;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      padding: .15cm .8cm;
-      background: #fff;
-      border-top: 1px solid #94a3b8;
-      color: #475569;
-      font-size: 8pt;
-      text-align: center;
-      z-index: 10
-    }
-
-    .screen-note {
-      max-width: 1120px;
-      margin: 1rem auto;
-      padding: 0 3.5rem;
-      color: var(--muted);
-      font-size: .8rem
-    }
-
-    @media screen and (max-width:760px) {
-      .cover {
-        min-height: auto;
-        padding: 4rem 1.4rem
-      }
-
-      .cover h1 {
-        font-size: 2.1rem
-      }
-
-      nav#TOC,
-      main {
-        padding: 1.5rem 1rem
-      }
-
-      table {
-        display: block;
-        overflow-x: auto;
-        white-space: nowrap
-      }
-
-      .doc-classification {
-        position: static
-      }
-    }
-
-    @media print {
-      @page {
-        size: A4;
-        margin: 1.55cm 1.35cm 2.5cm
-      }
-
-      html {
-        font-size: 10.2pt
-      }
-
-      body {
-        print-color-adjust: exact;
-        -webkit-print-color-adjust: exact
-      }
-
-      .cover {
-        min-height: 25cm;
-        padding: 4cm 1.2cm
-      }
-
-      .cover h1 {
-        font-size: 28pt
-      }
-
-      nav#TOC {
-        padding: 0
-      }
-
-      .screen-note {
-        display: none
-      }
-
-      main {
-        max-width: none;
-        padding: 0
-      }
-
-      h1 {
-        font-size: 18pt
-      }
-
-      h2 {
-        font-size: 15pt
-      }
-
-      h3 {
-        font-size: 12pt
-      }
-
-      h4 {
-        font-size: 10.5pt
-      }
-
-      p,
-      li {
-        font-size: 9.2pt
-      }
-
-      ol,
-      ul {
-        orphans: 2;
-        widows: 2
-      }
-
-      nav#TOC li,
-      h3#contenido + ol li {
-        break-inside: avoid;
-        page-break-inside: avoid
-      }
-
-      blockquote {
-        break-inside: avoid;
-        page-break-inside: avoid
-      }
-
-      table {
-        font-size: 7.2pt
-      }
-
-      pre {
-        font-size: 7.5pt;
-        break-inside: auto;
-        page-break-inside: auto;
-        background: #fff !important;
-        color: #111827 !important;
-        border: 1.5px solid #334155 !important;
-        border-left: 5px solid #0f172a !important;
-        box-shadow: none !important
-      }
-
-      pre code {
-        color: #111827 !important;
-        background: transparent !important
-      }
-
-      .mermaid {
-        break-inside: avoid;
-        page-break-inside: avoid
-      }
-
-      a {
-        color: inherit;
-        text-decoration: none
-      }
-
-      .doc-classification {
-        display: block;
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        margin: 0
-      }
-    }
-
-    .manual-capture {
-      margin: 1.25rem 0 1.75rem;
-      padding: .8rem;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: #f8fafc;
-      break-inside: avoid;
-      page-break-inside: avoid
-    }
-
-    .manual-capture img {
-      display: block;
-      width: 100%;
-      height: auto;
-      max-height: 720px;
-      object-fit: contain;
-      margin: 0 auto .7rem;
-      border: 1px solid #cbd5e1;
-      border-radius: 5px;
-      background: #fff
-    }
-
-    .manual-capture img[hidden] {
-      display: none
-    }
-
-    .capture-slot {
-      min-height: 220px;
-      aspect-ratio: 16/9;
-      display: grid;
-      place-items: center;
-      padding: 1rem;
-      border: 2px dashed #0891b2;
-      border-radius: 5px;
-      background: #ecfeff;
-      color: #155e75;
-      text-align: center;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-size: .78rem;
-      overflow-wrap: anywhere
-    }
-
-    .capture-slot[hidden] {
-      display: none
-    }
-
-    .manual-capture figcaption {
-      margin-top: .65rem;
-      color: #334155;
-      font-size: .84rem
-    }
-
-    .manual-capture figcaption strong {
-      color: var(--navy)
-    }
-
-    @media print {
-      .manual-capture {
-        margin: .5cm 0
-      }
-
-      .manual-capture img {
-        max-height: 20cm
-      }
-
-      .capture-slot {
-        min-height: 8cm
-      }
-    }
-  </style>
-</head>
+<style>
+:root{--navy:#12384a;--cyan:#0e7490;--ink:#1e293b;--muted:#64748b;--line:#cbd5e1;--soft:#f1f5f9;--warn:#fef3c7;--danger:#fee2e2}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;font-size:15px}
+body{margin:0!important;padding:0!important;max-width:none!important;color:var(--ink);background:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;line-height:1.62}
+.cover{min-height:100vh;padding:10vh 8vw;display:flex;flex-direction:column;justify-content:center;color:#fff;background:linear-gradient(145deg,#0b2531,#155e75);page-break-after:always;break-after:page}
+.cover .seal{width:140px;height:140px;border:2px solid #67e8f9;border-radius:50%;display:grid;place-items:center;margin-bottom:2.2rem}
+.cover .seal img{display:block;width:112px;height:112px;object-fit:contain}
+.cover h1{font-size:3rem;line-height:1.08;color:#fff;border:0;margin:0 0 .8rem}
+.cover p{max-width:720px;font-size:1.1rem;color:#cffafe}
+.cover .meta{margin-top:2.5rem;padding-top:1.2rem;border-top:1px solid #ffffff55;display:flex;gap:2rem;flex-wrap:wrap}
+.cover strong{color:#fff}
+body>header#title-block-header{display:none}
+nav#TOC{max-width:1040px;margin:0 auto;padding:3rem 3.5rem;page-break-after:always;break-after:page}
+nav#TOC:before{content:"Contenido";display:block;font-size:1.5rem;font-weight:800;color:var(--navy);border-bottom:3px solid var(--cyan);padding-bottom:.5rem;margin-bottom:1rem;page-break-after:avoid!important;break-after:avoid!important}
+nav#TOC ul{list-style:none;margin:.2rem 0;padding-left:1rem;page-break-inside:auto!important;break-inside:auto!important}
+nav#TOC>ul{padding-left:0}
+nav#TOC li{margin:.2rem 0;page-break-inside:auto!important;break-inside:auto!important}
+nav#TOC a{color:var(--ink);text-decoration:none}
+nav#TOC a:hover{color:var(--cyan)}
+h3#contenido,h3#contenido-institucional{page-break-after:avoid!important;break-after:avoid!important}
+h3#contenido+ol,h3#contenido-institucional+ol{page-break-inside:auto!important;break-inside:auto!important}
+h3#contenido+ol li,h3#contenido-institucional+ol li{page-break-inside:avoid;break-inside:avoid}
+main{max-width:1120px;margin:0 auto;padding:2rem 3.5rem 5rem}
+h1,h2,h3,h4{line-height:1.25;page-break-after:avoid;break-after:avoid}
+h1{font-size:2rem;color:var(--navy);border-bottom:4px solid var(--cyan);padding-bottom:.55rem;margin-top:2.5rem;page-break-after:avoid!important;break-after:avoid!important}
+h2{font-size:1.55rem;color:var(--navy);border-bottom:2px solid var(--line);padding-bottom:.35rem;margin-top:2.3rem}
+main>h2{page-break-before:always;break-before:page}
+main>h2:first-of-type,main>h2#sistema-de-registro-civil{page-break-before:avoid!important;break-before:avoid!important;margin-top:.6rem!important}
+h3{font-size:1.2rem;color:#155e75;border-left:4px solid #06b6d4;padding-left:.65rem;margin-top:1.8rem}
+h4{font-size:1rem;color:#334155;margin-top:1.35rem}
+p,li{font-size:.94rem}
+a{color:#0369a1}
+blockquote{margin:1rem 0;padding:.8rem 1rem;border-left:5px solid #dc2626;background:var(--danger);color:#7f1d1d}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--soft);color:#9f1239;padding:.12rem .3rem;border-radius:4px;font-size:.82em}
+pre{padding:1rem 1.1rem;background:#f8fafc;color:#111827;border:1.5px solid #64748b;border-left:5px solid #0f172a;border-radius:8px;overflow:auto;white-space:pre-wrap;word-break:break-word;font-size:.82rem;box-shadow:0 1px 2px #0f172a14}
+pre code{background:transparent;color:#111827;padding:0}
+.mermaid{background:#fff;color:var(--ink);border:1px solid var(--line);border-left:4px solid var(--cyan);text-align:center;overflow:auto}
+.mermaid svg{max-width:100%;height:auto}
+table{width:100%;border-collapse:collapse;margin:.8rem 0 1.25rem;font-size:.78rem}
+thead{background:var(--navy);color:#fff}
+th,td{padding:.48rem .58rem;border:1px solid #dbe3ea;text-align:left;vertical-align:top}
+tbody tr:nth-child(even){background:#f8fafc}
+tr{page-break-inside:avoid;break-inside:avoid}
+th{font-weight:700}
+ul.task-list{list-style:none;padding-left:.25rem}
+.task-list-item input{margin-right:.45rem}
+hr{border:0;border-top:1px solid var(--line);margin:2rem 0}
+.doc-classification{position:fixed;left:0;right:0;bottom:0;padding:.15cm .8cm;background:#fff;border-top:1px solid #94a3b8;color:#475569;font-size:8pt;text-align:center;z-index:10}
+.screen-note{max-width:1120px;margin:1rem auto;padding:0 3.5rem;color:var(--muted);font-size:.8rem}
+@media screen and (max-width:760px){
+  .cover{min-height:auto;padding:4rem 1.4rem}
+  .cover h1{font-size:2.1rem}
+  nav#TOC,main{padding:1.5rem 1rem}
+  table{display:block;overflow-x:auto;white-space:nowrap}
+  .doc-classification{position:static}
+}
+@media print{
+  @page{size:A4;margin:1.55cm 1.35cm 2.5cm}
+  html{font-size:10.2pt}
+  body{print-color-adjust:exact;-webkit-print-color-adjust:exact}
+  .cover{min-height:25cm;padding:4cm 1.2cm}
+  .cover h1{font-size:28pt}
+  nav#TOC{padding:0}
+  nav#TOC:before{page-break-after:avoid!important;break-after:avoid!important}
+  nav#TOC ul,nav#TOC li{page-break-inside:auto!important;break-inside:auto!important}
+  .screen-note{display:none}
+  main{max-width:none;padding:0}
+  h1{font-size:18pt;page-break-after:avoid!important;break-after:avoid!important}
+  main>h2{page-break-before:always;break-before:page}
+  main>h2:first-of-type,main>h2#sistema-de-registro-civil{page-break-before:avoid!important;break-before:avoid!important;margin-top:.4cm!important}
+  h2{font-size:15pt}
+  h3{font-size:12pt}
+  h4{font-size:10.5pt}
+  p,li{font-size:9.2pt}
+  ol,ul{orphans:2;widows:2}
+  h3#contenido,h3#contenido-institucional{page-break-after:avoid!important;break-after:avoid!important}
+  h3#contenido+ol,h3#contenido-institucional+ol{page-break-inside:auto!important;break-inside:auto!important}
+  h3#contenido+ol li,h3#contenido-institucional+ol li{page-break-inside:avoid;break-inside:avoid}
+  blockquote{page-break-inside:avoid;break-inside:avoid}
+  table{font-size:7.2pt}
+  pre{font-size:7.5pt;page-break-inside:auto;break-inside:auto;background:#fff!important;color:#111827!important;border:1.5px solid #334155!important;border-left:5px solid #0f172a!important;box-shadow:none!important}
+  pre code{color:#111827!important;background:transparent!important}
+  .mermaid{page-break-inside:avoid;break-inside:avoid}
+  a{color:inherit;text-decoration:none}
+  .doc-classification{display:block;position:fixed;bottom:0;left:0;right:0;margin:0}
+}
+
+.manual-capture {
+  margin: 1.25rem 0 1.75rem;
+  padding: .8rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f8fafc;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+.manual-capture img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 720px;
+  object-fit: contain;
+  margin: 0 auto .7rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 5px;
+  background: #fff;
+}
+.manual-capture img[hidden] {
+  display: none;
+}
+.capture-slot {
+  min-height: 220px;
+  aspect-ratio: 16/9;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  border: 2px dashed #0891b2;
+  border-radius: 5px;
+  background: #ecfeff;
+  color: #155e75;
+  text-align: center;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .78rem;
+  overflow-wrap: anywhere;
+}
+.capture-slot[hidden] {
+  display: none;
+}
+.manual-capture figcaption {
+  margin-top: .65rem;
+  color: #334155;
+  font-size: .84rem;
+}
+.manual-capture figcaption strong {
+  color: var(--navy);
+}
+@media print {
+  .manual-capture {
+    margin: .5cm 0;
+  }
+  .manual-capture img {
+    max-height: 20cm;
+  }
+  .capture-slot {
+    min-height: 8cm;
+  }
+}
+</style></head>
 
 <body>
   <section class="cover">
@@ -781,8 +396,8 @@
     <h1>Manual de Usuario<br>Sistema de Registro Civil</h1>
     <p>Municipalidad Distrital de La Unión Leticia — Tarma, Perú</p>
     <p><strong>USO INTERNO MUNICIPAL</strong></p>
-    <div class="meta"><span><strong>Versión:</strong> 1.0.0</span><span><strong>Fecha:</strong> 23 de julio de
-        2026</span><span><strong>Audiencia:</strong> ADMIN y REGISTRADOR</span></div>
+    <div class="meta"><span><strong>Versión:</strong> 1.1.0</span><span><strong>Fecha:</strong> 15 de octubre de
+        2026</span><span><strong>Audiencia:</strong> ADMIN, REGISTRADOR y CONSULTA</span></div>
   </section>
   <div class="screen-note">Guía funcional imprimible en formato A4 · Coloque las imágenes en
     docs/manual-usuario/capturas/ con el nombre indicado en cada figura.</div>
@@ -949,20 +564,19 @@ servidores.</p>
 </tr>
 <tr>
 <td>Versión</td>
-<td><code>1.0.0</code></td>
+<td><code>1.1.0</code></td>
 </tr>
 <tr>
 <td>Fecha</td>
-<td>23 de julio de 2026</td>
+<td>15 de octubre de 2026</td>
 </tr>
 <tr>
 <td>Estado</td>
-<td>Versión final</td>
+<td>Versión actualizada</td>
 </tr>
 <tr>
 <td>Audiencia</td>
-<td>ADMIN, REGISTRADOR y personal de ventanilla con cuenta
-REGISTRADOR</td>
+<td>ADMIN, REGISTRADOR, CONSULTA y personal de ventanilla con cuenta autorizada</td>
 </tr>
 <tr>
 <td>Documento técnico relacionado</td>
@@ -1025,16 +639,20 @@ administrativas.</p>
 <tbody>
 <tr>
 <td>REGISTRADOR</td>
-<td>Digitalización, personas, actas y solicitudes, según permisos; su
+<td>Digitalización, personas, actas, solicitudes y carga masiva, según permisos asignados; su
 identificador interno es <code>USER</code></td>
 </tr>
 <tr>
 <td>ADMIN</td>
-<td>Operación completa y administración funcional</td>
+<td>Operación completa, auditoría, gestión de usuarios, backup, configuración institucional y administración funcional</td>
+</tr>
+<tr>
+<td>CONSULTA</td>
+<td>Consulta y visualización en solo lectura de actas, ciudadanos, solicitudes y reportes; sin permisos de modificación, creación ni anulación</td>
 </tr>
 <tr>
 <td>Ventanilla (función organizativa, no rol)</td>
-<td>Opera con una cuenta REGISTRADOR autorizada</td>
+<td>Opera con una cuenta REGISTRADOR o CONSULTA según sus funciones asignadas</td>
 </tr>
 <tr>
 <td>Ciudadano</td>
@@ -1052,15 +670,15 @@ Descripción general de las funcionalidades del software</h3>
 <ul>
 <li>registrar personas y actas de nacimiento, matrimonio y
 defunción;</li>
-<li>adjuntar el PDF o imagen digitalizada de un acta;</li>
-<li>consultar, filtrar, editar, anular o eliminar registros según
-permisos;</li>
-<li>gestionar solicitudes de copias y sus constancias;</li>
-<li>importar actas históricas desde Excel;</li>
-<li>exportar información autorizada a Excel;</li>
-<li>administrar usuarios, auditoría, backup e identidad visual;</li>
-<li>ofrecer al ciudadano una verificación limitada, sin acceso al
-sistema interno.</li>
+<li>adjuntar y gestionar escaneos digitales (PDF o imagen) con historial de versiones anteriores y opción de restauración;</li>
+<li>consultar, filtrar, editar, anular o reactivar registros según permisos y estricta trazabilidad registral (no se permite eliminación destructiva de registros);</li>
+<li>fusionar ciudadanos duplicados para consolidar actas sin pérdida de información;</li>
+<li>gestionar personas homónimas y aplicar convenciones registrales históricas (<code>S/A</code>, <code>S/N</code>);</li>
+<li>gestionar solicitudes de copias certificadas, constancias y verificación pública con código QR;</li>
+<li>importar actas históricas desde Excel con prevención de duplicados erróneos;</li>
+<li>exportar información autorizada a reportes tabulares en Excel (<code>.xlsx</code>);</li>
+<li>administrar usuarios, bitácora de auditoría con registro de IP real del cliente, backup e identidad visual municipal;</li>
+<li>ofrecer al ciudadano un portal público de verificación de constancias, sin acceso a información sensible interna.</li>
 </ul>
 <h3 id="13-requisitos-básicos-del-usuario">1.3. Requisitos básicos del
 usuario</h3>
@@ -1449,51 +1067,49 @@ conjunta ciudadano, acta y archivo.</p>
 <h4 id="411-información-del-ciudadano">4.1.1. Información del
 ciudadano</h4>
 <ol type="1">
-<li>Seleccione el tipo de documento.</li>
-<li>Ingrese DNI si corresponde.</li>
-<li>Complete nombres y apellidos.</li>
-<li>Seleccione y verifique el sexo, que es obligatorio. Complete fecha
-de nacimiento, fecha de fallecimiento, teléfono u observaciones cuando
-correspondan. La fecha de fallecimiento es opcional.</li>
-<li>Revise las coincidencias mostradas por el sistema.</li>
+<li>Seleccione el tipo de documento (<strong>DNI</strong>, <strong>CARNET EXT.</strong>, <strong>LIBRETA ELECTORAL</strong> o <strong>SIN DOCUMENTO</strong>).</li>
+<li>Ingrese el número según corresponda (DNI de exactamente 8 dígitos numéricos).</li>
+<li>Complete nombres y apellidos:
+<ul>
+<li>Para registros históricos donde no conste el apellido o el nombre, utilice las convenciones admitidas por el sistema: <strong><code>S/A</code></strong> (Sin Apellido) y <strong><code>S/N</code></strong> (Sin Nombre).</li>
+</ul></li>
+<li>Seleccione y verifique el sexo, que es obligatorio. Complete fecha de nacimiento, fecha de fallecimiento (opcional), teléfono u observaciones cuando correspondan.</li>
+<li>Marque la casilla <strong>Es homónimo</strong> si el ciudadano comparte nombres y apellidos con otra persona pero se trata de un individuo diferente, o si carece de DNI y requiere un registro independiente para evitar vinculaciones automáticas no deseadas.</li>
+<li>Revise las coincidencias sugeridas por el sistema antes de proceder.</li>
 </ol>
-<p>Para una persona sin documento use <strong>SIN
-DOCUMENTO</strong>.</p>
+<p>Para una persona sin documento use <strong>SIN DOCUMENTO</strong> (el campo de número quedará inhabilitado automáticamente).</p>
 <p>Si registra ambas fechas, la fecha de fallecimiento no puede ser
 anterior a la fecha de nacimiento. Deje <strong>F.
 Fallecimiento</strong> vacía cuando no corresponda.</p>
 <blockquote>
-<p>Una coincidencia por nombre no demuestra que sea la misma persona.
-Revise fecha, acta física y demás datos. No fusione registros por
-suposición.</p>
+<p><strong>Importante sobre homonimias:</strong> Una coincidencia por nombre no demuestra que sea la misma persona.
+Revise fecha de nacimiento, acta física y lugar de procedencia. Si son personas diferentes, asegúrese de marcar la condición de homónimo.</p>
 </blockquote>
 <h4 id="412-especificaciones-del-acta">4.1.2. Especificaciones del
 acta</h4>
 <ol type="1">
 <li>Seleccione Nacimiento, Matrimonio o Defunción.</li>
-<li>Elija el modo:
+<li>Elija el modo de registro:
 <ul>
-<li><strong>Libro Clásico:</strong> libro y número de acta.</li>
-<li><strong>RENIEC (CUI):</strong> código CUI/ID.</li>
+<li><strong>Libro Clásico:</strong> ingrese número de libro y número de acta (o folio).</li>
+<li><strong>RENIEC (CUI):</strong> código CUI/ID único (entre 6 y 12 dígitos numéricos).</li>
 </ul></li>
 <li>Use la sugerencia <strong>AUTO</strong> solo después de verificar
 libro, tipo y año.</li>
 <li>Complete año y fecha del acta.</li>
-<li>En matrimonio complete <strong>Cónyuge — Obligatorio en
-Matrimonio</strong>.</li>
-<li>Agregue observaciones si son necesarias.</li>
+<li>En actas de matrimonio, complete obligatoriamente los datos del <strong>Cónyuge</strong>.</li>
+<li>Agregue observaciones registrales marginales si constan en la partida física.</li>
 </ol>
 <p>Formato clásico mostrado: <code>NAC-L{libro}-{numero}</code> o
-prefijo equivalente según tipo.</p>
+prefijo equivalente según tipo (<code>MAT-</code>, <code>DEF-</code>).</p>
 <h4 id="413-archivo-digitalizado">4.1.3. Archivo digitalizado</h4>
 <ol type="1">
-<li>Seleccione PDF, JPG o PNG.</li>
-<li>Verifique que corresponda a la persona y al acta de la
-pantalla.</li>
-<li>Tamaño máximo real: <strong>20 MB</strong>.</li>
+<li>Seleccione el archivo escaneado en formato PDF, JPG o PNG.</li>
+<li>Verifique en pantalla que el archivo corresponda fielmente a la persona y al acta especificada.</li>
+<li>Tamaño máximo permitido: <strong>20 MB</strong>.</li>
 <li>Pulse <strong>Procesar Registro</strong>.</li>
 </ol>
-<p>El archivo es obligatorio para este flujo.</p>
+<p>El archivo digital es obligatorio para culminar el flujo de la Consola de Digitalización.</p>
 <p><strong>Resultados esperados:</strong></p>
 <ul>
 <li><code>Nueva acta registrada con éxito.</code></li>
@@ -1510,19 +1126,19 @@ pantalla.</li>
 <tbody>
 <tr>
 <td><code>Documento Requerido</code></td>
-<td>Adjunte el archivo antes de procesar</td>
+<td>Adjunte el archivo escaneado antes de procesar</td>
 </tr>
 <tr>
 <td>Acta duplicada</td>
-<td>No vuelva a guardar; revise el acta existente</td>
+<td>Ya existe un acta con el mismo libro, número y año; consulte el registro existente</td>
 </tr>
 <tr>
 <td>Homonimia/ciudadano identificado</td>
-<td>Compare datos antes de seleccionar</td>
+<td>Compare datos antes de seleccionar o marque "Es homónimo" si es otra persona</td>
 </tr>
 <tr>
 <td>Error al procesar</td>
-<td>Verifique si el acta quedó creada antes de reintentar</td>
+<td>Verifique si el acta quedó creada en el listado antes de reintentar</td>
 </tr>
 </tbody>
 </table>
@@ -1643,9 +1259,13 @@ seleccione <strong>NACIMIENTO</strong> en <strong>Tipo</strong>.</p>
 identificados, ejemplo de búsqueda y botón de flechas circulares para
 limpiar.</figcaption>
 </figure>
-<h4 id="422-modificar-anular-reactivar-o-eliminar">4.2.2. Modificar,
-anular, reactivar o eliminar</h4>
-<p>Abra el menú <strong>⋮</strong> de la fila:</p>
+<h4 id="422-modificar-anular-reactivar-y-gestión-de-escaneos">4.2.2. Modificar,
+anular, reactivar y gestión de escaneos (historial y versiones)</h4>
+<blockquote>
+<p><strong>Criterio de conservación registral:</strong><br />
+Por seguridad jurídica, estricta trazabilidad y normativa del Registro Civil, <strong>el sistema no permite eliminar actas ni destruir partidas registradas</strong>. Si un acta fue ingresada por error, debe ser <strong>anulada</strong> ingresando obligatoriamente el motivo formal de anulación. Los registros anulados quedan rotulados en color ámbar y únicamente un usuario con perfil <strong>ADMIN</strong> puede <strong>reactivarlos</strong> si se comprueba una anulación involuntaria.</p>
+</blockquote>
+<p>Abra el menú <strong>⋮</strong> de la fila del acta:</p>
 <table>
 <thead>
 <tr>
@@ -1656,62 +1276,58 @@ anular, reactivar o eliminar</h4>
 </thead>
 <tbody>
 <tr>
-<td>Ver Detalles</td>
+<td><strong>Ver Detalles</strong></td>
 <td>Usuario autenticado</td>
-<td>Ficha completa</td>
+<td>Abre ficha completa con datos del titular, cónyuge, actas relacionadas y visualizador interactivo de PDF</td>
 </tr>
 <tr>
-<td>Editar</td>
+<td><strong>Editar Información</strong></td>
+<td>Permiso <code>actas_modificar</code> (ADMIN o REGISTRADOR con permiso)</td>
+<td>Permite actualizar datos registrales, folios y observaciones del acta</td>
+</tr>
+<tr>
+<td><strong>Descargar PDF</strong></td>
+<td>Acta con documento digital</td>
+<td>Descarga directa del archivo PDF escaneado</td>
+</tr>
+<tr>
+<td><strong>Adjuntar / Reemplazar Documento</strong></td>
 <td>Permiso <code>actas_modificar</code></td>
-<td>Actualiza datos</td>
+<td>Permite cargar un nuevo escaneo; el archivo anterior <strong>no se borra</strong>, se conserva archivado en el historial de versiones</td>
 </tr>
 <tr>
-<td>Imprimir</td>
-<td>Desde detalle</td>
-<td>Vista <code>/print/acta/{id}</code></td>
+<td><strong>Físico · Subir</strong> (botón directo)</td>
+<td>Acta física sin digitalizar</td>
+<td>Botón directo visible en la columna "Documento" para cargar el escaneo sin abrir el menú</td>
 </tr>
 <tr>
-<td>Ver/Descargar documento</td>
-<td>Documento existente</td>
-<td>Abre archivo</td>
+<td><strong>Anular Registro</strong></td>
+<td>Permiso <code>actas_anular</code> y estado ACTIVO</td>
+<td>Abre diálogo donde es <strong>obligatorio</strong> escribir el motivo de la anulación; cambia el estado a ANULADO</td>
 </tr>
 <tr>
-<td>Adjuntar/Reemplazar Archivo</td>
-<td>Usuario autenticado</td>
-<td>Sustituye documento vigente</td>
-</tr>
-<tr>
-<td>Anular</td>
-<td>Permiso <code>actas_anular</code></td>
-<td>Estado ANULADO</td>
-</tr>
-<tr>
-<td>Reactivar</td>
-<td>Solo ADMIN</td>
-<td>Estado activo</td>
-</tr>
-<tr>
-<td>Eliminar</td>
-<td>Permiso <code>actas_eliminar</code></td>
-<td>Eliminación lógica</td>
+<td><strong>Reactivar Registro</strong></td>
+<td>Solo perfil ADMIN y acta no activa</td>
+<td>Restablece el acta a estado ACTIVO</td>
 </tr>
 </tbody>
 </table>
+<h5 id="historial-de-escaneos-y-versiones">Historial de escaneos y versiones (v2, v3...):</h5>
+<ul>
+<li>Cuando un acta tiene más de un escaneo cargado en su historial, la tabla muestra una etiqueta ámbar con el contador (ejemplo: <code>1 escaneo previo archivado</code>).</li>
+<li>Al abrir <strong>Ver Detalles</strong>, se accede al historial completo donde figura la fecha, hora, usuario operador y versión de cada escaneo.</li>
+<li>Si un escaneo fue reemplazado por error, el sistema permite pulsar <strong>Restaurar escaneo anterior</strong> para regresar a la versión archivada correcta de forma inmediata.</li>
+</ul>
 <p>La ficha y la impresión del acta muestran la fecha de fallecimiento
 del titular o cónyuge únicamente cuando está registrada.</p>
-<p>Para anular, el motivo es obligatorio. Si aparece
-<code>Debe indicar el motivo de anulación</code>, complete el campo.</p>
-<blockquote>
-<p>Reemplazar o eliminar un documento puede borrar el archivo físico
-anterior. Confirme acta y archivo antes de aceptar.</p>
-</blockquote>
+<p>Para anular, el motivo es obligatorio. Si intenta confirmar en blanco, aparecerá la alerta
+<code>Debe indicar el motivo de anulación</code>.</p>
 <h4 id="423-descargar-e-iniciar-una-importación">4.2.3. Descargar e
 iniciar una importación</h4>
 <ul>
-<li><strong>EXPORTAR:</strong> genera Excel con los filtros
-activos.</li>
-<li><strong>IMPORTAR:</strong> abre la carga masiva; solo ADMIN puede
-completarla.</li>
+<li><strong>EXPORTAR:</strong> genera un archivo Excel (<code>.xlsx</code>) con los filtros
+aplicados en pantalla.</li>
+<li><strong>IMPORTAR:</strong> abre la carga masiva; disponible para <strong>ADMIN</strong> y usuarios <strong>REGISTRADOR</strong> autorizados (el perfil CONSULTA tiene esta función deshabilitada).</li>
 </ul>
 <p>Mensajes de exportación: <code>Generando Excel de actas...</code>,
 <code>Descarga lista</code> o
@@ -1731,7 +1347,7 @@ autenticado.</figcaption>
 <figure class="manual-capture" id="figura-4-6">
   <div class="capture-slot">Imagen pendiente<br><code>docs/manual-usuario/capturas/figura-4-6.png</code></div><img src="docs/manual-usuario/capturas/figura-4-6.png" alt="Figura 4.6" loading="lazy" onload="this.hidden=false;this.previousElementSibling.hidden=true" onerror="this.hidden=true;this.previousElementSibling.hidden=false">
   <figcaption><strong>Figura 4.6.</strong> Alerta de
-confirmación para anular o eliminar un acta, sin ejecutar la acción
+confirmación para anular un acta indicando motivo justificado, sin ejecutar la acción
 sobre información productiva.</figcaption>
 </figure>
 <hr />
@@ -1767,39 +1383,43 @@ Ciudadanos, resultado filtrado y botón para limpiar.</figcaption>
 <h4 id="432-registrar">4.3.2. Registrar</h4>
 <ol type="1">
 <li>Pulse <strong>REGISTRAR CIUDADANO</strong>.</li>
-<li>Complete nombres y apellidos obligatorios.</li>
+<li>Complete nombres y apellidos obligatorios:
+<ul>
+<li>Para partidas históricas sin apellido o nombre registrado, ingrese <strong><code>S/A</code></strong> (Sin Apellido) o <strong><code>S/N</code></strong> (Sin Nombre).</li>
+</ul></li>
 <li>Seleccione tipo de documento; use <strong>SIN DOCUMENTO</strong> si
 corresponde.</li>
 <li>Seleccione y verifique el sexo, que es obligatorio.</li>
+<li>Marque la casilla <strong>Es homónimo</strong> si la persona comparte nombres y apellidos con otro ciudadano pero se trata de un registro distinto, evitando que el sistema los unifique o sugiera vínculos erróneos.</li>
 <li>Complete fecha de nacimiento y, solo si corresponde, <strong>F.
-Fallecimiento</strong>.</li>
+Fallecimiento</strong> (deje vacía si no aplica).</li>
 <li>Revise y guarde.</li>
 </ol>
-<h4 id="433-editar-eliminar-y-exportar">4.3.3. Editar, eliminar y
+<h4 id="433-editar-fusionar-duplicados-y-exportar">4.3.3. Editar, fusionar duplicados y
 exportar</h4>
+<blockquote>
+<p><strong>Criterio de conservación de ciudadanos:</strong><br />
+Los ciudadanos registrados <strong>no se eliminan del sistema</strong>. Eliminar una persona rompería la integridad referencial de los libros y actas vinculadas históricas. Si por equivocación se registraron fichas duplicadas para una misma persona, <strong>no intente borrarlas</strong>: utilice la función oficial de <strong>Fusionar duplicado</strong>.</p>
+</blockquote>
 <ul>
 <li><strong>Ver detalles:</strong> abra el menú <strong>⋮</strong> y
-seleccione <strong>Ver detalles</strong>. El panel muestra los datos del
+seleccione <strong>Ver detalles</strong>. El panel lateral muestra los datos completos del
 ciudadano y la sección <strong>Actas vinculadas</strong>, incluyendo
-nacimiento, matrimonio o defunción donde figure como titular o
-cónyuge.</li>
-<li>Desde <strong>Actas vinculadas</strong> puede usar <strong>Ver
+nacimiento, matrimonio o defunción donde figure como titular, cónyuge o difunto.</li>
+<li>Desde <strong>Actas vinculadas</strong> puede pulsar <strong>Ver
 acta</strong>, <strong>Imprimir</strong> y, cuando esté digitalizada,
-<strong>Ver documento</strong>.</li>
-<li>Editar requiere <code>personas_modificar</code>. Desde
-<strong>Editar Ciudadano</strong> puede registrar, corregir o borrar
-<strong>F. Fallecimiento</strong>. Para borrarla, deje el campo vacío y
-guarde.</li>
-<li>Eliminar requiere <code>personas_eliminar</code> y puede rechazarse
-si la persona tiene actas.</li>
-<li><strong>EXPORTAR</strong> genera Excel del resultado filtrado con
-fecha de nacimiento y fecha de fallecimiento.</li>
+<strong>Ver documento</strong> (PDF).</li>
+<li><strong>Editar Ciudadano:</strong> requiere permiso <code>personas_modificar</code>. Permite actualizar nombres, apellidos, documento, sexo, observaciones, condición de homónimo y fecha de fallecimiento (para retirarla, deje el campo vacío y guarde).</li>
+<li><strong>Fusionar duplicado:</strong> disponible en el menú <strong>⋮</strong> para unificar registros repetidos:
+<ol type="1">
+<li>Ubique al ciudadano que quedará como registro principal y seleccione <strong>Fusionar duplicado</strong>.</li>
+<li>En la ventana emergente, busque y seleccione al ciudadano duplicado.</li>
+<li>Confirme la fusión: el sistema reasigna automáticamente todas las actas vinculadas al registro principal y consolida los datos sin pérdida de trazabilidad ni duplicidades.</li>
+</ol></li>
+<li><strong>EXPORTAR:</strong> genera un archivo Excel con el listado filtrado, incluyendo fecha de nacimiento, fallecimiento y estado de homonimia.</li>
 </ul>
-<p>Las actas se vinculan cuando se registra o edita el acta. El panel de
-Personas solo consulta las relaciones existentes y no permite
-vincularlas manualmente.</p>
-<p>No elimine una persona para resolver un duplicado sin verificar antes
-sus actas vinculadas.</p>
+<p>Las actas se vinculan cuando se digitaliza o edita el acta correspondiente. El panel de
+Personas consulta las relaciones existentes y las consolida automáticamente mediante la fusión de duplicados.</p>
 <figure class="manual-capture" id="figura-4-7">
   <div class="capture-slot">Imagen pendiente<br><code>docs/manual-usuario/capturas/figura-4-7.png</code></div><img src="docs/manual-usuario/capturas/figura-4-7.png" alt="Figura 4.7" loading="lazy" onload="this.hidden=false;this.previousElementSibling.hidden=true" onerror="this.hidden=true;this.previousElementSibling.hidden=false">
   <figcaption><strong>Figura 4.7.</strong> Padrón de Ciudadanos
@@ -1812,9 +1432,7 @@ registro de persona con campos obligatorios identificados.</figcaption>
 </figure>
 <figure class="manual-capture" id="figura-4-9">
   <div class="capture-slot">Imagen pendiente<br><code>docs/manual-usuario/capturas/figura-4-9.png</code></div><img src="docs/manual-usuario/capturas/figura-4-9.png" alt="Figura 4.9" loading="lazy" onload="this.hidden=false;this.previousElementSibling.hidden=true" onerror="this.hidden=true;this.previousElementSibling.hidden=false">
-  <figcaption><strong>Figura 4.9.</strong> Alerta de
-confirmación de eliminación o mensaje que impide eliminar una persona
-vinculada.</figcaption>
+  <figcaption><strong>Figura 4.9.</strong> Diálogo de <strong>Fusionar duplicado</strong> con selección del ciudadano secundario y confirmación de actas vinculadas.</figcaption>
 </figure>
 <hr />
 <h3 id="44-módulo-de-solicitudes-procesamiento-y-flujo-de-atención">4.4.
@@ -1833,23 +1451,21 @@ corresponda.</li>
 </ol>
 <p><strong>Resultado esperado:</strong> solicitud en estado
 <strong>PENDIENTE</strong>.</p>
-<h4 id="442-atender-anular-o-eliminar">4.4.2. Atender, anular o
-eliminar</h4>
+<h4 id="442-atender-o-anular-trámite">4.4.2. Atender o anular trámite</h4>
+<blockquote>
+<p><strong>Conservación de trámites y correlativos:</strong><br />
+Las solicitudes de copias y constancias <strong>no se eliminan del sistema</strong>. Cada solicitud posee un número correlativo único de trámite (<code>#000123</code>) que forma parte de la rendición de cuentas, auditoría y recaudación de la Municipalidad.</p>
+</blockquote>
 <ul>
-<li><strong>Atender:</strong> desde el detalle; resultado
-<code>Solicitud atendida correctamente</code> y estado
-<strong>ATENDIDO</strong>.</li>
-<li><strong>Anular:</strong> indique motivo; estado
-<strong>ANULADO</strong>.</li>
-<li><strong>Eliminar:</strong> confirme solo cuando corresponda; el
-registro deja de aparecer en listados normales.</li>
+<li><strong>Atender Solicitud:</strong> disponible cuando el trámite se encuentra en estado <strong>PENDIENTE</strong>. Desde el menú <strong>⋮</strong> de la fila o desde la ficha de detalle, seleccione <strong>Atender Solicitud</strong> tras verificar la expedición de las actas; el sistema registrará la fecha y hora de atención, cambiando su estado a <strong>ATENDIDO</strong> (<code>Solicitud atendida correctamente</code>).</li>
+<li><strong>Anular Trámite:</strong> disponible para trámites en estado no anulado. Si el solicitante desiste o el trámite es revocado, seleccione <strong>Anular Trámite</strong> e ingrese obligatoriamente el motivo de la anulación. El registro pasará a estado <strong>ANULADO</strong>, conservando su trazabilidad histórica.</li>
 </ul>
 <h4 id="443-imprimir-documento-o-cargo">4.4.3. Imprimir documento o
 cargo</h4>
 <p>Desde el detalle pulse <strong>Imprimir Documento /
 Cargo</strong>.</p>
 <p>La impresión incluye el número de constancia y un enlace de
-verificación. Revise antes de entregar:</p>
+verificación con código QR. Revise antes de entregar:</p>
 <ul>
 <li>solicitante;</li>
 <li>actas/cantidades;</li>
@@ -1925,7 +1541,7 @@ solicitud con opciones de atención e impresión.</figcaption>
 <figure class="manual-capture" id="figura-4-13">
   <div class="capture-slot">Imagen pendiente<br><code>docs/manual-usuario/capturas/figura-4-13.png</code></div><img src="docs/manual-usuario/capturas/figura-4-13.png" alt="Figura 4.13" loading="lazy" onload="this.hidden=false;this.previousElementSibling.hidden=true" onerror="this.hidden=true;this.previousElementSibling.hidden=false">
   <figcaption><strong>Figura 4.13.</strong> Alerta de
-confirmación para anular o eliminar una solicitud.</figcaption>
+confirmación para anular trámite de solicitud con motivo requerido.</figcaption>
 </figure>
 <hr />
 <h3 id="45-módulo-de-importación-masiva-de-actas-históricas">4.5. Módulo
@@ -1933,7 +1549,7 @@ de Importación Masiva de Actas Históricas</h3>
 <p><strong>Ruta funcional:</strong> <strong>Actas →
 IMPORTAR</strong></p>
 <p><strong>Pantalla:</strong> Carga Masiva de Actas</p>
-<p><strong>Rol:</strong> solo ADMIN</p>
+<p><strong>Rol:</strong> ADMIN y REGISTRADOR (operadores con permiso de importación; rol CONSULTA no admitido)</p>
 <h4 id="451-preparar-archivos">4.5.1. Preparar archivos</h4>
 <ol type="1">
 <li>Prepare el Excel con las columnas indicadas a continuación; la
@@ -1948,7 +1564,7 @@ archivo</strong>.</li>
 <p>Campos obligatorios por fila:</p>
 <ul>
 <li><code>nombres</code>, <code>apellido_paterno</code>,
-<code>apellido_materno</code>;</li>
+<code>apellido_materno</code> (se admiten convenciones <code>S/A</code> y <code>S/N</code> para partidas antiguas sin apellido o nombre);</li>
 <li><code>tipo_acta</code>: <code>NACIMIENTO</code>,
 <code>MATRIMONIO</code> o <code>DEFUNCION</code>;</li>
 <li><code>fecha_acta</code> en formato <code>AAAA-MM-DD</code>;</li>
@@ -1962,6 +1578,7 @@ archivo</strong>.</li>
 <li><code>dni</code>, <code>tipo_documento</code>, <code>sexo</code>,
 <code>fecha_nacimiento</code>, <code>fecha_fallecimiento</code>,
 <code>telefono</code>;</li>
+<li><code>es_homonimo</code> (opcional: <code>SI</code> o <code>1</code>, para evitar unificaciones indebidas);</li>
 <li><code>persona_observaciones</code>,
 <code>acta_observaciones</code>;</li>
 <li><code>nombre_archivo_pdf</code>, <code>carpeta_ruta</code>;</li>
@@ -1975,6 +1592,7 @@ archivo</strong>.</li>
 deben contener una fecha real y no pueden ser anteriores a la fecha de
 nacimiento correspondiente. Una celda vacía no borra una fecha ya
 registrada.</p>
+<p>El motor de importación cuenta con salvaguardas especiales para evitar fusionar automáticamente personas con nombres genéricos o convenciones <code>S/N</code> y <code>S/A</code>.</p>
 <p><code>sexo</code>, si se proporciona, acepta solo <code>M</code> o
 <code>F</code>. Si queda vacío, la versión actual asigna <code>M</code>.
 <strong>No inicie nuevas cargas históricas hasta que Sistemas confirme
@@ -2343,15 +1961,14 @@ nombre de usuario.</li>
 </ol>
 <p>Acciones del menú <strong>⋮</strong>:</p>
 <ul>
-<li><strong>Editar Perfil</strong>; dentro de este formulario se
-encuentra <strong>Cambiar Contraseña</strong>;</li>
-<li><strong>Configurar Permisos</strong>;</li>
-<li><strong>Desactivar Acceso</strong> / <strong>Activar
-Acceso</strong>;</li>
-<li>eliminar, cuando la aplicación lo permita.</li>
+<li><strong>Editar Perfil</strong>: permite actualizar nombres, apellidos, teléfono y contraseña institucional (<strong>Cambiar Contraseña</strong>);</li>
+<li><strong>Configurar Permisos</strong>: abre el panel de permisos específicos por módulo (exclusivo para usuarios con rol REGISTRADOR);</li>
+<li><strong>Desactivar Acceso</strong> / <strong>Activar Acceso</strong>: inhabilita o rehabilita la cuenta inmediatamente.</li>
 </ul>
-<p>No desactive ni elimine la cuenta propia durante una sesión
-administrativa.</p>
+<blockquote>
+<p><strong>Conservación de cuentas institucionales:</strong><br />
+Las cuentas de usuario <strong>no se eliminan del sistema</strong>. Al desvincularse un colaborador de la entidad, el administrador debe usar <strong>Desactivar Acceso</strong>. Esto bloquea el ingreso de forma inmediata mientras preserva la autoría e integridad de la bitácora de auditoría histórica. No desactive la cuenta propia durante una sesión administrativa activa.</p>
+</blockquote>
 <figure class="manual-capture" id="figura-6-1">
   <div class="capture-slot">Imagen pendiente<br><code>docs/manual-usuario/capturas/figura-6-1.png</code></div><img src="docs/manual-usuario/capturas/figura-6-1.png" alt="Figura 6.1" loading="lazy" onload="this.hidden=false;this.previousElementSibling.hidden=true" onerror="this.hidden=true;this.previousElementSibling.hidden=false">
   <figcaption><strong>Figura 6.1.</strong> Panel de Gestión de
@@ -2379,31 +1996,36 @@ roles y bandejas de trabajo</h3>
 <tbody>
 <tr>
 <td>ADMIN</td>
-<td>Dashboard, Digitalización, Personas, Actas, Solicitudes, Usuarios,
-Auditoría, Backup BD, Configuración e importación</td>
+<td>Acceso completo: Dashboard, Digitalización, Personas, Actas, Solicitudes, Usuarios,
+Auditoría, Backup BD, Configuración e Importación masiva</td>
 </tr>
 <tr>
 <td>REGISTRADOR</td>
-<td>Dashboard, Digitalización, Personas, Actas y Solicitudes, según
-permisos asignados</td>
+<td>Dashboard, Digitalización, Personas, Actas, Solicitudes e Importación masiva, según
+los permisos granulares asignados por el administrador (identificador interno <code>USER</code>)</td>
+</tr>
+<tr>
+<td>CONSULTA</td>
+<td>Visualización en solo lectura de Dashboard, Personas, Actas, Solicitudes y emisión de reportes; sin acceso a digitalización, importación ni opciones de edición o anulación</td>
 </tr>
 </tbody>
 </table>
-<p>Permisos configurables para REGISTRADOR:</p>
+<p>Permisos configurables para el rol REGISTRADOR:</p>
 <ul>
-<li>modificar, anular o eliminar actas;</li>
-<li>modificar o eliminar personas.</li>
+<li><strong>Actas:</strong> modificar datos y anular registros;</li>
+<li><strong>Personas:</strong> modificar datos de ciudadanos y fusionar registros duplicados;</li>
+<li><strong>Solicitudes:</strong> atender y anular trámites de solicitudes;</li>
+<li><strong>Importación:</strong> acceso a la carga masiva de actas históricas.</li>
 </ul>
 <p>ADMIN puede reactivar actas y gestionar usuarios, auditoría, backup,
-configuración e importación. El identificador técnico del perfil
-REGISTRADOR es <code>USER</code>.</p>
+configuración institucional e importación.</p>
 <ol type="1">
 <li>En <strong>Usuarios</strong>, abra el menú <strong>⋮</strong> de la
-cuenta.</li>
+cuenta con rol REGISTRADOR.</li>
 <li>Seleccione <strong>Configurar Permisos</strong>.</li>
-<li>Active solo las funciones aprobadas para el puesto.</li>
+<li>Active únicamente los permisos aprobados para las funciones del operador.</li>
 <li>Guarde y solicite al usuario que vuelva a ingresar si el cambio no
-aparece en su sesión.</li>
+aparece de inmediato en su sesión activa.</li>
 </ol>
 <figure class="manual-capture" id="figura-6-3">
   <div class="capture-slot">Imagen pendiente<br><code>docs/manual-usuario/capturas/figura-6-3.png</code></div><img src="docs/manual-usuario/capturas/figura-6-3.png" alt="Figura 6.3" loading="lazy" onload="this.hidden=false;this.previousElementSibling.hidden=true" onerror="this.hidden=true;this.previousElementSibling.hidden=false">
@@ -2413,7 +2035,7 @@ aparece en su sesión.</li>
 <figure class="manual-capture" id="figura-6-4">
   <div class="capture-slot">Imagen pendiente<br><code>docs/manual-usuario/capturas/figura-6-4.png</code></div><img src="docs/manual-usuario/capturas/figura-6-4.png" alt="Figura 6.4" loading="lazy" onload="this.hidden=false;this.previousElementSibling.hidden=true" onerror="this.hidden=true;this.previousElementSibling.hidden=false">
   <figcaption><strong>Figura 6.4.</strong> Comparación del menú
-visible para ADMIN y REGISTRADOR.</figcaption>
+visible para ADMIN, REGISTRADOR y CONSULTA.</figcaption>
 </figure>
 <h3 id="63-otras-funciones-administrativas">6.3. Otras funciones
 administrativas</h3>
@@ -2458,8 +2080,7 @@ filtros.</li>
 <li>Para restablecer la bitácora, pulse el botón con <strong>flechas
 circulares</strong>.</li>
 </ol>
-<p>La bitácora puede contener IP y datos operativos. No debe compartirse
-fuera del personal autorizado.</p>
+<p>La bitácora registra con precisión la IP real del cliente (con soporte para proxies inversos y encabezados confiables), usuario, fecha, hora y acción realizada. No debe compartirse fuera del personal autorizado.</p>
 <figure class="manual-capture" id="figura-6-5">
   <div class="capture-slot">Imagen pendiente<br><code>docs/manual-usuario/capturas/figura-6-5.png</code></div><img src="docs/manual-usuario/capturas/figura-6-5.png" alt="Figura 6.5" loading="lazy" onload="this.hidden=false;this.previousElementSibling.hidden=true" onerror="this.hidden=true;this.previousElementSibling.hidden=false">
   <figcaption><strong>Figura 6.5.</strong> Bitácora de
@@ -2574,9 +2195,9 @@ datos</h3>
 <td>Registre el motivo antes de confirmar</td>
 </tr>
 <tr>
-<td>Persona no se elimina</td>
-<td>Tiene actas vinculadas</td>
-<td>Revise sus relaciones; no fuerce la eliminación</td>
+<td>No existe opción eliminar</td>
+<td>Las actas y personas no se destruyen por normativa registral</td>
+<td>Para actas use "Anular Registro" con motivo; para personas repetidas use "Fusionar duplicado"</td>
 </tr>
 <tr>
 <td>Fila <code>ERROR</code> en importación</td>
@@ -2743,14 +2364,24 @@ confirme que la dirección sea
 aparecerá el login (secciones 2.0 y 2.1.1).</p>
 <p><strong>¿Por qué no veo Usuarios, Auditoría, Backup BD o
 Configuración?</strong><br />
-Esas opciones corresponden al perfil ADMIN.</p>
+Esas opciones corresponden exclusivamente al perfil ADMIN.</p>
 <p><strong>¿Por qué el logo no cambió después de
 reemplazarlo?</strong><br> Actualice la página. Si continúa la versión
 anterior, comuníquelo al encargado de la Oficina de Informática
 indicando cuál de los dos logos reemplazó y la hora aproximada.</p>
-<p><strong>¿Por qué no puedo editar, anular o eliminar?</strong><br />
-El perfil REGISTRADOR necesita permisos específicos. Solicite al ADMIN
-la revisión de su cuenta.</p>
+<p><strong>¿Por qué no existe la opción de eliminar registros y cómo debo proceder?</strong><br />
+Para cumplir con los estándares de seguridad jurídica, trazabilidad y normativa del Registro Civil, el sistema no permite eliminar actas, ciudadanos, solicitudes ni usuarios:
+<ul>
+<li><strong>Para un acta errónea:</strong> use <strong>Anular Registro</strong> del menú <strong>⋮</strong> indicando el motivo formal. Si fue un error involuntario, el usuario <strong>ADMIN</strong> puede <strong>Reactivar</strong> el acta.</li>
+<li><strong>Para un escaneo o documento PDF equivocado:</strong> use <strong>Reemplazar Documento</strong>; la versión anterior se archivará en el historial de escaneos y podrá ser consultada o restaurada con <strong>Restaurar escaneo anterior</strong>.</li>
+<li><strong>Para ciudadanos duplicados:</strong> use <strong>Fusionar duplicado</strong> desde el menú de la persona principal para transferir todas las actas y unificar el expediente sin perder historial.</li>
+<li><strong>Para solicitudes desistidas:</strong> use <strong>Anular Trámite</strong> registrando el motivo. Las solicitudes no se borran para garantizar la correlatividad de trámites.</li>
+<li><strong>Para usuarios que ya no laboran:</strong> el administrador utiliza <strong>Desactivar Acceso</strong>; no se eliminan para conservar la autoría en auditoría.</li>
+</ul></p>
+<p><strong>¿Por qué no puedo editar o anular en mi cuenta?</strong><br />
+Si tiene rol <strong>CONSULTA</strong>, su acceso es de solo lectura por diseño. Si tiene rol <strong>REGISTRADOR</strong>, requiere que el administrador le configure los permisos granulares correspondientes en <strong>Usuarios → Configurar Permisos</strong>.</p>
+<p><strong>¿Qué características tiene el nuevo rol CONSULTA?</strong><br />
+Permite al personal de ventanilla o áreas administrativas consultar información, revisar actas físicas y digitalizadas, imprimir constancias y generar reportes tabulares, garantizando la inmutabilidad de los datos al no permitir creación, edición ni anulación.</p>
 <p><strong>¿Qué hago si no sé si un registro se guardó?</strong><br />
 No repita inmediatamente la operación. Busque primero la persona, el
 acta o la solicitud.</p>

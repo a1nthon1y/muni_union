@@ -7,10 +7,13 @@ export const SIN_NOMBRE = "S/N";
 export const REGEX_NOMBRE = /^[A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ ]*$/i;
 export const REGEX_DNI = /^\d{8}$/;
 export const REGEX_CUI = /^\d{6,12}$/;
-export const REGEX_FOLIO = /^\d{1,6}$/;
+export const REGEX_FOLIO = /^\d{1,6}(-[A-Z0-9]+)?$/i;
 export const REGEX_LIBRO = /^\d{1,4}$/;
 export const REGEX_TELEFONO = /^\d{7,9}$/;
 export const REGEX_DOC_ALFANUM = /^[A-Z0-9-]{4,15}$/i;
+
+export const sanitizarFolio = (valor: string): string =>
+    valor.toUpperCase().replace(/[^0-9A-Z-]/g, "").slice(0, 10);
 
 const hoyEnLima = (): string =>
     new Intl.DateTimeFormat("en-CA", { timeZone: "America/Lima" }).format(new Date());
@@ -116,7 +119,7 @@ export const validarNumeroActa = (
 
     return REGEX_FOLIO.test(n)
         ? null
-        : "N° de acta: solo números, máximo 6 dígitos";
+        : "N° de acta: número de 1 a 6 dígitos (con sufijo opcional, ej. 154 o 154-A)";
 };
 
 export const validarLibro = (libro?: string): string | null => {
