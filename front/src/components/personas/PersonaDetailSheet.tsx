@@ -4,19 +4,16 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getApiBaseUrl } from "@/utils/api";
 import {
-    Baby,
     Calendar,
     Cross,
-    Eye,
     FileText,
-    Heart,
     Loader2,
     MapPin,
     Phone,
-    Printer,
     RotateCcw,
     User,
 } from "lucide-react";
+import { ActaVinculadaCard } from "@/components/actas/ActaVinculadaCard";
 import {
     Sheet,
     SheetContent,
@@ -36,28 +33,6 @@ interface PersonaDetailSheetProps {
     onClose: () => void;
     persona: Persona | null;
 }
-
-const tipoConfig: Record<TipoActa, {
-    label: string;
-    icon: typeof Baby;
-    className: string;
-}> = {
-    NACIMIENTO: {
-        label: "Nacimiento",
-        icon: Baby,
-        className: "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-blue-300",
-    },
-    MATRIMONIO: {
-        label: "Matrimonio",
-        icon: Heart,
-        className: "border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-900/50 dark:bg-violet-950/30 dark:text-violet-300",
-    },
-    DEFUNCION: {
-        label: "Defunción",
-        icon: Cross,
-        className: "border-slate-300 bg-slate-100 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300",
-    },
-};
 
 const ordenTipoActa: Record<TipoActa, number> = {
     NACIMIENTO: 1,
@@ -250,74 +225,25 @@ export function PersonaDetailSheet({
                             </div>
                         ) : (
                             <div className="relative space-y-3 before:absolute before:bottom-4 before:left-5 before:top-4 before:w-px before:bg-border">
-                                {actas.map((acta) => {
-                                    const config = tipoConfig[acta.tipo_acta];
-                                    const Icon = config.icon;
-                                    const participacion = acta.persona_principal_id === persona.id
-                                        ? "Titular"
-                                        : "Cónyuge";
-
-                                    return (
-                                        <article key={acta.id} className="relative rounded-xl border bg-card p-4 pl-14 shadow-sm">
-                                            <div className={`absolute left-2.5 top-4 z-10 rounded-full border p-2 ${config.className}`}>
-                                                <Icon className="h-4 w-4" />
-                                            </div>
-                                            <div className="flex flex-wrap items-start justify-between gap-2">
-                                                <div>
-                                                    <p className="font-mono text-sm font-bold text-primary">
-                                                        {acta.numero_acta}
-                                                    </p>
-                                                    <p className="mt-1 text-xs font-medium text-foreground/80">
-                                                        {config.label} · Año registral {acta.anio}
-                                                    </p>
-                                                    <p className="mt-0.5 text-[11px] text-muted-foreground">
-                                                        Fecha del acta:{" "}
-                                                        <span className="font-medium text-foreground/70">
-                                                            {dateUtils.formatDisplayDate(acta.fecha_acta)}
-                                                        </span>
-                                                    </p>
-                                                </div>
-                                                <div className="flex flex-wrap gap-1.5">
-                                                    <Badge variant="outline">{participacion}</Badge>
-                                                    <Badge variant={acta.estado === "ACTIVO" ? "success" : acta.estado === "ANULADO" ? "error" : "warning"}>
-                                                        {acta.estado}
-                                                    </Badge>
-                                                    {acta.tiene_documento && <Badge variant="info">Digitalizada</Badge>}
-                                                </div>
-                                            </div>
-                                            <div className="mt-4 flex flex-wrap gap-2">
-                                                <Button
-                                                    size="sm"
-                                                    className="gap-2"
-                                                    onClick={() => router.push(`/dashboard/actas?persona_id=${persona.id}&acta_id=${acta.id}`)}
-                                                >
-                                                    <Eye className="h-4 w-4" />
-                                                    Ver acta
-                                                </Button>
-                                                <Button
-                                                    size="sm"
-                                                    variant="outline"
-                                                    className="gap-2"
-                                                    onClick={() => window.open(`/print/acta/${acta.id}`, "_blank")}
-                                                >
-                                                    <Printer className="h-4 w-4" />
-                                                    Imprimir
-                                                </Button>
-                                                {acta.tiene_documento && acta.ruta_archivo && (
-                                                    <Button
-                                                        size="sm"
-                                                        variant="outline"
-                                                        className="gap-2"
-                                                        onClick={() => window.open(getFileUrl(acta.ruta_archivo!), "_blank")}
-                                                    >
-                                                        <FileText className="h-4 w-4" />
-                                                        Ver documento
-                                                    </Button>
-                                                )}
-                                            </div>
-                                        </article>
-                                    );
-                                })}
+                                {actas.map((acta) => (
+                                    <ActaVinculadaCard
+                                        key={acta.id}
+                                        numeroActa={acta.numero_acta}
+                                        tipoActa={acta.tipo_acta}
+                                        anio={acta.anio}
+                                        fechaActa={acta.fecha_acta}
+                                        estado={acta.estado}
+                                        badges={
+                                            <Badge variant="outline">
+                                                {acta.persona_principal_id === persona.id ? "Titular" : "Cónyuge"}
+                                            </Badge>
+                                        }
+                                        hasDocumento={!!acta.tiene_documento}
+                                        documentoUrl={acta.ruta_archivo ? getFileUrl(acta.ruta_archivo) : undefined}
+                                        onVer={() => router.push(`/dashboard/actas?persona_id=${persona.id}&acta_id=${acta.id}`)}
+                                        onImprimir={() => window.open(`/print/acta/${acta.id}`, "_blank")}
+                                    />
+                                ))}
                             </div>
                         )}
                     </section>

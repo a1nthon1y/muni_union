@@ -106,6 +106,18 @@ export default function ActasPage() {
                     openedActaId.current = actaIdParam;
                     setSelectedActa(actaSolicitada);
                     setIsDetailOpen(true);
+                } else {
+                    // No está en la página actual (ej.: enlace desde Solicitudes sin persona_id):
+                    // buscarla directamente por ID y abrir su detalle.
+                    actasService.getById(actaIdParam)
+                        .then((acta) => {
+                            openedActaId.current = actaIdParam;
+                            setSelectedActa(acta);
+                            setIsDetailOpen(true);
+                        })
+                        .catch(() => {
+                            // El acta no existe o no es accesible — no abrir nada
+                        });
                 }
             }
         } catch {

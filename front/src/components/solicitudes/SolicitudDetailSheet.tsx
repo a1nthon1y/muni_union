@@ -9,8 +9,9 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useRouter } from "next/navigation";
 import { Solicitud } from "@/types/solicitud";
-import { es } from "date-fns/locale";
+import { ActaVinculadaCard } from "@/components/actas/ActaVinculadaCard";
 import { dateUtils } from "@/utils/dateUtils";
 import { getApiBaseUrl } from "@/utils/api";
 import {
@@ -22,9 +23,7 @@ import {
     Ban,
     Clock,
     FileDigit,
-    Eye,
     Receipt,
-    ExternalLink,
     Printer,
     MapPin,
     Phone,
@@ -53,6 +52,8 @@ export function SolicitudDetailSheet({
     isLoadingActions = false,
     soloConsulta = false,
 }: SolicitudDetailSheetProps) {
+    const router = useRouter();
+
     if (!solicitud) return null;
 
     const getStatusBadge = (estado: string) => {
@@ -69,6 +70,7 @@ export function SolicitudDetailSheet({
     };
 
     const total = solicitud.detalles?.reduce((acc, curr) => acc + Number(curr.total), 0) || 0;
+    const totalDetalles = solicitud.detalles?.length ?? 0;
 
     const getFileUrl = (ruta?: string) => {
         if (!ruta) return "";
@@ -193,47 +195,42 @@ export function SolicitudDetailSheet({
                         </div>
                     </div>
 
-                    {/* Detalle de Partidas */}
-                    <div className="space-y-3">
-                        <div className="flex items-center gap-2">
-                            <FileDigit className="h-4 w-4 text-primary" />
-                            <h3 className="font-semibold text-sm text-foreground uppercase tracking-wide">Partidas Requeridas ({solicitud.detalles?.length})</h3>
+                    {/* Actas Requeridas */}
+                    <section aria-labelledby="solicitud-partidas" className="space-y-4">
+                        <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-center gap-2 min-w-0">
+                                <FileDigit className="h-4 w-4 shrink-0 text-primary" />
+                                <h3 id="solicitud-partidas" className="font-semibold text-sm text-foreground uppercase tracking-wide">
+                                    Actas requeridas ({solicitud.detalles?.length})
+                                </h3>
+                            </div>
+                            <Badge variant="outline" className="shrink-0">
+                                {totalDetalles} {totalDetalles === 1 ? "partida" : "partidas"}
+                            </Badge>
                         </div>
-                        <div className="space-y-2">
+
+                        <div className="relative space-y-3 before:absolute before:bottom-4 before:left-5 before:top-4 before:w-px before:bg-border">
                             {solicitud.detalles?.map((det) => (
-                                <div key={det.id} className="bg-muted px-4 py-3 rounded-xl border border-border flex items-center justify-between group hover:border-primary/30 transition-all">
-                                    <div className="flex items-center gap-3">
-                                        <div className="h-9 w-9 rounded-lg bg-background flex items-center justify-center font-bold text-primary border border-border text-[10px]">
-                                            {det.tipo_acta?.substring(0, 1)}
-                                        </div>
-                                        <div>
-                                            <p className="font-bold text-foreground text-[11px] leading-tight flex items-center gap-1.5">
-                                                ACTA N° {det.numero_acta}
-                                                {det.ruta_archivo && <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" title="Digitalizado" />}
-                                            </p>
-                                            <p className="text-[9px] font-bold text-muted-foreground uppercase">{det.tipo_acta} • {det.anio}</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <Badge variant="outline" className="text-[10px] font-black bg-background h-6">x{det.cantidad}</Badge>
-                                        {det.ruta_archivo && (
-                                            <Button
-                                                size="icon"
-                                                variant="outline"
-                                                className="h-8 w-8 rounded-lg text-primary hover:bg-primary/5 bg-background shadow-sm"
-                                                onClick={() => {
-                                                    const url = getFileUrl(det.ruta_archivo);
-                                                    if (url) window.open(url, '_blank');
-                                                }}
-                                            >
-                                                <Eye size={16} />
-                                            </Button>
-                                        )}
-                                    </div>
-                                </div>
+                                <ActaVinculadaCard
+                                    key={det.id}
+                                    numeroActa={det.numero_acta ?? "—"}
+                                    tipoActa={det.tipo_acta ?? ""}
+                                    anio={det.anio ?? 0}
+                                    badges={
+                                        <Badge variant="outline" className="text-[10px] font-black">
+                                            x{det.cantidad}
+                                        </Badge>
+                                    }
+                                    hasDocumento={!!det.ruta_archivo}
+                                    mostrarSinDigitalizar
+                                    documentoUrl={det.ruta_archivo ? getFileUrl(det.ruta_archivo) : undefined}
+                                    onVer={() => {
+                                        if (det.acta_id) router.push(`/dashboard/actas?acta_id=${det.acta_id}`);
+                                    }}
+                                />
                             ))}
                         </div>
-                    </div>
+                    </section>
 
                     {/* Trazabilidad */}
                     {solicitud.estado !== 'PENDIENTE' && (
@@ -279,7 +276,7 @@ export function SolicitudDetailSheet({
                             className="w-full h-11 rounded-xl font-bold uppercase text-[11px] tracking-widest text-slate-600 hover:bg-slate-50 border-slate-200"
                             onClick={() => window.open(`/print/solicitud/${solicitud.id}`, '_blank')}
                         >
-                            <Printer size={16} className="mr-2" /> Imprimir Documento / Cargo
+                            <Printer size={16} className="mr-2" /> Imprimir Constancia de Trámite
                         </Button>
                     )}
 
