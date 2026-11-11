@@ -29,7 +29,7 @@ function cleanAndFix(content) {
 
   content = content.replace(
     /main\s*>\s*h2(\s*\{[^}]*\})?(main\s*>\s*h2:[^}]+})?/g,
-    'main>h2{page-break-before:always;break-before:page}main>h2:first-of-type,main>h2#sistema-de-registro-civil{page-break-before:avoid!important;break-before:avoid!important;margin-top:.6rem!important}'
+    'main>h2{page-break-before:auto;break-before:auto;margin-top:2.2rem!important;padding-top:.8rem;page-break-after:avoid!important;break-after:avoid!important}main>h2:first-of-type,main>h2#sistema-de-registro-civil{margin-top:.6rem!important}'
   );
 
   // 4. h3#contenido and h3#contenido-institucional

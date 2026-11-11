@@ -267,7 +267,7 @@ main{max-width:1120px;margin:0 auto;padding:2rem 3.5rem 5rem}
 h1,h2,h3,h4{line-height:1.25;page-break-after:avoid;break-after:avoid}
 h1{font-size:2rem;color:var(--navy);border-bottom:4px solid var(--cyan);padding-bottom:.55rem;margin-top:2.5rem;page-break-after:avoid!important;break-after:avoid!important}
 h2{font-size:1.55rem;color:var(--navy);border-bottom:2px solid var(--line);padding-bottom:.35rem;margin-top:2.3rem}
-main>h2{page-break-before:always;break-before:page}
+main>h2{page-break-before:auto;break-before:auto;margin-top:2.2rem!important;padding-top:.8rem;page-break-after:avoid!important;break-after:avoid!important}
 main>h2:first-of-type,main>h2#sistema-de-registro-civil{page-break-before:avoid!important;break-before:avoid!important;margin-top:.6rem!important}
 h3{font-size:1.2rem;color:#155e75;border-left:4px solid #06b6d4;padding-left:.65rem;margin-top:1.8rem}
 h4{font-size:1rem;color:#334155;margin-top:1.35rem}
@@ -288,34 +288,37 @@ th{font-weight:700}
 ul.task-list{list-style:none;padding-left:.25rem}
 .task-list-item input{margin-right:.45rem}
 hr{border:0;border-top:1px solid var(--line);margin:2rem 0}
-.doc-classification{position:fixed;left:0;right:0;bottom:0;padding:.15cm .8cm;background:#fff;border-top:1px solid #94a3b8;color:#475569;font-size:8pt;text-align:center;z-index:10}
+.doc-classification{display:none!important}
 .screen-note{max-width:1120px;margin:1rem auto;padding:0 3.5rem;color:var(--muted);font-size:.8rem}
 @media screen and (max-width:760px){
   .cover{min-height:auto;padding:4rem 1.4rem}
   .cover h1{font-size:2.1rem}
   nav#TOC,main{padding:1.5rem 1rem}
   table{display:block;overflow-x:auto;white-space:nowrap}
-  .doc-classification{position:static}
 }
 @media print{
-  @page{size:A4;margin:1.55cm 1.35cm 2.5cm}
+  @page{size:A4;margin:1.6cm 1.4cm 1.8cm}
   html{font-size:10.2pt}
   body{print-color-adjust:exact;-webkit-print-color-adjust:exact}
   .cover{min-height:25cm;padding:4cm 1.2cm}
   .cover h1{font-size:28pt}
-  nav#TOC{padding:0}
+  nav#TOC{padding:0;font-size:8.6pt;line-height:1.32}
   nav#TOC:before{page-break-after:avoid!important;break-after:avoid!important}
-  nav#TOC ul,nav#TOC li{page-break-inside:auto!important;break-inside:auto!important}
+  nav#TOC ul{page-break-inside:auto!important;break-inside:auto!important}
+  nav#TOC li{margin:.08rem 0;page-break-inside:avoid!important;break-inside:avoid!important}
   .screen-note{display:none}
   main{max-width:none;padding:0}
   h1{font-size:18pt;page-break-after:avoid!important;break-after:avoid!important}
-  main>h2{page-break-before:always;break-before:page}
+  main>h2{page-break-before:auto;break-before:auto;page-break-after:avoid!important;break-after:avoid!important;margin-top:1.8rem!important;padding-top:.6rem}
   main>h2:first-of-type,main>h2#sistema-de-registro-civil{page-break-before:avoid!important;break-before:avoid!important;margin-top:.4cm!important}
   h2{font-size:15pt}
   h3{font-size:12pt}
   h4{font-size:10.5pt}
   p,li{font-size:9.2pt}
-  ol,ul{orphans:2;widows:2}
+  ol,ul{orphans:3;widows:3}
+  ol li,ul li{page-break-inside:avoid;break-inside:avoid}
+  h1+p,h2+p,h3+p,h4+p,h1+ol,h2+ol,h3+ol,h4+ol,h1+ul,h2+ul,h3+ul,h4+ul{page-break-after:avoid!important;break-after:avoid!important}
+  hr{page-break-after:avoid;break-after:avoid;margin:1.2rem 0}
   h3#contenido,h3#contenido-institucional{page-break-after:avoid!important;break-after:avoid!important}
   h3#contenido+ol,h3#contenido-institucional+ol{page-break-inside:auto!important;break-inside:auto!important}
   h3#contenido+ol li,h3#contenido-institucional+ol li{page-break-inside:avoid;break-inside:avoid}
@@ -325,7 +328,7 @@ hr{border:0;border-top:1px solid var(--line);margin:2rem 0}
   pre code{color:#111827!important;background:transparent!important}
   .mermaid{page-break-inside:avoid;break-inside:avoid}
   a{color:inherit;text-decoration:none}
-  .doc-classification{display:block;position:fixed;bottom:0;left:0;right:0;margin:0}
+  .doc-classification{display:none!important}
 }
 
 .manual-capture {
@@ -380,12 +383,17 @@ hr{border:0;border-top:1px solid var(--line);margin:2rem 0}
 @media print {
   .manual-capture {
     margin: .5cm 0;
+    page-break-inside: avoid;
+    break-inside: avoid;
   }
   .manual-capture img {
-    max-height: 20cm;
+    max-height: 12cm;
+    width: auto;
+    max-width: 100%;
+    margin: 0 auto;
   }
   .capture-slot {
-    min-height: 8cm;
+    min-height: 4.5cm;
   }
 }
 </style></head>
